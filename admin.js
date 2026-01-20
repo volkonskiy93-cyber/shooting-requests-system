@@ -6,25 +6,54 @@ let currentSort = { field: 'createdAt', direction: 'desc' }; // По умолч�
 
 // Инициализация страницы
 document.addEventListener('DOMContentLoaded', function() {
-    loadApplications();
-    setupFilters();
-    // Обновляем индикаторы сортировки после загрузки DOM
-    setTimeout(() => {
-        // По умолчанию сортировка по дате создания (она не отображается в таблице, но применяется)
-        updateSortIndicators();
-    }, 100);
+    // Ждем загрузки всех скриптов
+    setTimeout(function() {
+        if (typeof applicationManager === 'undefined') {
+            console.error('applicationManager не загружен! Проверьте, что data.js подключен.');
+            alert('Ошибка: система данных не загружена. Пожалуйста, обновите страницу.');
+            return;
+        }
+        
+        console.log('Инициализация страницы администратора');
+        console.log('applicationManager доступен:', typeof applicationManager !== 'undefined');
+        const allApps = applicationManager.getAllApplications();
+        console.log('Текущее количество заявок:', allApps.length);
+        console.log('Заявки:', allApps);
+        
+        loadApplications();
+        setupFilters();
+        // Обновляем индикаторы сортировки после загрузки DOM
+        setTimeout(() => {
+            // По умолчанию сортировка по дате создания (она не отображается в таблице, но применяется)
+            updateSortIndicators();
+        }, 100);
+    }, 200);
 });
 
 // Загрузка заявок
 function loadApplications() {
     if (typeof applicationManager === 'undefined') {
-        alert('Ошибка: система данных не загружена');
+        console.error('applicationManager не определен');
+        alert('Ошибка: система данных не загружена. Убедитесь, что файл data.js подключен.');
+        // Пробуем еще раз через небольшую задержку
+        setTimeout(function() {
+            if (typeof applicationManager !== 'undefined') {
+                loadApplications();
+            }
+        }, 500);
         return;
     }
     
-    currentApplications = applicationManager.getAllApplications();
-    updateStatistics();
-    applyFilters();
+    try {
+        currentApplications = applicationManager.getAllApplications();
+        console.log('Загружено заявок:', currentApplications.length);
+        console.log('Заявки:', currentApplications);
+        updateStatistics();
+        applyFilters();
+    } catch (error) {
+        console.error('Ошибка при загрузке заявок:', error);
+        alert('Ошибка при загрузке заявок: ' + error.message);
+    }
 }
 
 // Обновление статистики
@@ -66,21 +95,65 @@ function setupFilters() {
 
 // Применение фильтров
 function applyFilters() {
-    const filters = {
-        status: document.getElementById('status-filter').value,
-        contractor: document.getElementById('contractor-filter').value,
-        dateFrom: document.getElementById('date-from').value,
-        dateTo: document.getElementById('date-to').value,
-        search: document.getElementById('search-input').value
-    };
+    if (typeof applicationManager === 'undefined') {
+        console.error('applicationManager не определен в applyFilters');
+        return;
+    }
     
-    currentFilter = filters;
-    let filtered = applicationManager.getFilteredApplications(filters);
-    
-    // Применяем сортировку (по умолчанию по дате создания)
-    filtered = sortApplicationsData(filtered, currentSort.field, currentSort.direction);
-    
-    renderApplications(filtered);
+    try {
+        // Перезагружаем заявки из хранилища перед применением фильтров
+        currentApplications = applicationManager.getAllApplications();
+        console.log('Применение фильтров. Всего заявок:', currentApplications.length);
+        
+        let filtered = [...currentApplications];
+        
+        // Фильтр по статусу
+        const statusFilter = document.getElementById('status-filter')?.value;
+        if (statusFilter) {
+            filtered = filtered.filter(app => app.status === statusFilter);
+            console.log('После фильтра по статусу:', filtered.length);
+        }
+        
+        // Фильтр по подрядчику
+        const contractorFilter = document.getElementById('contractor-filter')?.value;
+        if (contractorFilter) {
+            filtered = filtered.filter(app => app.contractor === contractorFilter);
+            console.log('После фильтра по подрядчику:', filtered.length);
+        }
+        
+        // Фильтр по дате съемки
+        const dateFrom = document.getElementById('date-from')?.value;
+        const dateTo = document.getElementById('date-to')?.value;
+        if (dateFrom) {
+            filtered = filtered.filter(app => {
+                if (!app.shootingDate) return false;
+                return new Date(app.shootingDate) >= new Date(dateFrom);
+            });
+        }
+        if (dateTo) {
+            filtered = filtered.filter(app => {
+                if (!app.shootingDate) return false;
+                return new Date(app.shootingDate) <= new Date(dateTo);
+            });
+        }
+        
+        // Поиск по названию сюжета
+        const searchQuery = document.getElementById('search-input')?.value.toLowerCase();
+        if (searchQuery) {
+            filtered = filtered.filter(app => {
+                const title = (app.storyTitle || '').toLowerCase();
+                return title.includes(searchQuery);
+            });
+        }
+        
+        // Сортировка
+        filtered = sortApplicationsData(filtered, currentSort.field, currentSort.direction);
+        
+        console.log('Отображаем заявок:', filtered.length);
+        renderApplications(filtered);
+    } catch (error) {
+        console.error('Ошибка при применении фильтров:', error);
+    }
 }
 
 // Сортировка заявок
