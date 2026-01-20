@@ -4,92 +4,96 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Система заявок на видеосъемку</title>
+    
+    <!-- Внешние библиотеки (загружаем в начале) -->
+    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx-populate@1.21.0/browser/xlsx-populate.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.min.js"></script>
+    
+    <!-- Системные скрипты -->
+    <script src="auth.js"></script>
+    <script src="data.js"></script>
+    <script src="email-service.js"></script>
+    
     <script>
-        // КРИТИЧЕСКИ ВАЖНО: Функции должны быть определены ДО загрузки DOM
-        // Функция для выбора подрядчика (доступна глобально)
+        // КРИТИЧЕСКИ ВАЖНО: Функции выбора должны быть доступны глобально
         window.selectContractor = function(contractor) {
             try {
-                console.log('selectContractor вызвана с параметром:', contractor);
+                console.log('selectContractor вызвана:', contractor);
                 const mainScreen = document.getElementById('mainScreen');
-                const formFigaro = document.getElementById('formFigaro');
-                const formTTK = document.getElementById('formTTK');
-                const formProducer = document.getElementById('formProducer');
+                const forms = {
+                    'figaro': document.getElementById('formFigaro'),
+                    'ttk': document.getElementById('formTTK'),
+                    'producer': document.getElementById('formProducer')
+                };
                 
-                if (!mainScreen || !formFigaro || !formTTK || !formProducer) {
-                    console.error('Не найдены элементы форм:', {
-                        mainScreen: !!mainScreen,
-                        formFigaro: !!formFigaro,
-                        formTTK: !!formTTK,
-                        formProducer: !!formProducer
-                    });
-                    // Пробуем еще раз через небольшую задержку
-                    setTimeout(function() {
-                        window.selectContractor(contractor);
-                    }, 100);
+                if (!mainScreen || !forms.figaro || !forms.ttk || !forms.producer) {
+                    console.error('Элементы не найдены, пробуем повторно...');
+                    setTimeout(() => window.selectContractor(contractor), 100);
                     return;
                 }
                 
-                // Скрываем все
+                // Скрываем всё
                 mainScreen.classList.remove('active');
-                formFigaro.classList.remove('active');
-                formTTK.classList.remove('active');
-                formProducer.classList.remove('active');
-            
-                // Показываем выбранную форму
-                if (contractor === 'figaro') {
-                    formFigaro.classList.add('active');
-                    const figaroAppDate = document.getElementById('figaro-application-date');
-                    if (figaroAppDate) figaroAppDate.valueAsDate = new Date();
+                Object.values(forms).forEach(f => f.classList.remove('active'));
+                
+                // Показываем нужную форму
+                if (forms[contractor]) {
+                    forms[contractor].classList.add('active');
+                    console.log('Показана форма:', contractor);
+                    
+                    // Инициализация дат
                     const today = new Date().toISOString().split('T')[0];
-                    const figaroShootingDate = document.getElementById('figaro-shooting-date');
-                    const figaroBroadcastDate = document.getElementById('figaro-broadcast-date');
-                    if (figaroShootingDate) figaroShootingDate.min = today;
-                    if (figaroBroadcastDate) figaroBroadcastDate.min = today;
-                } else if (contractor === 'ttk') {
-                    formTTK.classList.add('active');
-                    const today = new Date().toISOString().split('T')[0];
-                    const ttkAppDate = document.getElementById('ttk-application-date');
-                    if (ttkAppDate) ttkAppDate.value = today;
-                    const ttkShootingDate = document.getElementById('ttk-shooting-date');
-                    const ttkBroadcastDate = document.getElementById('ttk-broadcast-date');
-                    const ttkSubmissionDate = document.getElementById('ttk-submission-date');
-                    if (ttkShootingDate) ttkShootingDate.min = today;
-                    if (ttkBroadcastDate) ttkBroadcastDate.min = today;
-                    if (ttkSubmissionDate) {
-                        const now = new Date();
-                        const currentDateTime = now.toISOString().slice(0, 16);
-                        ttkSubmissionDate.min = currentDateTime;
-                    }
-                } else if (contractor === 'producer') {
-                    formProducer.classList.add('active');
-                    const today = new Date().toISOString().split('T')[0];
-                    const producerShootingDate = document.getElementById('producer-shooting-date');
-                    if (producerShootingDate) {
-                        producerShootingDate.min = today;
-                        producerShootingDate.addEventListener('change', function() {
-                            if (typeof updateStoryTitleFromDate === 'function') {
-                                updateStoryTitleFromDate('producer');
-                            }
-                        });
+                    if (contractor === 'figaro') {
+                        document.getElementById('figaro-application-date').value = today;
+                        document.getElementById('figaro-shooting-date').min = today;
+                    } else if (contractor === 'ttk') {
+                        document.getElementById('ttk-application-date').value = today;
+                        document.getElementById('ttk-shooting-date').min = today;
+                    } else if (contractor === 'producer') {
+                        document.getElementById('producer-shooting-date').min = today;
                     }
                 }
-            } catch (error) {
-                console.error('Ошибка в функции selectContractor:', error);
-                alert('Ошибка при открытии формы. Пожалуйста, обновите страницу.');
+            } catch (e) {
+                console.error('Ошибка selectContractor:', e);
             }
         };
         
-        // Функция для возврата на главный экран (доступна глобально)
         window.goBack = function() {
             const mainScreen = document.getElementById('mainScreen');
-            const formFigaro = document.getElementById('formFigaro');
-            const formTTK = document.getElementById('formTTK');
-            const formProducer = document.getElementById('formProducer');
+            const forms = ['formFigaro', 'formTTK', 'formProducer'];
             
-            if (formFigaro) formFigaro.classList.remove('active');
-            if (formTTK) formTTK.classList.remove('active');
-            if (formProducer) formProducer.classList.remove('active');
+            forms.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.classList.remove('active');
+            });
+            
             if (mainScreen) mainScreen.classList.add('active');
+        };
+        
+        window.updateStoryTitleFromDate = function(formType) {
+            const ids = {
+                'figaro': ['figaro-shooting-date', 'figaro-story-title'],
+                'ttk': ['ttk-shooting-date', 'ttk-story-title'],
+                'producer': ['producer-shooting-date', 'producer-story-title']
+            };
+            
+            const [dateId, titleId] = ids[formType];
+            const dateInput = document.getElementById(dateId);
+            const titleInput = document.getElementById(titleId);
+            
+            if (dateInput && titleInput && dateInput.value) {
+                const date = new Date(dateInput.value);
+                const day = String(date.getDate()).padStart(2, '0');
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const year = date.getFullYear();
+                titleInput.value = `Съемка от ${day}.${month}.${year}`;
+            }
         };
     </script>
     <style>
@@ -2178,225 +2182,6 @@
     </div>
 
     <script>
-        // Функции должны быть определены ДО загрузки DOM
-        // Функция для выбора подрядчика (доступна глобально)
-        window.selectContractor = function(contractor) {
-            try {
-                console.log('selectContractor вызвана с параметром:', contractor);
-                const mainScreen = document.getElementById('mainScreen');
-                const formFigaro = document.getElementById('formFigaro');
-                const formTTK = document.getElementById('formTTK');
-                const formProducer = document.getElementById('formProducer');
-                
-                if (!mainScreen || !formFigaro || !formTTK || !formProducer) {
-                    console.error('Не найдены элементы форм:', {
-                        mainScreen: !!mainScreen,
-                        formFigaro: !!formFigaro,
-                        formTTK: !!formTTK,
-                        formProducer: !!formProducer
-                    });
-                    // Пробуем еще раз через небольшую задержку
-                    setTimeout(function() {
-                        window.selectContractor(contractor);
-                    }, 100);
-                    return;
-                }
-                
-                // Скрываем все
-                mainScreen.classList.remove('active');
-                formFigaro.classList.remove('active');
-                formTTK.classList.remove('active');
-                formProducer.classList.remove('active');
-            
-                // Показываем выбранную форму
-                if (contractor === 'figaro') {
-                    formFigaro.classList.add('active');
-                    const figaroAppDate = document.getElementById('figaro-application-date');
-                    if (figaroAppDate) figaroAppDate.valueAsDate = new Date();
-                    const today = new Date().toISOString().split('T')[0];
-                    const figaroShootingDate = document.getElementById('figaro-shooting-date');
-                    const figaroBroadcastDate = document.getElementById('figaro-broadcast-date');
-                    if (figaroShootingDate) figaroShootingDate.min = today;
-                    if (figaroBroadcastDate) figaroBroadcastDate.min = today;
-                } else if (contractor === 'ttk') {
-                    formTTK.classList.add('active');
-                    const today = new Date().toISOString().split('T')[0];
-                    const ttkAppDate = document.getElementById('ttk-application-date');
-                    if (ttkAppDate) ttkAppDate.value = today;
-                    const ttkShootingDate = document.getElementById('ttk-shooting-date');
-                    const ttkBroadcastDate = document.getElementById('ttk-broadcast-date');
-                    const ttkSubmissionDate = document.getElementById('ttk-submission-date');
-                    if (ttkShootingDate) ttkShootingDate.min = today;
-                    if (ttkBroadcastDate) ttkBroadcastDate.min = today;
-                    if (ttkSubmissionDate) {
-                        const now = new Date();
-                        const currentDateTime = now.toISOString().slice(0, 16);
-                        ttkSubmissionDate.min = currentDateTime;
-                    }
-                } else if (contractor === 'producer') {
-                    formProducer.classList.add('active');
-                    const today = new Date().toISOString().split('T')[0];
-                    const producerShootingDate = document.getElementById('producer-shooting-date');
-                    if (producerShootingDate) {
-                        producerShootingDate.min = today;
-                        producerShootingDate.addEventListener('change', function() {
-                            updateStoryTitleFromDate('producer');
-                        });
-                    }
-                }
-            } catch (error) {
-                console.error('Ошибка в функции selectContractor:', error);
-                alert('Ошибка при открытии формы. Пожалуйста, обновите страницу.');
-            }
-        };
-        
-        // Функция для возврата на главный экран (доступна глобально)
-        window.goBack = function() {
-            const mainScreen = document.getElementById('mainScreen');
-            const formFigaro = document.getElementById('formFigaro');
-            const formTTK = document.getElementById('formTTK');
-            const formProducer = document.getElementById('formProducer');
-            
-            if (formFigaro) formFigaro.classList.remove('active');
-            if (formTTK) formTTK.classList.remove('active');
-            if (formProducer) formProducer.classList.remove('active');
-            if (mainScreen) mainScreen.classList.add('active');
-        };
-        
-        // Функция для автоматического обновления названия сюжета на основе даты съемки
-        function updateStoryTitleFromDate(formType) {
-            let shootingDateInput, titleInput;
-            
-            if (formType === 'figaro') {
-                shootingDateInput = document.getElementById('figaro-shooting-date');
-                titleInput = document.getElementById('figaro-story-title');
-            } else if (formType === 'ttk') {
-                shootingDateInput = document.getElementById('ttk-shooting-date');
-                titleInput = document.getElementById('ttk-story-title');
-            } else if (formType === 'producer') {
-                shootingDateInput = document.getElementById('producer-shooting-date');
-                titleInput = document.getElementById('producer-story-title');
-            }
-            
-            if (shootingDateInput && titleInput && shootingDateInput.value) {
-                const date = new Date(shootingDateInput.value);
-                // Форматируем дату в формат ДД.ММ.ГГГГ
-                const day = String(date.getDate()).padStart(2, '0');
-                const month = String(date.getMonth() + 1).padStart(2, '0');
-                const year = date.getFullYear();
-                const formattedDate = `${day}.${month}.${year}`;
-                
-                // Устанавливаем название в формате "Съемка от ДД.ММ.ГГГГ"
-                titleInput.value = `Съемка от ${formattedDate}`;
-            }
-        }
-        
-        // Функция для выбора подрядчика (доступна глобально)
-        window.selectContractor = function(contractor) {
-            try {
-                console.log('selectContractor вызвана с параметром:', contractor);
-                const mainScreen = document.getElementById('mainScreen');
-                const formFigaro = document.getElementById('formFigaro');
-                const formTTK = document.getElementById('formTTK');
-                const formProducer = document.getElementById('formProducer');
-                
-                if (!mainScreen || !formFigaro || !formTTK || !formProducer) {
-                    console.error('Не найдены элементы форм:', {
-                        mainScreen: !!mainScreen,
-                        formFigaro: !!formFigaro,
-                        formTTK: !!formTTK,
-                        formProducer: !!formProducer
-                    });
-                    return;
-                }
-                
-                // Скрываем все
-                mainScreen.classList.remove('active');
-                formFigaro.classList.remove('active');
-                formTTK.classList.remove('active');
-                formProducer.classList.remove('active');
-            
-            // Показываем выбранную форму
-            if (contractor === 'figaro') {
-                formFigaro.classList.add('active');
-                // Устанавливаем дату подачи заявки на сегодня для ФИГАРО
-                document.getElementById('figaro-application-date').valueAsDate = new Date();
-                // Устанавливаем минимальную дату для съемки
-                const today = new Date().toISOString().split('T')[0];
-                document.getElementById('figaro-shooting-date').min = today;
-                document.getElementById('figaro-broadcast-date').min = today;
-            } else if (contractor === 'ttk') {
-                formTTK.classList.add('active');
-                // Устанавливаем дату подачи заявки на сегодня для ТТК
-                const today = new Date().toISOString().split('T')[0];
-                document.getElementById('ttk-application-date').value = today;
-                // Устанавливаем минимальные даты
-                document.getElementById('ttk-shooting-date').min = today;
-                document.getElementById('ttk-broadcast-date').min = today;
-                // Устанавливаем минимальную дату для сдачи материала
-                const now = new Date();
-                const currentDateTime = now.toISOString().slice(0, 16);
-                document.getElementById('ttk-submission-date').min = currentDateTime;
-            } else if (contractor === 'producer') {
-                formProducer.classList.add('active');
-                // Устанавливаем минимальную дату для съемки
-                const today = new Date().toISOString().split('T')[0];
-                document.getElementById('producer-shooting-date').min = today;
-                // Добавляем обработчик для автоматического названия по дате съемки
-                document.getElementById('producer-shooting-date').addEventListener('change', function() {
-                    updateStoryTitleFromDate('producer');
-                });
-            }
-            } catch (error) {
-                console.error('Ошибка в функции selectContractor:', error);
-                alert('Ошибка при открытии формы. Пожалуйста, обновите страницу.');
-            }
-        };
-        
-        // Функция для возврата на главный экран (доступна глобально)
-        window.goBack = function() {
-            const mainScreen = document.getElementById('mainScreen');
-            const formFigaro = document.getElementById('formFigaro');
-            const formTTK = document.getElementById('formTTK');
-            const formProducer = document.getElementById('formProducer');
-            
-            // Скрываем все формы
-            formFigaro.classList.remove('active');
-            formTTK.classList.remove('active');
-            formProducer.classList.remove('active');
-            
-            // Показываем главный экран
-            mainScreen.classList.add('active');
-        };
-        
-        // Функция для автоматического обновления названия сюжета на основе даты съемки
-        function updateStoryTitleFromDate(formType) {
-            let shootingDateInput, titleInput;
-            
-            if (formType === 'figaro') {
-                shootingDateInput = document.getElementById('figaro-shooting-date');
-                titleInput = document.getElementById('figaro-story-title');
-            } else if (formType === 'ttk') {
-                shootingDateInput = document.getElementById('ttk-shooting-date');
-                titleInput = document.getElementById('ttk-story-title');
-            } else if (formType === 'producer') {
-                shootingDateInput = document.getElementById('producer-shooting-date');
-                titleInput = document.getElementById('producer-story-title');
-            }
-            
-            if (shootingDateInput && titleInput && shootingDateInput.value) {
-                const date = new Date(shootingDateInput.value);
-                // Форматируем дату в формат ДД.ММ.ГГГГ
-                const day = String(date.getDate()).padStart(2, '0');
-                const month = String(date.getMonth() + 1).padStart(2, '0');
-                const year = date.getFullYear();
-                const formattedDate = `${day}.${month}.${year}`;
-                
-                // Устанавливаем название в формате "Съемка от ДД.ММ.ГГГГ"
-                titleInput.value = `Съемка от ${formattedDate}`;
-            }
-        }
-        
         // Функция сбора данных оборудования
         function collectEquipment(formId) {
             const equipment = [];
@@ -2404,36 +2189,28 @@
             if (equipmentTable) {
                 const rows = equipmentTable.querySelectorAll('tr');
                 rows.forEach(row => {
-                    // Получаем первую ячейку (основное оборудование)
                     const mainCell = row.querySelector('td:first-child');
-                    // Получаем вторую ячейку (дополнительное оборудование)
                     const additionalCell = row.querySelector('td:nth-child(2)');
-                    // Получаем третью ячейку (выбор дополнительного оборудования)
                     const selectCell = row.querySelector('td:last-child');
                     
-                    // Извлекаем название основного оборудования (без input и количества)
                     let mainEquip = '';
                     let mainQuantity = 0;
                     if (mainCell) {
-                        // Клонируем ячейку, чтобы удалить input без изменения оригинала
                         const mainCellClone = mainCell.cloneNode(true);
                         const quantityInput = mainCellClone.querySelector('input[type="number"]');
                         if (quantityInput) {
                             mainQuantity = parseInt(quantityInput.value) || 0;
-                            quantityInput.remove(); // Удаляем input из клона
+                            quantityInput.remove();
                         }
-                        // Получаем текст без input
                         mainEquip = mainCellClone.textContent.trim().replace(/\s+/g, ' ');
                     }
                     
-                    // Извлекаем название дополнительного оборудования
                     let additionalEquip = '';
                     let additionalQuantity = 0;
                     if (additionalCell) {
                         additionalEquip = additionalCell.textContent.trim().replace(/\s+/g, ' ');
                     }
                     
-                    // Извлекаем количество дополнительного оборудования из select
                     if (selectCell) {
                         const additionalSelect = selectCell.querySelector('select');
                         if (additionalSelect) {
@@ -2441,7 +2218,6 @@
                         }
                     }
                     
-                    // Добавляем только если есть хотя бы одно поле заполнено
                     if (mainEquip || additionalEquip) {
                         equipment.push({
                             main: mainEquip,
@@ -4304,23 +4080,6 @@
         </div>
     </div>
     
-    <!-- EmailJS для отправки писем -->
-    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
-    <!-- SheetJS для работы с Excel файлами -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <!-- ExcelJS для лучшей работы со стилями -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
-    <!-- xlsx-populate для работы с шаблонами (лучше сохраняет стили) -->
-    <script src="https://cdn.jsdelivr.net/npm/xlsx-populate@1.21.0/browser/xlsx-populate.min.js"></script>
-    <!-- jsPDF и html2canvas для генерации PDF -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <!-- pdfmake для генерации PDF с поддержкой кириллицы -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.min.js"></script>
-    <script src="auth.js"></script>
-    <script src="email-service.js"></script>
-    <script src="data.js"></script>
     <script>
         // Проверка авторизации и инициализации при загрузке страницы
         document.addEventListener('DOMContentLoaded', function() {
@@ -4340,13 +4099,12 @@
                 
                 // Проверка applicationManager
                 if (typeof applicationManager === 'undefined') {
-                    console.error('applicationManager не загружен! Проверьте, что data.js подключен.');
+                    console.error('applicationManager не загружен!');
                     alert('Ошибка: система данных не загружена. Пожалуйста, обновите страницу.');
                     return;
                 }
                 
                 console.log('applicationManager инициализирован');
-                console.log('Текущее количество заявок:', applicationManager.getAllApplications().length);
                 
                 // Убеждаемся, что главный экран виден по умолчанию
                 const mainScreen = document.getElementById('mainScreen');
