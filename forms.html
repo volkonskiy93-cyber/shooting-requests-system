@@ -2477,8 +2477,19 @@
             };
             
             // Сохраняем через applicationManager
-            if (typeof applicationManager !== 'undefined') {
+            if (typeof applicationManager === 'undefined') {
+                alert('Ошибка: система данных не загружена. Убедитесь, что файл data.js подключен.');
+                console.error('applicationManager не определен');
+                return;
+            }
+            
+            try {
                 const newApp = applicationManager.createApplication(formData);
+                console.log('Заявка создана:', newApp);
+                
+                // Проверяем, что заявка сохранилась
+                const allApps = applicationManager.getAllApplications();
+                console.log('Всего заявок в хранилище:', allApps.length);
                 
                 // Создаем и отправляем Excel документ
                 createExcelDocumentAndSend(formData, newApp.id);
@@ -2486,8 +2497,9 @@
                 alert('Заявка ВЕК XXL (ФИГАРО) успешно отправлена! Номер заявки: ' + newApp.id.substring(0, 8) + '\n\nExcel файл будет создан и предложен для отправки на pendeho098rus@yandex.ru');
                 this.reset();
                 goBack();
-            } else {
-                alert('Ошибка: система данных не загружена. Убедитесь, что файл data.js подключен.');
+            } catch (error) {
+                console.error('Ошибка при сохранении заявки:', error);
+                alert('Ошибка при сохранении заявки: ' + error.message);
             }
         });
         
@@ -2547,8 +2559,19 @@
             };
             
             // Сохраняем через applicationManager
-            if (typeof applicationManager !== 'undefined') {
+            if (typeof applicationManager === 'undefined') {
+                alert('Ошибка: система данных не загружена. Убедитесь, что файл data.js подключен.');
+                console.error('applicationManager не определен');
+                return;
+            }
+            
+            try {
                 const newApp = applicationManager.createApplication(formData);
+                console.log('Заявка ТТК создана:', newApp);
+                
+                // Проверяем, что заявка сохранилась
+                const allApps = applicationManager.getAllApplications();
+                console.log('Всего заявок в хранилище:', allApps.length);
                 
                 // Создаем и отправляем Excel документ
                 createExcelDocumentAndSend(formData, newApp.id);
@@ -2556,8 +2579,9 @@
                 alert('Заявка ТТК успешно отправлена! Номер заявки: ' + newApp.id.substring(0, 8) + '\n\nExcel файл будет создан и предложен для отправки на pendeho098rus@yandex.ru');
                 this.reset();
                 goBack();
-            } else {
-                alert('Ошибка: система данных не загружена. Убедитесь, что файл data.js подключен.');
+            } catch (error) {
+                console.error('Ошибка при сохранении заявки ТТК:', error);
+                alert('Ошибка при сохранении заявки: ' + error.message);
             }
         });
         
@@ -2607,8 +2631,19 @@
             };
             
             // Сохраняем через applicationManager
-            if (typeof applicationManager !== 'undefined') {
+            if (typeof applicationManager === 'undefined') {
+                alert('Ошибка: система данных не загружена. Убедитесь, что файл data.js подключен.');
+                console.error('applicationManager не определен');
+                return;
+            }
+            
+            try {
                 const newApp = applicationManager.createApplication(formData);
+                console.log('Заявка для продюсеров создана:', newApp);
+                
+                // Проверяем, что заявка сохранилась
+                const allApps = applicationManager.getAllApplications();
+                console.log('Всего заявок в хранилище:', allApps.length);
                 
                 // Создаем и отправляем Word документ
                 createWordDocumentAndSend(formData, newApp.id);
@@ -2616,8 +2651,9 @@
                 alert('Заявка продюсерам успешно создана! Номер заявки: ' + newApp.id.substring(0, 8) + '\n\nWord документ будет создан и предложен для отправки на pendeho098rus@yandex.ru');
                 this.reset();
                 goBack();
-            } else {
-                alert('Ошибка: система данных не загружена. Убедитесь, что файл data.js подключен.');
+            } catch (error) {
+                console.error('Ошибка при сохранении заявки для продюсеров:', error);
+                alert('Ошибка при сохранении заявки: ' + error.message);
             }
         });
         
@@ -4501,10 +4537,11 @@
     <script src="email-service.js"></script>
     <script src="data.js"></script>
     <script>
-        // Проверка авторизации при загрузке страницы
+        // Проверка авторизации и инициализации при загрузке страницы
         document.addEventListener('DOMContentLoaded', function() {
-            // Ждем загрузки auth.js
+            // Ждем загрузки всех скриптов
             setTimeout(function() {
+                // Проверка authManager
                 if (typeof authManager === 'undefined') {
                     console.error('authManager не загружен');
                     return;
@@ -4513,8 +4550,19 @@
                 if (!authManager.isAuthenticated()) {
                     alert('Пожалуйста, войдите в систему для доступа к этой странице');
                     window.location.href = 'index.html';
+                    return;
                 }
-            }, 100);
+                
+                // Проверка applicationManager
+                if (typeof applicationManager === 'undefined') {
+                    console.error('applicationManager не загружен! Проверьте, что data.js подключен.');
+                    alert('Ошибка: система данных не загружена. Пожалуйста, обновите страницу.');
+                    return;
+                }
+                
+                console.log('applicationManager инициализирован');
+                console.log('Текущее количество заявок:', applicationManager.getAllApplications().length);
+            }, 200);
         });
     </script>
 </body>
