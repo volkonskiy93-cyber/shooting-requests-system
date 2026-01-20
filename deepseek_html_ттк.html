@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Заявка на видеосъемку</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f5f5;
+            margin: 20px;
+            color: #333;
+        }
+        .form-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 30px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #3498db;
+        }
+        .header-info {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 25px;
+            font-size: 14px;
+            color: #7f8c8d;
+        }
+        .form-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 25px;
+        }
+        .form-table td {
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            vertical-align: top;
+        }
+        .form-table tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        .form-table tr:hover {
+            background-color: #f1f8ff;
+        }
+        .label {
+            font-weight: 600;
+            color: #2c3e50;
+            white-space: nowrap;
+            width: 30%;
+        }
+        input, textarea, select {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #bdc3c7;
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-size: 14px;
+        }
+        input:focus, textarea:focus, select:focus {
+            border-color: #3498db;
+            outline: none;
+            box-shadow: 0 0 5px rgba(52, 152, 219, 0.3);
+        }
+        textarea {
+            min-height: 80px;
+            resize: vertical;
+        }
+        .equipment-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        .equipment-table th {
+            background-color: #2c3e50;
+            color: white;
+            padding: 12px;
+            text-align: left;
+        }
+        .equipment-table td {
+            padding: 10px;
+            border: 1px solid #ddd;
+        }
+        .small-input {
+            width: 60px;
+        }
+        .date-time-group {
+            display: flex;
+            gap: 15px;
+        }
+        .date-time-group > div {
+            flex: 1;
+        }
+        .form-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 15px;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #ddd;
+        }
+        button {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .submit-btn {
+            background-color: #2ecc71;
+            color: white;
+        }
+        .submit-btn:hover {
+            background-color: #27ae60;
+        }
+        .reset-btn {
+            background-color: #e74c3c;
+            color: white;
+        }
+        .reset-btn:hover {
+            background-color: #c0392b;
+        }
+        .required::after {
+            content: " *";
+            color: #e74c3c;
+        }
+        .note {
+            font-size: 12px;
+            color: #7f8c8d;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="form-container">
+        <h1>Заявка на видеосъемку</h1>
+        
+        <div class="header-info">
+            <div>Подрядчик "ВЕК XXL. TMC"</div>
+            <div>Заказ-наряд на видеосъемку</div>
+            <div>ДУТ "Доброе утро"</div>
+        </div>
+        
+        <form id="shooting-request-form">
+            <table class="form-table">
+                <tr>
+                    <td class="label required">Название сюжета:</td>
+                    <td>
+                        <input type="text" id="story-title" name="story-title" placeholder="Введите название сюжета" required>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="label required">Аннотация к съемке и адрес локации:</td>
+                    <td>
+                        <textarea id="annotation" name="annotation" placeholder="Введите аннотацию и адрес локации" required></textarea>
+                        <div class="note">Пример: Роскачество, Тимирязевская академия Кафедра Пчеловодства, магазин</div>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="label">Примечания (погода, парковка и т.д.):</td>
+                    <td>
+                        <textarea id="notes" name="notes" placeholder="Введите примечания"></textarea>
+                        <div class="note">Пример: на улице и в помещении, в магазинах и салонах интервью и съемки</div>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="label">Аккредитация:</td>
+                    <td>
+                        <select id="accreditation" name="accreditation">
+                            <option value="yes">ДА</option>
+                            <option value="no">НЕТ</option>
+                        </select>
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="2" style="background-color: #ecf0f1; font-weight: bold; text-align: center;">
+                        Ответственные за проведение съемок
+                    </td>
+                </tr>
+                <tr>
+                    <td class="label">Режиссер (редактор):</td>
+                    <td>
+                        <select id="director" name="director">
+                            <option value="">-- Выберите редактора --</option>
+                            <option value="dubasova">Дубасова</option>
+                            <!-- Другие фамилии будут подгружаться отдельно -->
+                        </select>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="label">Корреспондент:</td>
+                    <td>
+                        <select id="correspondent" name="correspondent">
+                            <option value="">-- Выберите корреспондента --</option>
+                            <option value="lyubchenko">Н. Любченко</option>
+                            <!-- Другие фамилии будут подгружаться отдельно -->
+                        </select>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="label">Продюсер:</td>
+                    <td>
+                        <select id="producer" name="producer">
+                            <option value="">-- Выберите продюсера --</option>
+                            <option value="bykova">Быкова</option>
+                            <!-- Другие фамилии будут подгружаться отдельно -->
+                        </select>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="label">Оператор:</td>
+                    <td>
+                        <select id="operator" name="operator">
+                            <option value="">-- Выберите оператора --</option>
+                            <option value="rozhkov">Рожков</option>
+                            <option value="ivanovsky">Ивановский</option>
+                            <option value="likhachev">Лихачёв</option>
+                            <!-- Другие фамилии будут подгружаться отдельно -->
+                        </select>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="label">Видео инженер:</td>
+                    <td>
+                        <select id="video-engineer" name="video-engineer">
+                            <option value="">-- Выберите видео инженера --</option>
+                            <!-- Фамилии будут подгружаться отдельно -->
+                        </select>
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="2" style="background-color: #ecf0f1; font-weight: bold; text-align: center;">
+                        Даты и время
+                    </td>
+                </tr>
+                <tr>
+                    <td class="label">Дата подачи заявки:</td>
+                    <td>
+                        <input type="date" id="application-date" name="application-date" required>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="label">Дата съемки:</td>
+                    <td>
+                        <input type="date" id="shooting-date" name="shooting-date" required>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="label">Время выезда и завершения съемки:</td>
+                    <td>
+                        <div class="date-time-group">
+                            <div>
+                                <input type="time" id="start-time" name="start-time" value="09:00">
+                            </div>
+                            <div style="text-align: center; line-height: 40px;">-</div>
+                            <div>
+                                <input type="time" id="end-time" name="end-time" value="18:00">
+                            </div>
+                        </div>
+                        <div class="note">По умолчанию: 9:00 - 18:00</div>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="label">Дата эфира:</td>
+                    <td>
+                        <input type="date" id="broadcast-date" name="broadcast-date">
+                        <div class="note">Оставьте пустым, если дата эфира по готовности</div>
+                    </td>
+                </tr>
+            </table>
+            
+            <h3>Оборудование</h3>
+            
+            <table class="equipment-table">
+                <thead>
+                    <tr>
+                        <th width="40%">Основной комплект</th>
+                        <th width="40%">Дополнительное оборудование</th>
+                        <th width="20%">Выбор дополнительного оборудования</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>
+                            камера HD SONY (XDCAM, HDCAM) c Объективом CANON\17 накамерным светом
+                            <input type="number" class="small-input" value="1" min="0" max="10"> шт
+                        </td>
+                        <td>Экшн-камера, карты памяти 2шт, система стабилизации или крепления.</td>
+                        <td>
+                            <select class="small-input">
+                                <option value="0">0</option>
+                                <option value="1">1</option>
+                                <option value="2">2</option>
+                                <option value="3">3</option>
+                            </select>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>Аккумулятор <input type="number" class="small-input" value="2" min="0" max="10"> шт</td>
+                        <td>Микрофон ручной с Логотипом Первого канала. Плагон.</td>
+                        <td>
+                            <select class="small-input">
+                                <option value="0">0</option>
+                                <option value="1">1</option>
+                                <option value="2">2</option>
+                                <option value="3">3</option>
+                            </select>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>Карта памяти <input type="number" class="small-input" value="2" min="0" max="10"> шт</td>
+                        <td>Микрофон ручной (проводной) с Логотипом Первого канала. Звуковой кабель xlr 5м.</td>
+                        <td>
+                            <select class="small-input">
+                                <option value="0">0</option>
+                                <option value="1">1</option>
+                                <option value="2">2</option>
+                                <option value="3">3</option>
+                            </select>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            Комплект света: DEDOLIGHT 3 прибора.(направленный свет) 1 прибор(заполняющий свет)
+                            <input type="number" class="small-input" value="1" min="0" max="10"> шт
+                        </td>
+                        <td>Радиосистема SENNHEISER EK 100 "ПЕТЛЯ" 1 ШТ.</td>
+                        <td>
+                            <select class="small-input">
+                                <option value="0">0</option>
+                                <option value="1" selected>1</option>
+                                <option value="2">2</option>
+                                <option value="3">3</option>
+                            </select>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>Светоотражатель флекс <input type="number" class="small-input" value="1" min="0" max="10"> шт</td>
+                        <td>"Удочка" микрофонная SENNHEISER.</td>
+                        <td>
+                            <select class="small-input">
+                                <option value="0">0</option>
+                                <option value="1">1</option>
+                                <option value="2">2</option>
+                                <option value="3">3</option>
+                            </select>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>Кофр транспортный <input type="number" class="small-input" value="1" min="0" max="10"> шт</td>
+                        <td>Лайтпанель 1шт Bi-Color Flood DMX.</td>
+                        <td>
+                            <select class="small-input">
+                                <option value="0">0</option>
+                                <option value="1" selected>1</option>
+                                <option value="2">2</option>
+                                <option value="3">3</option>
+                            </select>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>Дождевик (зимник) для камеры <input type="number" class="small-input" value="1" min="0" max="10"> шт</td>
+                        <td>Фильтры.</td>
+                        <td>
+                            <select class="small-input">
+                                <option value="0">0</option>
+                                <option value="1">1</option>
+                                <option value="2">2</option>
+                                <option value="3">3</option>
+                            </select>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>Наушники SENNHEISER HD280 <input type="number" class="small-input" value="1" min="0" max="10"> шт</td>
+                        <td>Объектив широкоугольный 11*</td>
+                        <td>
+                            <select class="small-input">
+                                <option value="0">0</option>
+                                <option value="1">1</option>
+                                <option value="2">2</option>
+                                <option value="3">3</option>
+                            </select>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>Штатив для видеокамеры <input type="number" class="small-input" value="1" min="0" max="10"> шт</td>
+                        <td>Широкоугольная линза.</td>
+                        <td>
+                            <select class="small-input">
+                                <option value="0">0</option>
+                                <option value="1">1</option>
+                                <option value="2">2</option>
+                                <option value="3">3</option>
+                            </select>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td></td>
+                        <td>Монитор к камере.</td>
+                        <td>
+                            <select class="small-input">
+                                <option value="0">0</option>
+                                <option value="1">1</option>
+                                <option value="2">2</option>
+                                <option value="3">3</option>
+                            </select>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+            
+            <div class="form-actions">
+                <button type="reset" class="reset-btn">Очистить форму</button>
+                <button type="submit" class="submit-btn">Отправить заявку</button>
+            </div>
+        </form>
+    </div>
+    
+    <script>
+        // Устанавливаем дату подачи заявки на сегодня
+        document.getElementById('application-date').valueAsDate = new Date();
+        
+        // Устанавливаем минимальную дату для съемки на сегодня
+        document.getElementById('shooting-date').min = new Date().toISOString().split('T')[0];
+        
+        // Устанавливаем минимальную дату для эфира на сегодня
+        document.getElementById('broadcast-date').min = new Date().toISOString().split('T')[0];
+        
+        // Обработка отправки формы
+        document.getElementById('shooting-request-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            alert('Заявка успешно отправлена!');
+            // Здесь можно добавить отправку данных на сервер
+        });
+    </script>
+</body>
+</html>
