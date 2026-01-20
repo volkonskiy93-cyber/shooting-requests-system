@@ -39,6 +39,11 @@ class ApplicationManager {
         };
         applications.push(newApplication);
         localStorage.setItem(this.storageKey, JSON.stringify(applications));
+        console.log('Заявка создана:', newApplication);
+        console.log('Всего заявок в хранилище:', applications.length);
+        // Дополнительная проверка сохранения
+        const verify = this.getAllApplications();
+        console.log('Проверка сохранения - загружено заявок:', verify.length);
         return newApplication;
     }
 
