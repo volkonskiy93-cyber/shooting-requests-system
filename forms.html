@@ -4984,19 +4984,13 @@
         <p>Создано: ${new Date().toLocaleString('ru-RU')}</p>
     </div>
     
-    <scr` + `ipt>
-        window.onload = function() {
-            window.print();
-            window.onafterprint = function() {
-                window.close();
-            };
-        };
-    </scr` + `ipt>
+    <!-- Скрипты в шаблоне не нужны для DOC -->
 </body>
 </html>`;
                 
                 // Создаем DOC файл (HTML формат с расширением .doc - Word отлично открывает)
-                const docContent = printHtml.replace(/<script[\s\S]*?<\/script>/gi, ''); // Убираем скрипты
+                const scriptTagRegex = new RegExp('<scr' + 'ipt[\\s\\S]*?<\\/scr' + 'ipt>', 'gi');
+                const docContent = printHtml.replace(scriptTagRegex, ''); // Убираем скрипты
                 
                 // Создаем Blob с правильной кодировкой UTF-8
                 const blob = new Blob(['\ufeff' + docContent], { 
