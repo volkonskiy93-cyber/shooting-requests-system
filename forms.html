@@ -4232,12 +4232,7 @@
                 alert('Ошибка при создании DOC: ' + error.message);
             }
         };
-        
-        // УДАЛЕНО - функции для PDF больше не используются
-        /*
-        window.downloadHTMLForPDF = function(contractorType) {
-            // Собираем все данные (та же логика, что и в exportFormToPDFViaPrint)
-            const storyTitle = contractorType === 'figaro' 
+    </script> 
                 ? document.getElementById('figaro-story-title')?.value || ''
                 : document.getElementById('ttk-story-title')?.value || '';
             const annotation = contractorType === 'figaro'
