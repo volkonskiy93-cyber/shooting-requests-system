@@ -1,0 +1,723 @@
+<div class="container">
+        <!-- Главный экран выбора -->
+        <div id="mainScreen" class="main-screen active">
+            <h1>Система заявок на видеосъемку</h1>
+            <p style="color: #7f8c8d; margin-bottom: 20px; max-width: 600px; font-size: 1.1rem;">
+                Выберите тип заявки для создания заявки на видеосъемку программы "Доброе утро"
+            </p>
+            <div style="margin-bottom: 20px; display: flex; gap: 15px; justify-content: center;">
+                <button class="back-btn" onclick="window.location.href='/'">← На главную</button>
+                <button class="back-btn archive-btn" onclick="window.location.href='/archive'">📁 Архив моих заявок</button>
+            </div>
+            
+            <div class="contractor-select">
+                <div class="contractor-card figaro" onclick="selectContractor('figaro')">
+                    <h2>ВЕК XXL (ФИГАРО)</h2>
+                    <p>Заказ-наряд на видеосъемку для подрядчика "ВЕК XXL. TMC"</p>
+                    <button class="select-btn btn-figaro">Выбрать ФИГАРО</button>
+                </div>
+                
+                <div class="contractor-card ttk" onclick="selectContractor('ttk')">
+                    <h2>Технологический центр ТВ (ТТК)</h2>
+                    <p>Заказ-наряд на видеосъемку для подрядчика "Технологический центр ТВ"</p>
+                    <button class="select-btn btn-ttk">Выбрать ТТК</button>
+                </div>
+                
+                <div class="contractor-card producer" onclick="selectContractor('producer')">
+                    <h2>Заявка продюсерам</h2>
+                    <p>Заявка на видеосъемку для продюсеров программы "Доброе утро"</p>
+                    <button class="select-btn btn-producer">Создать заявку</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Форма ФИГАРО -->
+        <div id="formFigaro" class="form-container figaro">
+            <div class="form-header figaro">
+                <h1>Заявка на видеосъемку - ВЕК XXL (ФИГАРО)</h1>
+                <button class="back-btn" onclick="goBack()">← Назад к выбору</button>
+            </div>
+            
+            <div class="header-info">
+                <div>Подрядчик "ВЕК XXL. TMC"</div>
+                <div>Заказ-наряд на видеосъемку</div>
+                <div>ДУТ "Доброе утро"</div>
+            </div>
+            
+            <form id="shooting-request-form-figaro">
+                <table class="form-table">
+                    <tr>
+                        <td class="label required">Название сюжета:</td>
+                        <td>
+                            <input type="text" id="figaro-story-title" name="story-title" placeholder="Введите название сюжета" required>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="label required">Аннотация к съемке и адрес локации:</td>
+                        <td>
+                            <textarea id="figaro-annotation" name="annotation" placeholder="Введите аннотацию и адрес локации" required></textarea>
+                            <div class="note">Пример: Роскачество, Тимирязевская академия Кафедра Пчеловодства, магазин</div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="label">Примечания (погода, парковка и т.д.):</td>
+                        <td>
+                            <textarea id="figaro-notes" name="notes" placeholder="Введите примечания"></textarea>
+                            <div class="note">Пример: на улице и в помещении, в магазинах и салонах интервью и съемки</div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="label">Аккредитация:</td>
+                        <td>
+                            <select id="figaro-accreditation" name="accreditation">
+                                <option value="yes">ДА</option>
+                                <option value="no">НЕТ</option>
+                            </select>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td colspan="2" style="background-color: #ecf0f1; font-weight: bold; text-align: center;">
+                            Ответственные за проведение съемок
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="label">Режиссер (редактор):</td>
+                        <td>
+                            <input type="text" id="figaro-director" name="director" list="editors-list" placeholder="Выберите из списка или введите вручную">
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="label">Корреспондент:</td>
+                        <td>
+                            <input type="text" id="figaro-correspondent" name="correspondent" list="correspondents-list" placeholder="Выберите из списка или введите вручную">
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="label">Продюсер:</td>
+                        <td>
+                            <select id="figaro-producer" name="producer">
+                                <option value="">-- Выберите продюсера --</option>
+                                <option value="bykova">Быкова</option>
+                                <!-- Другие фамилии будут подгружаться отдельно -->
+                            </select>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="label">Оператор:</td>
+                        <td>
+                            <input type="text" id="figaro-operator" name="operator" placeholder="Введите ФИО оператора">
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="label">Видео инженер:</td>
+                        <td>
+                            <input type="text" id="figaro-video-engineer" name="video-engineer" placeholder="Введите ФИО видео инженера">
+                        </td>
+                    </tr>
+                    <tr>
+                        <td colspan="2" style="background-color: #ecf0f1; font-weight: bold; text-align: center;">
+                            Даты и время
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="label">Дата подачи заявки:</td>
+                        <td>
+                            <input type="date" id="figaro-application-date" name="application-date" required readonly>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="label">Дата съемки:</td>
+                        <td>
+                            <input type="date" id="figaro-shooting-date" name="shooting-date" required>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="label">Время выезда и завершения съемки:</td>
+                        <td>
+                            <div class="date-time-group">
+                                <div>
+                                    <input type="text" class="time-input" id="figaro-start-time" name="start-time" value="09:00" inputmode="numeric" autocomplete="off">
+                                </div>
+                                <div style="text-align: center; line-height: 40px;">-</div>
+                                <div>
+                                    <input type="text" class="time-input" id="figaro-end-time" name="end-time" value="18:00" inputmode="numeric" autocomplete="off">
+                                </div>
+                            </div>
+                            <div class="note">По умолчанию: 09:00 - 18:00</div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="label">Дата эфира:</td>
+                        <td>
+                            <input type="date" id="figaro-broadcast-date" name="broadcast-date">
+                            <div class="note">Оставьте пустым, если дата эфира по готовности</div>
+                        </td>
+                    </tr>
+                </table>
+                
+                <h3>Оборудование</h3>
+                
+                <table class="equipment-table">
+                    <thead>
+                        <tr>
+                            <th width="40%">Основной комплект</th>
+                            <th width="40%">Дополнительное оборудование</th>
+                            <th width="20%">Выбор дополнительного оборудования</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>
+                                камера HD SONY (XDCAM, HDCAM) c Объективом CANON\17 накамерным светом
+                                <input type="number" class="small-input" value="1" min="0" max="10"> шт
+                            </td>
+                            <td>Экшн-камера, карты памяти 2шт, система стабилизации или крепления.</td>
+                            <td>
+                                <select class="small-input">
+                                    <option value="0">0</option>
+                                    <option value="1">1</option>
+                                    <option value="2">2</option>
+                                    <option value="3">3</option>
+                                    <option value="4">4</option>
+                                    <option value="5">5</option>
+                                </select>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Аккумулятор <input type="number" class="small-input" value="2" min="0" max="10"> шт</td>
+                            <td>Микрофон ручной с Логотипом Первого канала. Плагон.</td>
+                            <td>
+                                <select class="small-input">
+                                    <option value="0">0</option>
+                                    <option value="1">1</option>
+                                    <option value="2">2</option>
+                                    <option value="3">3</option>
+                                    <option value="4">4</option>
+                                    <option value="5">5</option>
+                                </select>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Карта памяти <input type="number" class="small-input" value="2" min="0" max="10"> шт</td>
+                            <td>Микрофон ручной (проводной) с Логотипом Первого канала. Звуковой кабель xlr 5м.</td>
+                            <td>
+                                <select class="small-input">
+                                    <option value="0">0</option>
+                                    <option value="1">1</option>
+                                    <option value="2">2</option>
+                                    <option value="3">3</option>
+                                    <option value="4">4</option>
+                                    <option value="5">5</option>
+                                </select>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                Комплект света: DEDOLIGHT 3 прибора.(направленный свет) 1 прибор(заполняющий свет)
+                                <input type="number" class="small-input" value="1" min="0" max="10"> шт
+                            </td>
+                            <td>Радиосистема SENNHEISER EK 100 "ПЕТЛЯ" 1 ШТ.</td>
+                            <td>
+                                <select class="small-input">
+                                    <option value="0">0</option>
+                                    <option value="1" selected>1</option>
+                                    <option value="2">2</option>
+                                    <option value="3">3</option>
+                                    <option value="4">4</option>
+                                    <option value="5">5</option>
+                                </select>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Светоотражатель флекс <input type="number" class="small-input" value="1" min="0" max="10"> шт</td>
+                            <td>"Удочка" микрофонная SENNHEISER.</td>
+                            <td>
+                                <select class="small-input">
+                                    <option value="0">0</option>
+                                    <option value="1">1</option>
+                                    <option value="2">2</option>
+                                    <option value="3">3</option>
+                                    <option value="4">4</option>
+                                    <option value="5">5</option>
+                                </select>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Кофр транспортный <input type="number" class="small-input" value="1" min="0" max="10"> шт</td>
+                            <td>Лайтпанель 1шт Bi-Color Flood DMX.</td>
+                            <td>
+                                <select class="small-input">
+                                    <option value="0">0</option>
+                                    <option value="1" selected>1</option>
+                                    <option value="2">2</option>
+                                    <option value="3">3</option>
+                                    <option value="4">4</option>
+                                    <option value="5">5</option>
+                                </select>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Дождевик (зимник) для камеры <input type="number" class="small-input" value="1" min="0" max="10"> шт</td>
+                            <td>Фильтры.</td>
+                            <td>
+                                <select class="small-input">
+                                    <option value="0">0</option>
+                                    <option value="1">1</option>
+                                    <option value="2">2</option>
+                                    <option value="3">3</option>
+                                    <option value="4">4</option>
+                                    <option value="5">5</option>
+                                </select>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Наушники SENNHEISER HD280 <input type="number" class="small-input" value="1" min="0" max="10"> шт</td>
+                            <td>Объектив широкоугольный 11*</td>
+                            <td>
+                                <select class="small-input">
+                                    <option value="0">0</option>
+                                    <option value="1">1</option>
+                                    <option value="2">2</option>
+                                    <option value="3">3</option>
+                                    <option value="4">4</option>
+                                    <option value="5">5</option>
+                                </select>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Штатив для видеокамеры <input type="number" class="small-input" value="1" min="0" max="10"> шт</td>
+                            <td>Широкоугольная линза.</td>
+                            <td>
+                                <select class="small-input">
+                                    <option value="0">0</option>
+                                    <option value="1">1</option>
+                                    <option value="2">2</option>
+                                    <option value="3">3</option>
+                                    <option value="4">4</option>
+                                    <option value="5">5</option>
+                                </select>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td></td>
+                            <td>Монитор к камере.</td>
+                            <td>
+                                <select class="small-input">
+                                    <option value="0">0</option>
+                                    <option value="1">1</option>
+                                    <option value="2">2</option>
+                                    <option value="3">3</option>
+                                    <option value="4">4</option>
+                                    <option value="5">5</option>
+                                </select>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <div class="form-actions">
+                    <button type="reset" class="reset-btn">Очистить форму</button>
+                    <button type="button" class="excel-btn" onclick="exportToExcel('figaro')" title="Выгрузит заявку в формате Excel (XLSX) с точным шаблоном">📊 Выгрузить Excel</button>
+                    <button type="button" class="doc-btn" onclick="exportToDOC('figaro')" title="Выгрузит заявку в формате Word (DOC)">📝 Выгрузить в DOC</button>
+                    <button type="submit" class="submit-btn">Отправить заявку</button>
+                </div>
+            </form>
+        </div>
+        
+        <!-- Форма ТТК -->
+        <div id="formTTK" class="form-container ttk">
+            <div class="form-header ttk">
+                <h1>Заявка на видеосъемку - Технологический центр ТВ (ТТК)</h1>
+                <button class="back-btn" onclick="goBack()">← Назад к выбору</button>
+            </div>
+            
+            <div class="header-info">
+                <div>Подрядчик "Технологический центр ТВ"</div>
+                <div>Заказ-наряд на видеосъемку</div>
+                <div>ДУТ "Доброе утро"</div>
+            </div>
+            
+            <form id="shooting-request-form-ttk">
+                <table class="form-table">
+                    <tr>
+                        <td class="label required">Название сюжета:</td>
+                        <td>
+                            <input type="text" id="ttk-story-title" name="story-title" placeholder="Введите название сюжета" required>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="label required">Аннотация к съемке и адрес локации:</td>
+                        <td>
+                            <textarea id="ttk-annotation" name="annotation" placeholder="Введите аннотацию и адрес локации" required></textarea>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="label">Примечания (погода, парковка и т.д.):</td>
+                        <td>
+                            <textarea id="ttk-notes" name="notes" placeholder="Введите примечания"></textarea>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="label">Аккредитация:</td>
+                        <td>
+                            <select id="ttk-accreditation" name="accreditation">
+                                <option value="no" selected>НЕТ</option>
+                                <option value="yes">ДА</option>
+                            </select>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="label">Уточнения (если нужно):</td>
+                        <td>
+                            <textarea id="ttk-clarifications" name="clarifications" placeholder="Введите уточнения"></textarea>
+                        </td>
+                    </tr>
+                    
+                    <tr>
+                        <td colspan="2" class="section-title">
+                            Ответственные за проведение съемок
+                        </td>
+                    </tr>
+                    
+                    <tr>
+                        <td class="label">Режиссер (редактор):</td>
+                        <td>
+                            <input type="text" id="ttk-director" name="director" list="editors-list" placeholder="Выберите из списка или введите вручную">
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="label">Корреспондент:</td>
+                        <td>
+                            <input type="text" id="ttk-correspondent" name="correspondent" list="correspondents-list" placeholder="Выберите из списка или введите вручную">
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="label">Продюсер:</td>
+                        <td>
+                            <select id="ttk-producer" name="producer">
+                                <option value="">-- Выберите продюсера --</option>
+                                <!-- Фамилии будут подгружаться отдельно -->
+                            </select>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="label">Оператор:</td>
+                        <td>
+                            <input type="text" id="ttk-operator" name="operator" placeholder="Введите ФИО оператора">
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="label">Видео инженер:</td>
+                        <td>
+                            <input type="text" id="ttk-video-engineer" name="video-engineer" placeholder="Введите ФИО видео инженера">
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="label">Номер автомобиля:</td>
+                        <td>
+                            <input type="text" id="ttk-car-number" name="car-number" placeholder="Введите номер автомобиля">
+                        </td>
+                    </tr>
+                    
+                    <tr>
+                        <td colspan="2" class="section-title">
+                            Даты и время
+                        </td>
+                    </tr>
+                    
+                    <tr>
+                        <td class="label">Дата подачи заявки:</td>
+                        <td>
+                            <input type="date" id="ttk-application-date" name="application-date" required readonly>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="label">Дата съемки:</td>
+                        <td>
+                            <input type="date" id="ttk-shooting-date" name="shooting-date" required>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="label">Время выезда и завершения съемки:</td>
+                        <td>
+                            <div class="date-time-group">
+                                <div>
+                                    <input type="text" class="time-input" id="ttk-start-time" name="start-time" value="09:00" inputmode="numeric" autocomplete="off">
+                                </div>
+                                <div style="text-align: center; line-height: 40px;">-</div>
+                                <div>
+                                    <input type="text" class="time-input" id="ttk-end-time" name="end-time" value="18:00" inputmode="numeric" autocomplete="off">
+                                </div>
+                            </div>
+                            <div class="note">По умолчанию: 09:00 - 18:00</div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="label">Продление:</td>
+                        <td>
+                            <input type="text" id="ttk-extension" name="extension" placeholder="Укажите продление при необходимости">
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="label">Дата эфира:</td>
+                        <td>
+                            <input type="date" id="ttk-broadcast-date" name="broadcast-date">
+                            <div class="note">Оставьте пустым, если дата эфира по готовности</div>
+                        </td>
+                    </tr>
+                </table>
+                
+                <h3>Оборудование - Основной комплект 1</h3>
+                
+                <table class="equipment-table">
+                    <thead>
+                        <tr>
+                            <th width="40%">Основной комплект</th>
+                            <th width="40%">Дополнительное оборудование</th>
+                            <th width="20%">Выбор дополнительного оборудования</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Камера PANASONIC AG-HPX500E <input type="number" class="small-input" value="1" min="0" max="10" name="main-qty-0"> шт</td>
+                            <td>Экшн-камера Gopro 11...</td>
+                            <td><select class="small-input" name="add-qty-0"><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option></select></td>
+                        </tr>
+                        <tr>
+                            <td>Объектив CANON\17 <input type="number" class="small-input" value="1" min="0" max="10" name="main-qty-1"> шт</td>
+                            <td>Удочка микрофонная SENNHEISER.</td>
+                            <td><select class="small-input" name="add-qty-1"><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option></select></td>
+                        </tr>
+                        <tr>
+                            <td>Штатив для видеокамеры SACHTLER v 18 <input type="number" class="small-input" value="1" min="0" max="10" name="main-qty-2"> шт</td>
+                            <td>Рюкзак для прямого включения "Live-U"</td>
+                            <td><select class="small-input" name="add-qty-13"><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option></select></td>
+                        </tr>
+                        <tr>
+                            <td>Наушники SENNHEISER HD280 <input type="number" class="small-input" value="1" min="0" max="10" name="main-qty-3"> шт</td>
+                            <td>Стедикам ronin rs</td>
+                            <td><select class="small-input" name="add-qty-14"><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option></select></td>
+                        </tr>
+                        <tr>
+                            <td>Аккумулятор BEILLEN BL-F-BP190 <input type="number" class="small-input" value="2" min="0" max="10" name="main-qty-4"> шт</td>
+                            <td>Видеокамера SONY FX 3</td>
+                            <td><select class="small-input" name="add-qty-15"><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option></select></td>
+                        </tr>
+                        <tr>
+                            <td>Карта памяти PANASONIC AJ-P2EO32XG <input type="number" class="small-input" value="4" min="0" max="10" name="main-qty-5"> шт</td>
+                            <td>Камера Panasonic AJ-PX270</td>
+                            <td><select class="small-input" name="add-qty-16"><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option></select></td>
+                        </tr>
+                        <tr>
+                            <td>Комплект света: DEDOLIGHT 3 прибора... <input type="number" class="small-input" value="1" min="0" max="10" name="main-qty-6"> шт</td>
+                            <td></td>
+                            <td></td>
+                        </tr>
+                        <tr>
+                            <td>Радиосистема SENNHEISER EK 100 "ПЕТЛЯ" <input type="number" class="small-input" value="1" min="0" max="10" name="main-qty-7"> шт</td>
+                            <td>Радиосистема SENNHEISER EK 100 "ПЕТЛЯ" 1 шт.</td>
+                            <td><select class="small-input" name="add-qty-7"><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option></select></td>
+                        </tr>
+                        <tr>
+                            <td>Система оцифровки NEXTO DI <input type="number" class="small-input" value="1" min="0" max="10" name="main-qty-8"> шт</td>
+                            <td>Звуковой пульт SHURE.</td>
+                            <td><select class="small-input" name="add-qty-8"><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option></select></td>
+                        </tr>
+                        <tr>
+                            <td>Микрофон ручной (проводной) <input type="number" class="small-input" value="1" min="0" max="10" name="main-qty-9"> шт</td>
+                            <td></td>
+                            <td></td>
+                        </tr>
+                        <tr>
+                            <td>Лайтпанель TECPRO FELLONI <input type="number" class="small-input" value="1" min="0" max="10" name="main-qty-10"> шт</td>
+                            <td>Лайтпанель TECPRO FELLONI 1 шт.</td>
+                            <td><select class="small-input" name="add-qty-10"><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option></select></td>
+                        </tr>
+                        <tr>
+                            <td>Видеомонитор контрольный <input type="number" class="small-input" value="1" min="0" max="10" name="main-qty-11"> шт</td>
+                            <td>Объектив широкоугольный 12"</td>
+                            <td><select class="small-input" name="add-qty-11"><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option></select></td>
+                        </tr>
+                        <tr>
+                            <td>Дождевик (зимник) для камеры <input type="number" class="small-input" value="1" min="0" max="10" name="main-qty-12"> шт</td>
+                            <td>Коптер.</td>
+                            <td><select class="small-input" name="add-qty-12"><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option></select></td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <table class="form-table" style="margin-top: 30px;">
+                    <tr>
+                        <td class="label">Дата и время сдачи материала в инжест:</td>
+                        <td>
+                            <input type="datetime-local" id="ttk-submission-date" name="submission-date">
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="label">Инженер инжеста ФИО:</td>
+                        <td>
+                            <input type="text" id="ttk-engineer-name" name="engineer-name" placeholder="Введите ФИО инженера">
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="label">Подпись:</td>
+                        <td>
+                            <input type="text" id="ttk-signature" name="signature" placeholder="Подпись">
+                        </td>
+                    </tr>
+                </table>
+                
+                <div class="form-actions">
+                    <button type="reset" class="reset-btn">Очистить форму</button>
+                    <button type="button" class="excel-btn" onclick="exportToExcel('ttk')" title="Выгрузит заявку в формате Excel (XLSX) с точным шаблоном">📊 Выгрузить Excel</button>
+                    <button type="button" class="doc-btn" onclick="exportToDOC('ttk')" title="Выгрузит заявку в формате Word (DOC)">📝 Выгрузить в DOC</button>
+                    <button type="submit" class="submit-btn">Отправить заявку</button>
+                </div>
+            </form>
+        </div>
+        
+        <!-- Форма для продюсеров -->
+        <div id="formProducer" class="form-container producer">
+            <div class="form-header producer">
+                <h1>Заявка продюсерам</h1>
+                <button class="back-btn" onclick="goBack()">← Назад к выбору</button>
+            </div>
+            
+            <div class="header-info">
+                <div>Заявка на видеосъемку</div>
+                <div>Программа "Доброе утро"</div>
+                <div>Для продюсеров</div>
+            </div>
+            
+            <form id="shooting-request-form-producer">
+                <table class="form-table">
+                    <tr>
+                        <td class="label required">Название сюжета:</td>
+                        <td>
+                            <input type="text" id="producer-story-title" name="story-title" placeholder="Введите название сюжета" required>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="label required">Краткое содержание сюжета:</td>
+                        <td>
+                            <textarea id="producer-summary" name="summary" placeholder="Введите краткое содержание сюжета" required></textarea>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="label">Герои:</td>
+                        <td>
+                            <textarea id="producer-heroes" name="heroes" placeholder="Укажите героев сюжета"></textarea>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="label required">Дата съемки:</td>
+                        <td>
+                            <input type="date" id="producer-shooting-date" name="shooting-date" required>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="label required">Время съемки:</td>
+                        <td>
+                            <div class="date-time-group">
+                                <div>
+                                    <input type="text" class="time-input" id="producer-start-time" name="start-time" required inputmode="numeric" autocomplete="off">
+                                </div>
+                                <div style="text-align: center; line-height: 40px;">-</div>
+                                <div>
+                                    <input type="text" class="time-input" id="producer-end-time" name="end-time" required inputmode="numeric" autocomplete="off">
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="label required">Корреспондент:</td>
+                        <td>
+                            <input type="text" id="producer-correspondent" name="correspondent" list="correspondents-list" placeholder="Выберите из списка или введите вручную" required>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="label required">Контакты корреспондента:</td>
+                        <td>
+                            <input type="text" id="producer-correspondent-contacts" name="correspondent-contacts" placeholder="Введите контакты корреспондента (телефон, email)" required>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="label required">Редактор:</td>
+                        <td>
+                            <input type="text" id="producer-director" name="director" list="editors-list" placeholder="Выберите из списка или введите вручную" required>
+                        </td>
+                    </tr>
+                </table>
+                
+                <div class="form-actions">
+                    <button type="reset" class="reset-btn">Очистить форму</button>
+                    <button type="button" class="doc-btn" onclick="exportToDOC('producer')" title="Выгрузит заявку в формате Word (DOC)">📝 Выгрузить в DOC</button>
+                    <button type="submit" class="submit-btn">Отправить заявку</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Списки для автодополнения -->
+    <datalist id="editors-list">
+        <option value="Бакланова Н">
+        <option value="Варкентин О">
+        <option value="Дубасова Т">
+        <option value="Железнов А">
+        <option value="Изварина М">
+        <option value="Казанджан И">
+        <option value="Ломовцев Э">
+        <option value="Матеранская И">
+        <option value="Миронова Н">
+    </datalist>
+
+    <datalist id="correspondents-list">
+        <option value="Абросимова А.">
+        <option value="Алькова И.">
+        <option value="Астраханцева А.">
+        <option value="Белянская Л">
+        <option value="Бронзова М">
+        <option value="Вашук А.">
+        <option value="Гребенщикова А.">
+        <option value="Завидова А.">
+        <option value="Иванова А">
+        <option value="Ионкина К">
+        <option value="Кобрин И">
+        <option value="Ковалева Н.">
+        <option value="Козлова Ю.">
+        <option value="Королькова А.">
+        <option value="Кремешная А.">
+        <option value="Крылова А.">
+        <option value="Кулабухова М">
+        <option value="Кузьмин А.">
+        <option value="Кузьмин Д.">
+        <option value="Кускова М.">
+        <option value="Любченко Н.">
+        <option value="Макарян К.">
+        <option value="Молостова Ю.">
+        <option value="Нестеров Ю.">
+        <option value="Нейманис С.">
+        <option value="Никишова Е.">
+        <option value="Никишичева О.">
+        <option value="Николаева М.">
+        <option value="Новохатняя А.">
+        <option value="Оболенских В">
+        <option value="Орехова А.">
+        <option value="Попов В.">
+        <option value="Попова А.">
+        <option value="Попова Е.">
+        <option value="Правдина Н.">
+        <option value="Радкевич А">
+        <option value="Рыжова А.">
+        <option value="Савельева А.">
+        <option value="Солдатова А.">
+        <option value="Сотник С.">
+        <option value="Телия А.">
+        <option value="Торубарова Д">
+        <option value="Федорова В.">
+        <option value="Жукова М.">
+        <option value="Шерстобитова О">
+        <option value="Шувалова Ю.">
+        <option value="Юняев Р.">
+        <option value="Якунина О">
+    </datalist>

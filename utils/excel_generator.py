@@ -1,0 +1,223 @@
+"""
+Генерация Excel файлов для заявок ФИГАРО и ТТК на основе шаблонов.
+Особое внимание уделено сохранению стилей и правильным координатам.
+"""
+
+import openpyxl
+from openpyxl.cell.cell import MergedCell
+from openpyxl.styles import Font, Color
+from datetime import datetime, date
+import os
+import tempfile
+import re
+from pathlib import Path
+
+def _parse_date_yyyy_mm_dd(date_string):
+    if not date_string:
+        return None
+    if isinstance(date_string, (date, datetime)):
+        return date_string
+    try:
+        return datetime.strptime(str(date_string), "%Y-%m-%d").date()
+    except:
+        return None
+
+def _parse_datetime_local(dt_string):
+    if not dt_string:
+        return None
+    try:
+        return datetime.strptime(str(dt_string), "%Y-%m-%dT%H:%M")
+    except:
+        return _parse_date_yyyy_mm_dd(dt_string)
+
+def _template_path(contractor: str) -> Path:
+    project_root = Path(__file__).resolve().parent.parent
+    return project_root / "excel_templates" / f"{contractor}_template.xlsx"
+
+def _set_cell_value(ws, coord_or_cell, value, force_black=True):
+    """
+    Безопасно устанавливает значение ячейки, даже если она объединена.
+    По возможности сохраняет шрифт или принудительно ставит черный цвет.
+    """
+    if value is None:
+        return
+
+    if isinstance(coord_or_cell, str):
+        cell = ws[coord_or_cell]
+    else:
+        cell = coord_or_cell
+
+    target_cell = cell
+    if isinstance(cell, MergedCell):
+        # Если ячейка объединена, ищем начало диапазона
+        for merged_range in ws.merged_cells.ranges:
+            if cell.coordinate in merged_range:
+                target_cell = ws.cell(row=merged_range.min_row, column=merged_range.min_col)
+                break
+    
+    target_cell.value = value
+    
+    # Исправление "красного шрифта": принудительно ставим черный цвет, если нужно
+    if force_black and target_cell.font:
+        new_font = Font(
+            name=target_cell.font.name,
+            size=target_cell.font.size,
+            bold=target_cell.font.bold,
+            italic=target_cell.font.italic,
+            color="000000" # Чистый черный
+        )
+        target_cell.font = new_font
+
+def _replace_qty_in_text(text: str, qty: int) -> str:
+    if not isinstance(text, str):
+        return text
+    try:
+        qty_int = int(qty or 0)
+        # Ищем паттерны типа -2шт, 2 шт, -2 шт.
+        pat = re.compile(r"([- ]?)(\d+)(\s*шт)", re.IGNORECASE)
+        if pat.search(text):
+            return pat.sub(rf"\1{qty_int}\3", text, count=1)
+        return text
+    except:
+        return text
+
+def _apply_equipment(ws, equipment):
+    """
+    Заполняет таблицу оборудования. 
+    В шаблонах ФИГАРО/ТТК: 
+    A - Основной комплект, C - Выбор (да/нет), D - Количество доп.
+    """
+    if not equipment:
+        return
+    
+    # Ищем строку заголовка оборудования
+    header_row = None
+    for r in range(1, ws.max_row + 1):
+        a = ws.cell(r, 1).value
+        if isinstance(a, str) and "Основной комплект" in a:
+            header_row = r
+            break
+    
+    if not header_row:
+        return
+
+    start_row = header_row + 1
+    for idx, eq in enumerate(equipment):
+        # Если есть rowIndex (из UI), используем его, иначе используем порядковый номер
+        ui_row_index = eq.get("rowIndex")
+        if ui_row_index is not None:
+            row_idx = start_row + ui_row_index
+        else:
+            row_idx = start_row + idx
+            
+        if row_idx > ws.max_row:
+            continue
+
+        main_qty = eq.get("mainQuantity", 0)
+        add_qty = eq.get("additionalQuantity", 0)
+
+        # Колонка A: Обновляем текст основного комплекта (если там есть цифра шт)
+        cell_main = ws.cell(row=row_idx, column=1)
+        if cell_main.value and isinstance(cell_main.value, str):
+            new_val = _replace_qty_in_text(cell_main.value, main_qty)
+            _set_cell_value(ws, cell_main, new_val, force_black=False) # Сохраняем стиль шаблона
+
+        # Колонка C: да/нет
+        cell_choice = ws.cell(row=row_idx, column=3)
+        if cell_choice.value is not None: # Пишем только если ячейка не пустая в шаблоне
+            _set_cell_value(ws, cell_choice, "да" if int(add_qty or 0) > 0 else "нет", force_black=False)
+
+        # Колонка D: количество
+        cell_qty = ws.cell(row=row_idx, column=4)
+        if int(add_qty or 0) > 0:
+            _set_cell_value(ws, cell_qty, int(add_qty), force_black=False)
+        else:
+            # Если 0, лучше очистить ячейку количества, чтобы не было лишних нулей
+            if cell_qty.value is not None and not isinstance(cell_qty, MergedCell):
+                cell_qty.value = None
+
+def create_excel_document(form_data, application_id):
+    contractor = form_data.get('contractor')
+    tpl = _template_path(contractor)
+    
+    if not tpl.exists():
+        print(f"⚠️ Шаблон не найден: {tpl}")
+        return None
+
+    try:
+        # data_only=False чтобы сохранить формулы и стили
+        wb = openpyxl.load_workbook(tpl)
+        ws = wb.active
+
+        if contractor == 'figaro':
+            # Точные координаты для ФИГАРО
+            _set_cell_value(ws, "B2", form_data.get("storyTitle", ""))
+            _set_cell_value(ws, "B3", form_data.get("annotation", ""))
+            _set_cell_value(ws, "B4", form_data.get("notes", ""))
+            _set_cell_value(ws, "B5", "да" if form_data.get("accreditation") == "yes" else "нет")
+            _set_cell_value(ws, "B7", form_data.get("director", ""))
+            _set_cell_value(ws, "B8", form_data.get("correspondent", ""))
+            _set_cell_value(ws, "B9", form_data.get("producer", ""))
+            
+            op = form_data.get("operator", "")
+            ve = form_data.get("videoEngineer", "")
+            _set_cell_value(ws, "B10", f"{op}, {ve}".strip(", "))
+            
+            _set_cell_value(ws, "A13", _parse_date_yyyy_mm_dd(form_data.get("applicationDate")))
+            _set_cell_value(ws, "B13", _parse_date_yyyy_mm_dd(form_data.get("shootingDate")))
+            _set_cell_value(ws, "C13", f"{form_data.get('startTime')} - {form_data.get('endTime')}")
+            _set_cell_value(ws, "D13", _parse_date_yyyy_mm_dd(form_data.get("broadcastDate")))
+            
+            _apply_equipment(ws, form_data.get("equipment", []))
+
+        elif contractor == 'ttk':
+            # Точные координаты для ТТК (на основе дампа)
+            _set_cell_value(ws, "B2", form_data.get("storyTitle", ""))
+            _set_cell_value(ws, "B3", form_data.get("annotation", ""))
+            _set_cell_value(ws, "B4", form_data.get("notes", ""))
+            _set_cell_value(ws, "B5", "да" if form_data.get("accreditation") == "yes" else "нет")
+            
+            # Ответственные ТТК
+            _set_cell_value(ws, "B7", form_data.get("director", ""))
+            _set_cell_value(ws, "B8", form_data.get("correspondent", ""))
+            _set_cell_value(ws, "B9", form_data.get("producer", ""))
+            
+            op = form_data.get("operator", "")
+            ve = form_data.get("videoEngineer", "")
+            _set_cell_value(ws, "B10", f"{op}, {ve}".strip(", "))
+            
+            # Даты и время (строка 14 для значений)
+            _set_cell_value(ws, "A14", _parse_date_yyyy_mm_dd(form_data.get("applicationDate")))
+            _set_cell_value(ws, "B14", _parse_date_yyyy_mm_dd(form_data.get("shootingDate")))
+            _set_cell_value(ws, "C14", f"{form_data.get('startTime')} - {form_data.get('endTime')}")
+            _set_cell_value(ws, "D14", _parse_date_yyyy_mm_dd(form_data.get("broadcastDate")))
+            
+            # Доп поля ТТК
+            # В ТТК "Уточнения" обычно в C5 (значение в D5 или B5?)
+            # Но по дампу C5 - это заголовок. Пробуем писать в D5.
+            if form_data.get("clarifications"):
+                _set_cell_value(ws, "D5", form_data.get("clarifications"))
+            
+            # Сдача материала (ТТК) - по дампу это может быть ниже
+            # Если не знаем точно, ищем по метке, но с вертикальным смещением +1
+            def _set_below_label(label, val):
+                for row in ws.iter_rows():
+                    for cell in row:
+                        if isinstance(cell.value, str) and label.lower() in cell.value.lower():
+                            _set_cell_value(ws, ws.cell(row=cell.row + 1, column=cell.column), val)
+                            return True
+                return False
+
+            _apply_equipment(ws, form_data.get("equipment", []))
+
+        # Сохранение
+        temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".xlsx")
+        wb.save(temp_file.name)
+        temp_file.close()
+        return temp_file.name
+
+    except Exception as e:
+        print(f"❌ Ошибка генерации Excel: {e}")
+        import traceback
+        traceback.print_exc()
+        return None

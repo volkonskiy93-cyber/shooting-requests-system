@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+
+{% block title %}Система заявок на видеосъемку{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='forms_vercel.css') }}">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+{% endblock %}
+
+{% block content %}
+{% include "_forms_vercel_body.html" %}
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/ru.js"></script>
+<script src="{{ url_for('static', filename='forms.js') }}"></script>
+{% endblock %}

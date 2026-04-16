@@ -1,0 +1,344 @@
+{% extends "base.html" %}
+
+{% block title %}Система заявок на видеосъемку - Вход{% endblock %}
+
+{% block styles %}
+.container {
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+}
+
+.login-container {
+    background: rgba(255, 255, 255, 0.9);
+    backdrop-filter: blur(30px) saturate(180%);
+    -webkit-backdrop-filter: blur(30px) saturate(180%);
+    border-radius: 28px;
+    padding: 50px;
+    width: 100%;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1), 
+                0 8px 25px rgba(0, 0, 0, 0.05),
+                inset 0 1px 0 rgba(255, 255, 255, 0.6);
+    text-align: center;
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    animation: slideUp 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px) scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+h1 {
+    color: #2C1810;
+    margin-bottom: 12px;
+    font-size: 3rem;
+    font-weight: 700;
+    letter-spacing: -1px;
+    background: linear-gradient(135deg, #FF6B6B 0%, #FF8E53 50%, #FFA07A 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.subtitle {
+    color: #5C4A3A;
+    margin-bottom: 45px;
+    font-size: 1.15rem;
+    line-height: 1.6;
+}
+
+.role-select {
+    display: flex;
+    gap: 24px;
+    flex-direction: column;
+}
+
+.role-card {
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border-radius: 24px;
+    padding: 35px;
+    cursor: pointer;
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+}
+
+.role-card:hover {
+    transform: translateY(-8px) scale(1.02);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.12);
+}
+
+.role-card.correspondent {
+    background: linear-gradient(135deg, rgba(74, 144, 226, 0.15) 0%, rgba(74, 144, 226, 0.25) 100%);
+}
+
+.role-card.admin {
+    background: linear-gradient(135deg, rgba(255, 107, 107, 0.15) 0%, rgba(255, 107, 107, 0.25) 100%);
+}
+
+.role-card h2 {
+    margin-bottom: 12px;
+    font-size: 2rem;
+    font-weight: 700;
+    color: #2C1810;
+}
+
+.form-section {
+    margin-bottom: 30px;
+    padding: 28px;
+    background: rgba(255, 255, 255, 0.6);
+    backdrop-filter: blur(15px);
+    border-radius: 20px;
+    display: none;
+}
+
+.form-section.active {
+    display: block;
+}
+
+input {
+    width: 100%;
+    padding: 14px 18px;
+    margin-bottom: 14px;
+    border: 1.5px solid rgba(92, 74, 58, 0.2);
+    border-radius: 14px;
+    font-size: 16px;
+    background: rgba(255, 255, 255, 0.8);
+    color: #2C1810;
+}
+
+button {
+    width: 100%;
+    padding: 16px 32px;
+    border: none;
+    border-radius: 16px;
+    font-size: 17px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-bottom: 16px;
+    transition: all 0.3s;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #4A90E2 0%, #357ABD 100%);
+    color: white;
+}
+
+.btn-success {
+    background: linear-gradient(135deg, #52C41A 0%, #73D13D 100%);
+    color: white;
+}
+
+.user-info {
+    margin-bottom: 25px;
+    padding: 20px;
+    background: linear-gradient(135deg, rgba(82, 196, 26, 0.15) 0%, rgba(115, 209, 61, 0.15) 100%);
+    backdrop-filter: blur(15px);
+    border-radius: 20px;
+    display: none;
+}
+
+.user-info {
+    margin-bottom: 30px;
+    padding: 25px;
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(20px);
+    border-radius: 24px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    display: none;
+    color: white;
+}
+
+.user-info.active {
+    display: block;
+}
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="login-container">
+        <h1>Добро пожаловать</h1>
+        <p class="subtitle">Система заявок на видеосъемку программы "Доброе утро"</p>
+        
+        <!-- Форма авторизации -->
+        <div id="auth-section" class="form-section active">
+            <h3 style="font-size: 1.5rem; margin-bottom: 20px; color: #2C1810;">Вход в систему</h3>
+            <input type="email" id="user-email" placeholder="Введите ваш email">
+            <input type="password" id="user-password" placeholder="Введите пароль">
+            <button class="btn-primary" onclick="handleLogin()">Войти</button>
+            <div style="text-align: center; font-size: 0.95rem; color: #5C4A3A;">
+                Нет аккаунта? <a href="#" onclick="showRegister(); return false;" style="color: #4A90E2;">Зарегистрироваться</a>
+            </div>
+        </div>
+        
+        <!-- Форма регистрации -->
+        <div id="register-section" class="form-section">
+            <h3 style="font-size: 1.5rem; margin-bottom: 20px; color: #2C1810;">Регистрация</h3>
+            <input type="email" id="reg-email" placeholder="Введите ваш email">
+            <input type="password" id="reg-password" placeholder="Придумайте пароль (мин. 4 символа)">
+            <input type="password" id="reg-password-confirm" placeholder="Повторите пароль">
+            <button class="btn-success" onclick="handleRegister()">Зарегистрироваться</button>
+            <div style="text-align: center; font-size: 0.95rem; color: #5C4A3A;">
+                Уже есть аккаунт? <a href="#" onclick="showLogin(); return false;" style="color: #4A90E2;">Войти</a>
+            </div>
+        </div>
+        
+        <!-- Информация о пользователе -->
+        <div id="user-info" class="user-info">
+            <p style="margin: 0 0 15px 0; color: #2C1810;">Вы вошли как: <strong id="user-email-display"></strong></p>
+            <button onclick="handleLogout()" style="padding: 12px 24px; background: rgba(92, 74, 58, 0.1); color: #5C4A3A; border: 1.5px solid rgba(92, 74, 58, 0.2); border-radius: 12px; cursor: pointer;">Выйти</button>
+        </div>
+        
+        <div class="role-select">
+            <div class="role-card correspondent" onclick="selectRole('correspondent')">
+                <div style="font-size: 3.5rem; margin-bottom: 20px;">📝</div>
+                <h2>Корреспондент</h2>
+                <p>Создание и отправка заявок на видеосъемку</p>
+            </div>
+            
+            <div class="role-card admin" onclick="selectRole('admin')">
+                <div style="font-size: 3.5rem; margin-bottom: 20px;">👨‍💼</div>
+                <h2>Администратор-Координатор</h2>
+                <p>Просмотр и обработка заявок на видеосъемку</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const API_BASE = '{{ url_for("index") }}';
+
+function showLogin() {
+    document.getElementById('auth-section').classList.add('active');
+    document.getElementById('register-section').classList.remove('active');
+}
+
+function showRegister() {
+    document.getElementById('auth-section').classList.remove('active');
+    document.getElementById('register-section').classList.add('active');
+}
+
+async function handleLogin() {
+    const email = document.getElementById('user-email').value.trim();
+    const password = document.getElementById('user-password').value;
+    
+    if (!email || !password) {
+        alert('Заполните все поля');
+        return;
+    }
+    
+    try {
+        const response = await fetch('/login', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({email, password})
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            document.getElementById('user-email-display').textContent = data.user.email;
+            document.getElementById('user-info').classList.add('active');
+            document.getElementById('auth-section').classList.remove('active');
+            document.getElementById('register-section').classList.remove('active');
+        } else {
+            alert(data.message || 'Ошибка входа');
+        }
+    } catch (error) {
+        alert('Ошибка: ' + error.message);
+    }
+}
+
+async function handleRegister() {
+    const email = document.getElementById('reg-email').value.trim();
+    const password = document.getElementById('reg-password').value;
+    const passwordConfirm = document.getElementById('reg-password-confirm').value;
+    
+    if (!email || !password) {
+        alert('Заполните все поля');
+        return;
+    }
+    
+    if (password.length < 4) {
+        alert('Пароль должен быть не менее 4 символов');
+        return;
+    }
+    
+    if (password !== passwordConfirm) {
+        alert('Пароли не совпадают');
+        return;
+    }
+    
+    try {
+        const response = await fetch('/register', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({email, password, password_confirm: passwordConfirm})
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            alert('Регистрация успешна! Теперь войдите в систему.');
+            showLogin();
+            document.getElementById('user-email').value = email;
+        } else {
+            alert(data.message || 'Ошибка регистрации');
+        }
+    } catch (error) {
+        alert('Ошибка: ' + error.message);
+    }
+}
+
+async function handleLogout() {
+    try {
+        await fetch('/logout', {method: 'POST'});
+        document.getElementById('user-info').classList.remove('active');
+        document.getElementById('auth-section').classList.add('active');
+        document.getElementById('user-email').value = '';
+        document.getElementById('user-password').value = '';
+    } catch (error) {
+        alert('Ошибка: ' + error.message);
+    }
+}
+
+function selectRole(role) {
+    // Проверка авторизации
+    const userInfo = document.getElementById('user-info');
+    if (!userInfo.classList.contains('active')) {
+        alert('Пожалуйста, войдите в систему перед выбором роли');
+        return;
+    }
+    
+    if (role === 'correspondent') {
+        window.location.href = '/forms';
+    } else if (role === 'admin') {
+        window.location.href = '/admin';
+    }
+}
+
+// Проверка авторизации при загрузке
+document.addEventListener('DOMContentLoaded', function() {
+    {% if user %}
+    document.getElementById('user-email-display').textContent = '{{ user }}';
+    document.getElementById('user-info').classList.add('active');
+    document.getElementById('auth-section').classList.remove('active');
+    {% endif %}
+});
+</script>
+{% endblock %}

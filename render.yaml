@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: shooting-requests-app
+    env: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app --workers 2 --bind 0.0.0.0:$PORT
+    envVars:
+      - key: SECRET_KEY
+        generateValue: true
+      - key: RESEND_API_KEY
+        sync: false
+      - key: EMAIL_RECIPIENT
+        sync: false
+      - key: EMAIL_FROM
+        value: onboarding@resend.dev
+      - key: DATABASE_URL
+        value: sqlite:////data/shooting_requests.db
+    disks:
+      - name: data
+        mountPath: /data
+        sizeGB: 1
