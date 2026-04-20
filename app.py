@@ -37,10 +37,12 @@ def _resolve_database_url() -> str:
             return database_url.replace('postgres://', 'postgresql://', 1)
         return database_url
 
-    # Railway не использует render.yaml, поэтому при отсутствии DATABASE_URL
-    # сохраняем SQLite в постоянный том, если он примонтирован.
-    if any(os.environ.get(marker) for marker in ('RAILWAY_ENVIRONMENT', 'RAILWAY_PROJECT_ID', 'RAILWAY_SERVICE_ID')) or os.path.isdir('/data'):
-        return 'sqlite:////data/shooting_requests.db'
+    # Используем постоянный том только если путь существует реально
+    # или задан явно через переменную окружения.
+    sqlite_data_dir = (os.environ.get('SQLITE_DATA_DIR') or '/data').strip()
+    if sqlite_data_dir and os.path.isdir(sqlite_data_dir):
+        sqlite_path = os.path.join(sqlite_data_dir, 'shooting_requests.db').replace('\\', '/')
+        return f"sqlite:///{sqlite_path}"
 
     return 'sqlite:///shooting_requests.db'
 
