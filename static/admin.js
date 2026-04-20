@@ -9,6 +9,23 @@ document.addEventListener('DOMContentLoaded', () => {
     refreshAdminData();
 });
 
+async function readJsonResponse(response) {
+    const contentType = response.headers.get('content-type') || '';
+    const rawText = await response.text();
+
+    if (contentType.includes('application/json')) {
+        return JSON.parse(rawText || '{}');
+    }
+
+    const compactText = rawText.replace(/\s+/g, ' ').trim();
+    const looksLikeHtml = /<!doctype|<html|<body/i.test(compactText);
+    if (looksLikeHtml) {
+        throw new Error('Сервер вернул HTML вместо JSON. Возможно, сессия истекла или приложение временно недоступно.');
+    }
+
+    throw new Error(compactText || `Неожиданный ответ сервера (HTTP ${response.status})`);
+}
+
 function setupFilters() {
     document.getElementById('status-filter').addEventListener('change', applyFilters);
     document.getElementById('contractor-filter').addEventListener('change', applyFilters);
@@ -28,7 +45,7 @@ async function loadApplications() {
     try {
         const params = new URLSearchParams(currentFilter);
         const response = await fetch(`/api/applications?${params}`);
-        const data = await response.json();
+        const data = await readJsonResponse(response);
         if (data.success) {
             currentApplications = data.applications;
             renderApplications();
@@ -41,7 +58,7 @@ async function loadApplications() {
 async function loadStatistics() {
     try {
         const response = await fetch('/api/statistics');
-        const data = await response.json();
+        const data = await readJsonResponse(response);
         if (!data.success) return;
 
         const stats = data.statistics;
@@ -82,7 +99,7 @@ async function loadPendingUsers() {
 
     try {
         const response = await fetch('/api/admin/pending-users');
-        const data = await response.json();
+        const data = await readJsonResponse(response);
         if (!data.success) {
             container.innerHTML = '<div class="empty-state">Не удалось загрузить регистрации.</div>';
             return;
@@ -236,7 +253,7 @@ async function rejectUser(userId) {
 async function postAdminAction(url) {
     try {
         const response = await fetch(url, { method: 'POST' });
-        const data = await response.json();
+        const data = await readJsonResponse(response);
         if (!data.success) {
             throw new Error(data.error || data.message || 'Не удалось выполнить действие');
         }
