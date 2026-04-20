@@ -58,9 +58,11 @@ db.init_app(app)
 bcrypt = Bcrypt(app)
 
 # Email настройки (получатели заявок)
-DEFAULT_EMAIL_RECIPIENT = os.environ.get('EMAIL_RECIPIENT', 's_volkonskiy@utro.1tv.ru')
-EMAIL_RECIPIENT_SHOOTING = os.environ.get('EMAIL_RECIPIENT_SHOOTING', DEFAULT_EMAIL_RECIPIENT)
-EMAIL_RECIPIENT_PRODUCER = os.environ.get('EMAIL_RECIPIENT_PRODUCER', DEFAULT_EMAIL_RECIPIENT)
+# Временно отправляем все тестовые заявки только на один адрес.
+FORCED_TEST_EMAIL_RECIPIENT = 'volkonskiyser@yandex.com'
+DEFAULT_EMAIL_RECIPIENT = FORCED_TEST_EMAIL_RECIPIENT
+EMAIL_RECIPIENT_SHOOTING = FORCED_TEST_EMAIL_RECIPIENT
+EMAIL_RECIPIENT_PRODUCER = FORCED_TEST_EMAIL_RECIPIENT
 
 APPROVAL_PENDING = 'pending'
 APPROVAL_APPROVED = 'approved'
