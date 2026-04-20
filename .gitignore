@@ -59,3 +59,5 @@ tmp/
 *.xlsx
 *.docx
 *.doc
+!excel_templates/
+!excel_templates/*.xlsx
