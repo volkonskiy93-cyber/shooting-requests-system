@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Загрузка deepseek_htmlобщая.html</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .status {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 5px;
+            display: none;
+        }
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .warning {
+            background: #fff3cd;
+            color: #856404;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+            border: 1px solid #ffeaa7;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Загрузка deepseek_htmlобщая.html на GitHub</h1>
+        
+        <div class="warning">
+            <strong>⚠️ ВАЖНО:</strong> Этот инструмент работает только если файл открыт через веб-сервер, 
+            а не напрямую через file://. Если вы видите ошибку CORS, используйте вариант 2 (вручную).
+        </div>
+        
+        <button id="uploadBtn" onclick="uploadFile()">Загрузить файл на GitHub</button>
+        
+        <div id="status" class="status"></div>
+        
+        <h3>Альтернативный способ:</h3>
+        <p>Если инструмент не работает, загрузите файл вручную:</p>
+        <ol>
+            <li>Откройте: <a href="https://github.com/volkonskiy93-cyber/shooting-requests-system" target="_blank">GitHub репозиторий</a></li>
+            <li>Нажмите "Add file" → "Upload files"</li>
+            <li>Перетащите файл deepseek_htmlобщая.html</li>
+            <li>Commit changes</li>
+        </ol>
+    </div>
+
+    <script>
+        const token = 'YOUR_GITHUB_TOKEN_HERE';
+        const repo = 'volkonskiy93-cyber/shooting-requests-system';
+        const baseUrl = `https://api.github.com/repos/${repo}/contents`;
+        
+        const headers = {
+            'Authorization': `token ${token}`,
+            'Accept': 'application/vnd.github.v3+json'
+        };
+        
+        function showStatus(message, type) {
+            const statusDiv = document.getElementById('status');
+            statusDiv.textContent = message;
+            statusDiv.className = `status ${type}`;
+            statusDiv.style.display = 'block';
+        }
+        
+        async function uploadFile() {
+            const btn = document.getElementById('uploadBtn');
+            btn.disabled = true;
+            showStatus('Загрузка файла...', 'info');
+            
+            try {
+                // Пробуем загрузить файл через fetch
+                const response = await fetch('deepseek_htmlобщая.html');
+                if (!response.ok) {
+                    throw new Error('Не удалось загрузить локальный файл. Используйте вариант 2 (вручную).');
+                }
+                
+                const content = await response.text();
+                const b64 = btoa(unescape(encodeURIComponent(content)));
+                
+                // Получаем SHA существующего файла
+                let sha = null;
+                const fileName = 'deepseek_htmlобщая.html';
+                
+                try {
+                    const getResponse = await fetch(`${baseUrl}/${encodeURIComponent(fileName)}`, {
+                        method: 'GET',
+                        headers: headers
+                    });
+                    if (getResponse.ok) {
+                        const data = await getResponse.json();
+                        sha = data.sha;
+                    }
+                } catch (e) {
+                    // Файл не существует
+                }
+                
+                const body = {
+                    message: 'Add/Update deepseek_htmlобщая.html - fix form opening',
+                    content: b64
+                };
+                
+                if (sha) {
+                    body.sha = sha;
+                }
+                
+                const putResponse = await fetch(`${baseUrl}/${encodeURIComponent(fileName)}`, {
+                    method: 'PUT',
+                    headers: {
+                        ...headers,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(body)
+                });
+                
+                if (putResponse.ok) {
+                    const result = await putResponse.json();
+                    showStatus('✅ Файл успешно загружен на GitHub! Vercel автоматически пересоберет проект.', 'success');
+                    btn.disabled = false;
+                } else {
+                    const error = await putResponse.text();
+                    showStatus(`❌ Ошибка: ${error}`, 'error');
+                    btn.disabled = false;
+                }
+            } catch (error) {
+                showStatus(`❌ Ошибка: ${error.message}. Используйте вариант 2 (вручную через GitHub).`, 'error');
+                btn.disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>

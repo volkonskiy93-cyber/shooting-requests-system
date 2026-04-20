@@ -1,14 +1,12 @@
-// JavaScript для панели администратора
-
-const API_BASE = '';
-
 let currentApplications = [];
-let currentFilter = {};
+let currentFilter = {
+    sort_by: 'created_at',
+    sort_dir: 'desc',
+};
 
-document.addEventListener('DOMContentLoaded', function() {
-    loadApplications();
-    loadStatistics();
+document.addEventListener('DOMContentLoaded', () => {
     setupFilters();
+    refreshAdminData();
 });
 
 function setupFilters() {
@@ -17,6 +15,13 @@ function setupFilters() {
     document.getElementById('date-from').addEventListener('change', applyFilters);
     document.getElementById('date-to').addEventListener('change', applyFilters);
     document.getElementById('search-input').addEventListener('input', applyFilters);
+    document.getElementById('sort-by').addEventListener('change', applyFilters);
+    document.getElementById('sort-dir').addEventListener('change', applyFilters);
+    document.getElementById('reset-filters-btn').addEventListener('click', resetFilters);
+}
+
+async function refreshAdminData() {
+    await Promise.all([loadApplications(), loadStatistics(), loadPendingUsers()]);
 }
 
 async function loadApplications() {
@@ -24,7 +29,6 @@ async function loadApplications() {
         const params = new URLSearchParams(currentFilter);
         const response = await fetch(`/api/applications?${params}`);
         const data = await response.json();
-        
         if (data.success) {
             currentApplications = data.applications;
             renderApplications();
@@ -38,34 +42,77 @@ async function loadStatistics() {
     try {
         const response = await fetch('/api/statistics');
         const data = await response.json();
-        
-        if (data.success) {
-            const stats = data.statistics;
-            document.getElementById('stats').innerHTML = `
-                <div class="stat-card">
-                    <h3>Новые</h3>
-                    <div style="font-size: 2rem; font-weight: bold;">${stats.new}</div>
-                </div>
-                <div class="stat-card">
-                    <h3>В обработке</h3>
-                    <div style="font-size: 2rem; font-weight: bold;">${stats.in_progress}</div>
-                </div>
-                <div class="stat-card">
-                    <h3>Одобрены</h3>
-                    <div style="font-size: 2rem; font-weight: bold;">${stats.approved}</div>
-                </div>
-                <div class="stat-card">
-                    <h3>Отклонены</h3>
-                    <div style="font-size: 2rem; font-weight: bold;">${stats.rejected}</div>
-                </div>
-                <div class="stat-card">
-                    <h3>Всего</h3>
-                    <div style="font-size: 2rem; font-weight: bold;">${stats.total}</div>
-                </div>
-            `;
-        }
+        if (!data.success) return;
+
+        const stats = data.statistics;
+        document.getElementById('stats').innerHTML = `
+            <div class="stat-card">
+                <h3>Новые</h3>
+                <div style="font-size: 2rem; font-weight: bold;">${stats.new}</div>
+            </div>
+            <div class="stat-card">
+                <h3>В обработке</h3>
+                <div style="font-size: 2rem; font-weight: bold;">${stats.in_progress}</div>
+            </div>
+            <div class="stat-card">
+                <h3>Одобрены</h3>
+                <div style="font-size: 2rem; font-weight: bold;">${stats.approved}</div>
+            </div>
+            <div class="stat-card">
+                <h3>Отклонены</h3>
+                <div style="font-size: 2rem; font-weight: bold;">${stats.rejected}</div>
+            </div>
+            <div class="stat-card">
+                <h3>Ожидают доступ</h3>
+                <div style="font-size: 2rem; font-weight: bold;">${stats.pendingUsers || 0}</div>
+            </div>
+            <div class="stat-card">
+                <h3>Всего заявок</h3>
+                <div style="font-size: 2rem; font-weight: bold;">${stats.total}</div>
+            </div>
+        `;
     } catch (error) {
         console.error('Ошибка загрузки статистики:', error);
+    }
+}
+
+async function loadPendingUsers() {
+    const container = document.getElementById('pending-users-list');
+    if (!container) return;
+
+    try {
+        const response = await fetch('/api/admin/pending-users');
+        const data = await response.json();
+        if (!data.success) {
+            container.innerHTML = '<div class="empty-state">Не удалось загрузить регистрации.</div>';
+            return;
+        }
+
+        if (!data.users.length) {
+            container.innerHTML = '<div class="empty-state">Сейчас нет пользователей, ожидающих одобрения.</div>';
+            return;
+        }
+
+        container.innerHTML = data.users.map((user) => {
+            const createdAt = user.created_at
+                ? new Date(user.created_at).toLocaleString('ru-RU')
+                : '—';
+
+            return `
+                <div class="pending-user-card">
+                    <h4>${escapeHtml(user.fullName || 'Без имени')}</h4>
+                    <p><strong>Почта:</strong> ${escapeHtml(user.email)}</p>
+                    <p><strong>Подана:</strong> ${createdAt}</p>
+                    <div class="pending-user-actions">
+                        <button class="btn btn-approve" onclick="approveUser(${user.id})">Одобрить</button>
+                        <button class="btn btn-reject" onclick="rejectUser(${user.id})">Отклонить</button>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    } catch (error) {
+        console.error('Ошибка загрузки регистраций:', error);
+        container.innerHTML = '<div class="empty-state">Ошибка загрузки регистраций.</div>';
     }
 }
 
@@ -75,50 +122,80 @@ function applyFilters() {
         contractor: document.getElementById('contractor-filter').value,
         date_from: document.getElementById('date-from').value,
         date_to: document.getElementById('date-to').value,
-        search: document.getElementById('search-input').value
+        search: document.getElementById('search-input').value,
+        sort_by: document.getElementById('sort-by').value,
+        sort_dir: document.getElementById('sort-dir').value,
     };
-    
-    // Удаляем пустые фильтры
-    Object.keys(currentFilter).forEach(key => {
+
+    Object.keys(currentFilter).forEach((key) => {
         if (!currentFilter[key]) delete currentFilter[key];
     });
-    
+
     loadApplications();
+}
+
+function resetFilters() {
+    document.getElementById('status-filter').value = '';
+    document.getElementById('contractor-filter').value = '';
+    document.getElementById('date-from').value = '';
+    document.getElementById('date-to').value = '';
+    document.getElementById('search-input').value = '';
+    document.getElementById('sort-by').value = 'created_at';
+    document.getElementById('sort-dir').value = 'desc';
+    applyFilters();
 }
 
 function renderApplications() {
     const tbody = document.getElementById('applications-tbody');
-    
-    if (currentApplications.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">Заявок не найдено</td></tr>';
+    const summary = document.getElementById('applications-summary');
+    if (!tbody) return;
+
+    if (summary) {
+        summary.textContent = `Показано заявок: ${currentApplications.length}`;
+    }
+
+    if (!currentApplications.length) {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align: center;">Заявок не найдено</td></tr>';
         return;
     }
-    
-    tbody.innerHTML = currentApplications.map(app => {
+
+    tbody.innerHTML = currentApplications.map((app) => {
         const contractorName = {
-            'figaro': 'ФИГАРО',
-            'ttk': 'ТТК',
-            'producer': 'Продюсерам'
+            figaro: 'ФИГАРО',
+            ttk: 'ТТК',
+            producer: 'Продюсерам',
         }[app.contractor] || app.contractor;
-        
+
         const statusName = {
-            'new': 'Новая',
-            'in_progress': 'В обработке',
-            'approved': 'Одобрена',
-            'rejected': 'Отклонена'
+            new: 'Новая',
+            in_progress: 'В обработке',
+            approved: 'Одобрена',
+            rejected: 'Отклонена',
         }[app.status] || app.status;
-        
-        const shootingDate = app.shootingDate ? new Date(app.shootingDate).toLocaleDateString('ru-RU') : '-';
-        
+
+        const shootingDate = app.shootingDate
+            ? new Date(app.shootingDate).toLocaleDateString('ru-RU')
+            : '-';
+        const createdAt = app.createdAt
+            ? new Date(app.createdAt).toLocaleString('ru-RU')
+            : '-';
+
         return `
             <tr>
-                <td>${app.storyTitle || '-'}</td>
+                <td class="table-meta">${createdAt}</td>
+                <td>${escapeHtml(app.storyTitle || '-')}</td>
+                <td>${escapeHtml(app.correspondent || '-')}</td>
                 <td>${contractorName}</td>
                 <td>${shootingDate}</td>
-                <td>${statusName}</td>
+                <td><span class="table-status">${statusName}</span></td>
                 <td>
                     <button class="btn" onclick="viewApplication(${app.id})">Просмотр</button>
-                    <button class="btn" onclick="exportDoc(${app.id})">Экспорт DOC</button>
+                    ${app.contractor === 'producer'
+                        ? ''
+                        : `<button class="btn btn-secondary" onclick="exportExcel(${app.id})">Excel</button>`}
+                    ${app.contractor === 'producer'
+                        ? `<button class="btn" onclick="exportDoc(${app.id})">Экспорт DOC</button>`
+                        : ''}
                 </td>
             </tr>
         `;
@@ -126,13 +203,62 @@ function renderApplications() {
 }
 
 function viewApplication(id) {
-    const app = currentApplications.find(a => a.id === id);
-    if (app) {
-        alert(`Заявка #${id}\nНазвание: ${app.storyTitle}\nСтатус: ${app.status}`);
-        // Здесь можно открыть модальное окно с деталями
+    const app = currentApplications.find((item) => item.id === id);
+    if (!app) return;
+
+    const contractorName = {
+        figaro: 'ФИГАРО',
+        ttk: 'ТТК',
+        producer: 'Продюсерам',
+    }[app.contractor] || app.contractor;
+
+    alert(
+        `Заявка #${id}\n` +
+        `Название: ${app.storyTitle || '-'}\n` +
+        `Поступила: ${app.createdAt ? new Date(app.createdAt).toLocaleString('ru-RU') : '-'}\n` +
+        `Подрядчик: ${contractorName}\n` +
+        `Корреспондент: ${app.correspondent || '-'}\n` +
+        `Дата съемки: ${app.shootingDate ? new Date(app.shootingDate).toLocaleDateString('ru-RU') : '-'}\n` +
+        `Статус: ${app.status || '-'}`
+    );
+}
+
+async function approveUser(userId) {
+    if (!confirm('Одобрить доступ этому пользователю?')) return;
+    await postAdminAction(`/api/admin/users/${userId}/approve`);
+}
+
+async function rejectUser(userId) {
+    if (!confirm('Отклонить доступ этому пользователю?')) return;
+    await postAdminAction(`/api/admin/users/${userId}/reject`);
+}
+
+async function postAdminAction(url) {
+    try {
+        const response = await fetch(url, { method: 'POST' });
+        const data = await response.json();
+        if (!data.success) {
+            throw new Error(data.error || data.message || 'Не удалось выполнить действие');
+        }
+        await refreshAdminData();
+    } catch (error) {
+        alert(`Ошибка: ${error.message}`);
     }
 }
 
 function exportDoc(id) {
     window.open(`/api/applications/${id}/export/doc`, '_blank');
+}
+
+function exportExcel(id) {
+    window.open(`/api/applications/${id}/export/excel`, '_blank');
+}
+
+function escapeHtml(value) {
+    return String(value || '')
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#39;');
 }

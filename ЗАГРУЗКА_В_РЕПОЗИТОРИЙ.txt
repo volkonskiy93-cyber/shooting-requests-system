@@ -1,0 +1,34 @@
+═══════════════════════════════════════════════════════
+  ЗАГРУЗКА ФАЙЛОВ В РЕПОЗИТОРИЙ
+  https://github.com/volkonskiy93-cyber/-2
+═══════════════════════════════════════════════════════
+
+ШАГИ:
+
+1. Откроется страница загрузки файлов в GitHub
+
+2. Откройте папку: c:\Users\user\Desktop\дут
+
+3. Перетащите ВСЕ эти файлы в окно GitHub:
+   
+   ✅ index.html
+   ✅ deepseek_htmlобщая.html
+   ✅ admin.html
+   ✅ admin.js
+   ✅ data.js
+   ✅ README.md (если хотите)
+   ✅ .nojekyll (важно для GitHub Pages!)
+
+4. Внизу страницы:
+   - Commit message: "Initial commit"
+   - Нажмите: "Commit changes"
+
+5. ПОСЛЕ ЗАГРУЗКИ включите GitHub Pages:
+   - Settings → Pages
+   - Source: Branch → main, Folder → / (root)
+   - Save
+
+6. Ссылка будет:
+   https://volkonskiy93-cyber.github.io/-2/
+
+═══════════════════════════════════════════════════════

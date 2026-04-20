@@ -30,8 +30,10 @@ def _parse_datetime_local(dt_string):
     except:
         return _parse_date_yyyy_mm_dd(dt_string)
 
-def _template_path(contractor: str) -> Path:
+def _template_path(contractor: str, without_main_kit: bool = False) -> Path:
     project_root = Path(__file__).resolve().parent.parent
+    if contractor == "ttk" and without_main_kit:
+        return project_root / "excel_templates" / "ttk_without_main_kit_template.xlsx"
     return project_root / "excel_templates" / f"{contractor}_template.xlsx"
 
 def _set_cell_value(ws, coord_or_cell, value, force_black=True):
@@ -68,6 +70,23 @@ def _set_cell_value(ws, coord_or_cell, value, force_black=True):
         )
         target_cell.font = new_font
 
+def _resolve_target_cell(ws, coord_or_cell):
+    if isinstance(coord_or_cell, str):
+        cell = ws[coord_or_cell]
+    else:
+        cell = coord_or_cell
+
+    if isinstance(cell, MergedCell):
+        for merged_range in ws.merged_cells.ranges:
+            if cell.coordinate in merged_range:
+                return ws.cell(row=merged_range.min_row, column=merged_range.min_col)
+    return cell
+
+def _clear_cell_value(ws, coord_or_cell):
+    target_cell = _resolve_target_cell(ws, coord_or_cell)
+    if target_cell is not None:
+        target_cell.value = None
+
 def _replace_qty_in_text(text: str, qty: int) -> str:
     if not isinstance(text, str):
         return text
@@ -81,7 +100,7 @@ def _replace_qty_in_text(text: str, qty: int) -> str:
     except:
         return text
 
-def _apply_equipment(ws, equipment):
+def _apply_equipment(ws, equipment, contractor=None, without_main_kit=False):
     """
     Заполняет таблицу оборудования. 
     В шаблонах ФИГАРО/ТТК: 
@@ -94,7 +113,9 @@ def _apply_equipment(ws, equipment):
     header_row = None
     for r in range(1, ws.max_row + 1):
         a = ws.cell(r, 1).value
-        if isinstance(a, str) and "Основной комплект" in a:
+        if isinstance(a, str) and (
+            "Основной комплект" in a or "Без основного комплекта" in a
+        ):
             header_row = r
             break
     
@@ -116,16 +137,26 @@ def _apply_equipment(ws, equipment):
         main_qty = eq.get("mainQuantity", 0)
         add_qty = eq.get("additionalQuantity", 0)
 
-        # Колонка A: Обновляем текст основного комплекта (если там есть цифра шт)
+        # Колонка A: Обновляем текст основного комплекта.
+        # Для ТТК в режиме "без основного комплекта" не затираем шаблон:
+        # в образце основной блок остается как в исходном файле.
         cell_main = ws.cell(row=row_idx, column=1)
         if cell_main.value and isinstance(cell_main.value, str):
-            new_val = _replace_qty_in_text(cell_main.value, main_qty)
-            _set_cell_value(ws, cell_main, new_val, force_black=False) # Сохраняем стиль шаблона
+            if not (contractor == 'ttk' and without_main_kit):
+                new_val = _replace_qty_in_text(cell_main.value, main_qty)
+                _set_cell_value(ws, cell_main, new_val, force_black=False) # Сохраняем стиль шаблона
 
         # Колонка C: да/нет
         cell_choice = ws.cell(row=row_idx, column=3)
-        if cell_choice.value is not None: # Пишем только если ячейка не пустая в шаблоне
-            _set_cell_value(ws, cell_choice, "да" if int(add_qty or 0) > 0 else "нет", force_black=False)
+        has_additional = int(add_qty or 0) > 0
+        if contractor == 'ttk':
+            if without_main_kit:
+                if has_additional:
+                    _set_cell_value(ws, cell_choice, "ДА", force_black=False)
+            else:
+                _set_cell_value(ws, cell_choice, "ДА" if has_additional else "НЕТ", force_black=False)
+        elif cell_choice.value is not None:
+            _set_cell_value(ws, cell_choice, "да" if has_additional else "нет", force_black=False)
 
         # Колонка D: количество
         cell_qty = ws.cell(row=row_idx, column=4)
@@ -138,7 +169,8 @@ def _apply_equipment(ws, equipment):
 
 def create_excel_document(form_data, application_id):
     contractor = form_data.get('contractor')
-    tpl = _template_path(contractor)
+    without_main_kit = bool(form_data.get("withoutMainKit"))
+    tpl = _template_path(contractor, without_main_kit=without_main_kit)
     
     if not tpl.exists():
         print(f"⚠️ Шаблон не найден: {tpl}")
@@ -168,7 +200,7 @@ def create_excel_document(form_data, application_id):
             _set_cell_value(ws, "C13", f"{form_data.get('startTime')} - {form_data.get('endTime')}")
             _set_cell_value(ws, "D13", _parse_date_yyyy_mm_dd(form_data.get("broadcastDate")))
             
-            _apply_equipment(ws, form_data.get("equipment", []))
+            _apply_equipment(ws, form_data.get("equipment", []), contractor='figaro')
 
         elif contractor == 'ttk':
             # Точные координаты для ТТК (на основе дампа)
@@ -191,6 +223,7 @@ def create_excel_document(form_data, application_id):
             _set_cell_value(ws, "B14", _parse_date_yyyy_mm_dd(form_data.get("shootingDate")))
             _set_cell_value(ws, "C14", f"{form_data.get('startTime')} - {form_data.get('endTime')}")
             _set_cell_value(ws, "D14", _parse_date_yyyy_mm_dd(form_data.get("broadcastDate")))
+            _set_cell_value(ws, "D15", form_data.get("extension", ""))
             
             # Доп поля ТТК
             # В ТТК "Уточнения" обычно в C5 (значение в D5 или B5?)
@@ -208,7 +241,12 @@ def create_excel_document(form_data, application_id):
                             return True
                 return False
 
-            _apply_equipment(ws, form_data.get("equipment", []))
+            _apply_equipment(
+                ws,
+                form_data.get("equipment", []),
+                contractor='ttk',
+                without_main_kit=without_main_kit
+            )
 
         # Сохранение
         temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".xlsx")

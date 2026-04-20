@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Чтение структуры оборудования из Excel</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+        }
+        
+        .upload-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f9f9f9;
+            border-radius: 8px;
+        }
+        
+        input[type="file"] {
+            margin: 10px 0;
+            padding: 10px;
+            width: 100%;
+            border: 2px dashed #ddd;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        
+        .result {
+            margin-top: 20px;
+            padding: 20px;
+            background: #e3f2fd;
+            border-radius: 8px;
+        }
+        
+        .equipment-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        
+        .equipment-table th,
+        .equipment-table td {
+            padding: 10px;
+            border: 1px solid #ddd;
+            text-align: left;
+        }
+        
+        .equipment-table th {
+            background: #2196F3;
+            color: white;
+        }
+        
+        .equipment-table tr:nth-child(even) {
+            background: #f9f9f9;
+        }
+        
+        pre {
+            background: #f5f5f5;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            margin-top: 15px;
+        }
+        
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 10px;
+        }
+        
+        button:hover {
+            background: #45a049;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📋 Чтение структуры оборудования из Excel</h1>
+        
+        <div class="upload-section">
+            <h2>Заявка ФИГАРО</h2>
+            <input type="file" id="figaroFile" accept=".xlsx,.xls" />
+            <div id="figaroResult"></div>
+        </div>
+        
+        <div class="upload-section">
+            <h2>Заявка ТТК</h2>
+            <input type="file" id="ttkFile" accept=".xlsx,.xls" />
+            <div id="ttkResult"></div>
+        </div>
+    </div>
+    
+    <script>
+        let figaroEquipment = null;
+        let ttkEquipment = null;
+        
+        document.getElementById('figaroFile').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                readEquipmentFromExcel(file, 'figaro');
+            }
+        });
+        
+        document.getElementById('ttkFile').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                readEquipmentFromExcel(file, 'ttk');
+            }
+        });
+        
+        function readEquipmentFromExcel(file, type) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, {type: 'array'});
+                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                const jsonData = XLSX.utils.sheet_to_json(firstSheet, {header: 1});
+                
+                // Ищем столбцы с оборудованием
+                const headers = jsonData[0] || [];
+                let mainEquipmentCol = -1;
+                let additionalEquipmentCol = -1;
+                
+                headers.forEach((header, index) => {
+                    const headerStr = String(header).toLowerCase();
+                    if (headerStr.includes('основн') || headerStr.includes('основной')) {
+                        mainEquipmentCol = index;
+                    }
+                    if (headerStr.includes('дополнительн') || headerStr.includes('дополнительное')) {
+                        additionalEquipmentCol = index;
+                    }
+                });
+                
+                // Собираем данные оборудования
+                const equipment = [];
+                for (let i = 1; i < jsonData.length; i++) {
+                    const row = jsonData[i];
+                    const main = mainEquipmentCol >= 0 ? String(row[mainEquipmentCol] || '').trim() : '';
+                    const additional = additionalEquipmentCol >= 0 ? String(row[additionalEquipmentCol] || '').trim() : '';
+                    
+                    if (main || additional) {
+                        equipment.push({
+                            main: main,
+                            additional: additional
+                        });
+                    }
+                }
+                
+                if (type === 'figaro') {
+                    figaroEquipment = equipment;
+                } else {
+                    ttkEquipment = equipment;
+                }
+                
+                displayEquipment(equipment, type);
+            };
+            reader.readAsArrayBuffer(file);
+        }
+        
+        function displayEquipment(equipment, type) {
+            const resultDiv = document.getElementById(type + 'Result');
+            
+            if (equipment.length === 0) {
+                resultDiv.innerHTML = '<p style="color: red;">⚠️ Оборудование не найдено. Проверьте структуру Excel файла.</p>';
+                return;
+            }
+            
+            let html = `
+                <div class="result">
+                    <h3>✅ Найдено ${equipment.length} позиций оборудования</h3>
+                    <table class="equipment-table">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Основное оборудование</th>
+                                <th>Дополнительное оборудование</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+            
+            equipment.forEach((eq, index) => {
+                html += `
+                    <tr>
+                        <td>${index + 1}</td>
+                        <td>${eq.main || '-'}</td>
+                        <td>${eq.additional || '-'}</td>
+                    </tr>
+                `;
+            });
+            
+            html += `
+                        </tbody>
+                    </table>
+                    <h4>Структура данных (JSON):</h4>
+                    <pre id="${type}Json">${JSON.stringify(equipment, null, 2)}</pre>
+                    <button onclick="copyToClipboard('${type}Json')">📋 Копировать JSON</button>
+                </div>
+            `;
+            
+            resultDiv.innerHTML = html;
+        }
+        
+        function copyToClipboard(elementId) {
+            const element = document.getElementById(elementId);
+            const text = element.textContent;
+            navigator.clipboard.writeText(text).then(() => {
+                alert('✅ Скопировано в буфер обмена!');
+            });
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Администратор-Координатор - Система заявок на видеосъемку</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .header {
+            background: white;
+            padding: 20px 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .header h1 {
+            color: #2c3e50;
+            font-size: 2rem;
+        }
+        
+        .back-btn {
+            padding: 10px 25px;
+            background-color: #95a5a6;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+        
+        .back-btn:hover {
+            background-color: #7f8c8d;
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        
+        .stat-card h3 {
+            color: #7f8c8d;
+            font-size: 0.9rem;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+        }
+        
+        .stat-card .number {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        
+        .stat-card.new .number { color: #3498db; }
+        .stat-card.in-progress .number { color: #f39c12; }
+        .stat-card.approved .number { color: #2ecc71; }
+        .stat-card.rejected .number { color: #e74c3c; }
+        
+        .filters {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        
+        .filters-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .filter-group label {
+            font-weight: 600;
+            margin-bottom: 5px;
+            color: #2c3e50;
+            font-size: 0.9rem;
+        }
+        
+        .filter-group input,
+        .filter-group select {
+            padding: 8px 12px;
+            border: 1px solid #bdc3c7;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        .search-box {
+            grid-column: 1 / -1;
+        }
+        
+        .search-box input {
+            width: 100%;
+        }
+        
+        .applications-table {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        thead {
+            background-color: #2c3e50;
+            color: white;
+        }
+        
+        th, td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        tbody tr:hover {
+            background-color: #f1f8ff;
+            cursor: pointer;
+        }
+        
+        .status-badge {
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            display: inline-block;
+        }
+        
+        .status-new { background-color: #3498db; color: white; }
+        .status-in_progress { background-color: #f39c12; color: white; }
+        .status-approved { background-color: #2ecc71; color: white; }
+        .status-rejected { background-color: #e74c3c; color: white; }
+        
+        .contractor-badge {
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            display: inline-block;
+        }
+        
+        .contractor-figaro { background-color: #3498db; color: white; }
+        .contractor-ttk { background-color: #e74c3c; color: white; }
+        
+        .action-buttons {
+            display: flex;
+            gap: 5px;
+        }
+        
+        .btn-view {
+            padding: 5px 10px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.85rem;
+        }
+        
+        .btn-approve {
+            padding: 5px 10px;
+            background-color: #2ecc71;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.85rem;
+        }
+        
+        .btn-reject {
+            padding: 5px 10px;
+            background-color: #e74c3c;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.85rem;
+        }
+        
+        .btn-delete {
+            padding: 5px 10px;
+            background-color: #95a5a6;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.85rem;
+        }
+        
+        .btn-view:hover { background-color: #2980b9; }
+        .btn-approve:hover { background-color: #27ae60; }
+        .btn-reject:hover { background-color: #c0392b; }
+        .btn-delete:hover { background-color: #7f8c8d; }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            z-index: 1000;
+            overflow-y: auto;
+        }
+        
+        .modal.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .modal-content {
+            background: white;
+            border-radius: 10px;
+            padding: 30px;
+            max-width: 900px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #2c3e50;
+        }
+        
+        .modal-header h2 {
+            color: #2c3e50;
+        }
+        
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 2rem;
+            cursor: pointer;
+            color: #7f8c8d;
+            line-height: 1;
+        }
+        
+        .close-btn:hover {
+            color: #2c3e50;
+        }
+        
+        .detail-section {
+            margin-bottom: 25px;
+        }
+        
+        .detail-section h3 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        .detail-row {
+            display: grid;
+            grid-template-columns: 200px 1fr;
+            padding: 8px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        
+        .detail-label {
+            font-weight: 600;
+            color: #7f8c8d;
+        }
+        
+        .detail-value {
+            color: #2c3e50;
+        }
+        
+        .equipment-list {
+            background-color: #f9f9f9;
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 10px;
+        }
+        
+        .equipment-item {
+            padding: 5px 0;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        .equipment-item:last-child {
+            border-bottom: none;
+        }
+        
+        .comments-section {
+            margin-top: 20px;
+        }
+        
+        .comment {
+            background-color: #f9f9f9;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+        }
+        
+        .comment-author {
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+        
+        .comment-date {
+            font-size: 0.85rem;
+            color: #7f8c8d;
+        }
+        
+        .comment-text {
+            margin-top: 5px;
+            color: #333;
+        }
+        
+        .status-actions {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 2px solid #ddd;
+        }
+        
+        .status-actions button {
+            margin-right: 10px;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #7f8c8d;
+        }
+        
+        .empty-state h3 {
+            font-size: 1.5rem;
+            margin-bottom: 10px;
+        }
+        
+        .sortable {
+            cursor: pointer;
+            user-select: none;
+            position: relative;
+            padding-right: 20px;
+        }
+        
+        .sortable:hover {
+            background-color: #34495e;
+        }
+        
+        .sortable::after {
+            content: ' ↕';
+            position: absolute;
+            right: 5px;
+            font-size: 0.8em;
+            opacity: 0.5;
+        }
+        
+        .sortable.asc::after {
+            content: ' ↑';
+            opacity: 1;
+        }
+        
+        .sortable.desc::after {
+            content: ' ↓';
+            opacity: 1;
+        }
+        
+        /* Адаптивные стили для мобильных устройств */
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .header {
+                flex-direction: column;
+                gap: 15px;
+                padding: 15px;
+                text-align: center;
+            }
+            
+            .header h1 {
+                font-size: 1.5rem;
+            }
+            
+            .stats {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 10px;
+            }
+            
+            .stat-card {
+                padding: 15px;
+            }
+            
+            .stat-card .number {
+                font-size: 2rem;
+            }
+            
+            .filters-row {
+                grid-template-columns: 1fr;
+            }
+            
+            .filters {
+                padding: 15px;
+            }
+            
+            .applications-table {
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+                display: block;
+            }
+            
+            #applications-table {
+                min-width: 800px;
+                display: table;
+            }
+            
+            th, td {
+                padding: 8px 10px;
+                font-size: 0.85rem;
+            }
+            
+            .action-buttons {
+                flex-direction: column;
+                gap: 5px;
+            }
+            
+            .btn-view, .btn-approve, .btn-reject, .btn-delete {
+                width: 100%;
+                padding: 8px;
+                font-size: 0.8rem;
+            }
+            
+            .modal-content {
+                padding: 20px;
+                margin: 10px;
+                max-height: 95vh;
+            }
+            
+            .detail-row {
+                grid-template-columns: 1fr;
+                gap: 5px;
+            }
+            
+            .detail-label {
+                margin-bottom: 5px;
+            }
+            
+            .status-actions button {
+                width: 100%;
+                margin-bottom: 10px;
+                margin-right: 0;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .header h1 {
+                font-size: 1.2rem;
+            }
+            
+            .stats {
+                grid-template-columns: 1fr;
+            }
+            
+            .stat-card .number {
+                font-size: 1.8rem;
+            }
+            
+            th, td {
+                padding: 6px 8px;
+                font-size: 0.75rem;
+            }
+            
+            .modal-content {
+                padding: 15px;
+            }
+            
+            .modal-header h2 {
+                font-size: 1.2rem;
+            }
+            
+            .back-btn {
+                width: 100%;
+                text-align: center;
+            }
+        }
+        
+        /* Улучшения для touch-устройств */
+        @media (hover: none) and (pointer: coarse) {
+            button, .back-btn {
+                min-height: 44px; /* Минимальный размер для удобного нажатия */
+                touch-action: manipulation;
+            }
+            
+            .sortable:hover {
+                background-color: #2c3e50;
+            }
+            
+            .sortable:active {
+                background-color: #34495e;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>👨‍💼 Панель администратора-координатора</h1>
+            <a href="index.html" class="back-btn">← Вернуться на главную</a>
+        </div>
+        
+        <div class="stats" id="stats">
+            <!-- Статистика будет загружена через JS -->
+        </div>
+        
+        <div class="filters">
+            <div class="filters-row">
+                <div class="filter-group search-box">
+                    <label>Поиск</label>
+                    <input type="text" id="search-input" placeholder="Поиск по названию, аннотации, редактору...">
+                </div>
+            </div>
+            <div class="filters-row">
+                <div class="filter-group">
+                    <label>Статус</label>
+                    <select id="status-filter">
+                        <option value="">Все статусы</option>
+                        <option value="new">Новая</option>
+                        <option value="in_progress">В обработке</option>
+                        <option value="approved">Одобрена</option>
+                        <option value="rejected">Отклонена</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>Подрядчик</label>
+                    <select id="contractor-filter">
+                        <option value="">Все подрядчики</option>
+                        <option value="figaro">ФИГАРО</option>
+                        <option value="ttk">ТТК</option>
+                        <option value="producer">Продюсер</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>Дата съемки от</label>
+                    <input type="date" id="date-from">
+                </div>
+                <div class="filter-group">
+                    <label>Дата съемки до</label>
+                    <input type="date" id="date-to">
+                </div>
+            </div>
+        </div>
+        
+        <div class="applications-table">
+            <table id="applications-table">
+                <thead>
+                    <tr>
+                        <th class="sortable" onclick="sortApplications('storyTitle')">Название сюжета</th>
+                        <th>Подрядчик</th>
+                        <th class="sortable" onclick="sortApplications('shootingDate')">Дата съемки</th>
+                        <th>Редактор</th>
+                        <th>Статус</th>
+                        <th>Действия</th>
+                    </tr>
+                </thead>
+                <tbody id="applications-tbody">
+                    <!-- Заявки будут загружены через JS -->
+                </tbody>
+            </table>
+            <div id="empty-state" class="empty-state" style="display: none;">
+                <h3>Заявки не найдены</h3>
+                <p>Попробуйте изменить параметры фильтрации</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Модальное окно просмотра заявки -->
+    <div id="application-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Детали заявки</h2>
+                <button class="close-btn" onclick="closeModal()">&times;</button>
+            </div>
+            <div id="application-details">
+                <!-- Детали заявки будут загружены через JS -->
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="data.js"></script>
+    <script src="admin.js"></script>
+</body>
+</html>

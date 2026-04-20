@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Сравнение Excel файлов с формами</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        
+        .upload-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f9f9f9;
+            border-radius: 8px;
+        }
+        
+        .upload-section h2 {
+            color: #555;
+            margin-bottom: 15px;
+        }
+        
+        input[type="file"] {
+            margin: 10px 0;
+            padding: 10px;
+            width: 100%;
+            border: 2px dashed #ddd;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        
+        .comparison-result {
+            margin-top: 30px;
+            padding: 20px;
+            border-radius: 8px;
+        }
+        
+        .comparison-result h2 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        
+        .field-list {
+            margin: 15px 0;
+        }
+        
+        .field-item {
+            padding: 8px;
+            margin: 5px 0;
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .field-match {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .field-excel-only {
+            background: #fff3cd;
+            color: #856404;
+        }
+        
+        .field-project-only {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .statistics {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .stat-card {
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        .stat-card.total {
+            background: #e3f2fd;
+        }
+        
+        .stat-card.match {
+            background: #d4edda;
+        }
+        
+        .stat-card.excel-only {
+            background: #fff3cd;
+        }
+        
+        .stat-card.project-only {
+            background: #f8d7da;
+        }
+        
+        .stat-number {
+            font-size: 2em;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        button {
+            background: #2196F3;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 10px;
+        }
+        
+        button:hover {
+            background: #1976D2;
+        }
+        
+        .success {
+            background: #d4edda;
+            color: #155724;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        
+        .warning {
+            background: #fff3cd;
+            color: #856404;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📊 Сравнение Excel файлов с формами проекта</h1>
+        
+        <div class="upload-section">
+            <h2>ФИГАРО</h2>
+            <input type="file" id="figaroFile" accept=".xlsx,.xls" />
+            <div id="figaroResult"></div>
+        </div>
+        
+        <div class="upload-section">
+            <h2>ТТК</h2>
+            <input type="file" id="ttkFile" accept=".xlsx,.xls" />
+            <div id="ttkResult"></div>
+        </div>
+        
+        <button onclick="compareAll()">Сравнить все</button>
+    </div>
+    
+    <script>
+        // Поля формы ФИГАРО из проекта
+        const FIGARO_FIELDS = [
+            "Название сюжета",
+            "Аннотация к съемке и адрес локации",
+            "Примечания (погода, парковка и т.д.)",
+            "Аккредитация",
+            "Режиссер (редактор)",
+            "Корреспондент",
+            "Продюсер",
+            "Оператор",
+            "Видеоинженер",
+            "Дата подачи заявки",
+            "Дата съемки",
+            "Время съемки",
+            "Дата эфира",
+            "Оборудование"
+        ];
+        
+        // Поля формы ТТК из проекта
+        const TTK_FIELDS = [
+            "Название сюжета",
+            "Аннотация к съемке и адрес локации",
+            "Примечания (погода, парковка и т.д.)",
+            "Аккредитация",
+            "Уточнения",
+            "Режиссер (редактор)",
+            "Корреспондент",
+            "Продюсер",
+            "Оператор",
+            "Видеоинженер",
+            "Номер машины",
+            "Дата подачи заявки",
+            "Дата съемки",
+            "Время съемки",
+            "Продление",
+            "Дата эфира",
+            "Дата сдачи",
+            "Оборудование"
+        ];
+        
+        let figaroExcelFields = [];
+        let ttkExcelFields = [];
+        
+        // Обработка файла ФИГАРО
+        document.getElementById('figaroFile').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                readExcelFile(file, 'figaro');
+            }
+        });
+        
+        // Обработка файла ТТК
+        document.getElementById('ttkFile').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                readExcelFile(file, 'ttk');
+            }
+        });
+        
+        function readExcelFile(file, type) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, {type: 'array'});
+                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                const jsonData = XLSX.utils.sheet_to_json(firstSheet, {header: 1});
+                
+                // Берем первую строку как заголовки
+                const headers = jsonData[0] || [];
+                const cleanHeaders = headers.map(h => String(h).trim()).filter(h => h);
+                
+                if (type === 'figaro') {
+                    figaroExcelFields = cleanHeaders;
+                    document.getElementById('figaroResult').innerHTML = 
+                        `<p>✅ Загружено ${cleanHeaders.length} полей</p>`;
+                } else {
+                    ttkExcelFields = cleanHeaders;
+                    document.getElementById('ttkResult').innerHTML = 
+                        `<p>✅ Загружено ${cleanHeaders.length} полей</p>`;
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+        
+        function compareFields(excelFields, projectFields, formName) {
+            const excelSet = new Set(excelFields);
+            const projectSet = new Set(projectFields);
+            
+            const common = excelFields.filter(f => projectSet.has(f));
+            const onlyExcel = excelFields.filter(f => !projectSet.has(f));
+            const onlyProject = projectFields.filter(f => !excelSet.has(f));
+            
+            let html = `
+                <div class="comparison-result">
+                    <h2>📋 Результаты сравнения: ${formName}</h2>
+                    
+                    <div class="statistics">
+                        <div class="stat-card total">
+                            <div class="stat-number">${excelFields.length}</div>
+                            <div>Всего в Excel</div>
+                        </div>
+                        <div class="stat-card total">
+                            <div class="stat-number">${projectFields.length}</div>
+                            <div>Всего в проекте</div>
+                        </div>
+                        <div class="stat-card match">
+                            <div class="stat-number">${common.length}</div>
+                            <div>Совпадают</div>
+                        </div>
+                        <div class="stat-card excel-only">
+                            <div class="stat-number">${onlyExcel.length}</div>
+                            <div>Только в Excel</div>
+                        </div>
+                        <div class="stat-card project-only">
+                            <div class="stat-number">${onlyProject.length}</div>
+                            <div>Только в проекте</div>
+                        </div>
+                    </div>
+            `;
+            
+            if (onlyExcel.length === 0 && onlyProject.length === 0) {
+                html += `<div class="success">✅ ✅ ✅ ВСЕ ПОЛЯ СОВПАДАЮТ! Формы идентичны!</div>`;
+            } else {
+                html += `<div class="warning">⚠️ Есть различия между Excel и проектом</div>`;
+            }
+            
+            if (common.length > 0) {
+                html += `
+                    <h3>✅ Совпадающие поля (${common.length}):</h3>
+                    <div class="field-list">
+                `;
+                common.forEach(field => {
+                    html += `<div class="field-item field-match">✓ ${field}</div>`;
+                });
+                html += `</div>`;
+            }
+            
+            if (onlyExcel.length > 0) {
+                html += `
+                    <h3>⚠️ Поля только в Excel (${onlyExcel.length}):</h3>
+                    <div class="field-list">
+                `;
+                onlyExcel.forEach(field => {
+                    html += `<div class="field-item field-excel-only">+ ${field}</div>`;
+                });
+                html += `</div>`;
+            }
+            
+            if (onlyProject.length > 0) {
+                html += `
+                    <h3>⚠️ Поля только в проекте (${onlyProject.length}):</h3>
+                    <div class="field-list">
+                `;
+                onlyProject.forEach(field => {
+                    html += `<div class="field-item field-project-only">- ${field}</div>`;
+                });
+                html += `</div>`;
+            }
+            
+            html += `</div>`;
+            return html;
+        }
+        
+        function compareAll() {
+            let result = '';
+            
+            if (figaroExcelFields.length > 0) {
+                result += compareFields(figaroExcelFields, FIGARO_FIELDS, 'ФИГАРО');
+            } else {
+                result += '<div class="warning">⚠️ Загрузите файл ФИГАРО для сравнения</div>';
+            }
+            
+            if (ttkExcelFields.length > 0) {
+                result += compareFields(ttkExcelFields, TTK_FIELDS, 'ТТК');
+            } else {
+                result += '<div class="warning">⚠️ Загрузите файл ТТК для сравнения</div>';
+            }
+            
+            if (result) {
+                const div = document.createElement('div');
+                div.innerHTML = result;
+                document.querySelector('.container').appendChild(div);
+            }
+        }
+    </script>
+</body>
+</html>

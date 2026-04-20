@@ -1,0 +1,20 @@
+{
+  "name": "shooting-requests-system",
+  "version": "1.0.0",
+  "description": "Система заявок на видеосъемку - программа Доброе утро",
+  "main": "index.html",
+  "scripts": {
+    "dev": "vercel dev",
+    "deploy": "vercel --prod",
+    "bot": "node bot.js"
+  },
+  "dependencies": {
+    "nodemailer": "^6.9.8",
+    "node-telegram-bot-api": "^0.64.0",
+    "dotenv": "^16.3.1"
+  },
+  "devDependencies": {},
+  "engines": {
+    "node": "24.x"
+  }
+}

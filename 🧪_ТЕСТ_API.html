@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Тест API отправки email</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 20px;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        #result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 5px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            font-size: 14px;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Тест API отправки email</h1>
+        <p>Эта страница поможет проверить, работает ли serverless функция отправки email.</p>
+        
+        <button id="testBtn" onclick="testEmailAPI()">Отправить тестовое письмо</button>
+        
+        <div id="result"></div>
+    </div>
+
+    <script>
+        async function testEmailAPI() {
+            const btn = document.getElementById('testBtn');
+            const result = document.getElementById('result');
+            
+            btn.disabled = true;
+            result.className = 'info';
+            result.textContent = 'Отправка тестового письма...\nПожалуйста, подождите...';
+            
+            try {
+                // Создаем простой тестовый файл Word
+                const testContent = `<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Тестовый документ</title>
+</head>
+<body>
+    <h1>Тестовый документ</h1>
+    <p>Это тестовое письмо для проверки работы serverless функции.</p>
+    <p>Дата: ${new Date().toLocaleString('ru-RU')}</p>
+</body>
+</html>`;
+                
+                const blob = new Blob(['\ufeff', testContent], { type: 'application/msword' });
+                
+                // Конвертируем в base64
+                const base64Promise = new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onloadend = () => {
+                        const base64String = reader.result.split(',')[1];
+                        resolve(base64String);
+                    };
+                    reader.onerror = reject;
+                    reader.readAsDataURL(blob);
+                });
+                
+                const base64File = await base64Promise;
+                
+                // Определяем URL API
+                const apiUrl = window.location.origin + '/api/send-email';
+                
+                console.log('Отправка на:', apiUrl);
+                
+                // Отправляем запрос
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        to: 'pendeho098rus@yandex.ru',
+                        subject: 'Тестовое письмо - проверка API',
+                        message: `Это тестовое письмо для проверки работы serverless функции отправки email.
+
+Дата отправки: ${new Date().toLocaleString('ru-RU')}
+URL функции: ${apiUrl}
+
+Если вы получили это письмо с вложением Word файла - значит всё работает правильно!`,
+                        attachment: {
+                            filename: `Тест_${new Date().toISOString().split('T')[0]}.doc`,
+                            content: base64File,
+                            type: 'application/msword'
+                        }
+                    })
+                });
+                
+                console.log('Статус ответа:', response.status, response.statusText);
+                
+                const responseText = await response.text();
+                console.log('Текст ответа:', responseText);
+                
+                let resultData;
+                try {
+                    resultData = JSON.parse(responseText);
+                } catch (e) {
+                    throw new Error(`Не удалось распарсить ответ: ${responseText}`);
+                }
+                
+                if (response.ok && resultData.success) {
+                    result.className = 'success';
+                    result.textContent = `✅ УСПЕХ! Письмо отправлено!
+
+Статус: ${response.status} ${response.statusText}
+Сообщение: ${resultData.message}
+Message ID: ${resultData.messageId || 'N/A'}
+
+Проверьте почту pendeho098rus@yandex.ru - должно прийти письмо с вложением Word файла.
+
+Если письмо не пришло:
+1. Проверьте папку "Спам"
+2. Проверьте логи в Vercel (Deployments → Functions → api/send-email)
+3. Проверьте переменные окружения SMTP_USER и SMTP_PASSWORD`;
+                } else {
+                    result.className = 'error';
+                    result.textContent = `❌ ОШИБКА!
+
+Статус: ${response.status} ${response.statusText}
+Ошибка: ${resultData.error || resultData.message || 'Неизвестная ошибка'}
+
+Возможные причины:
+1. Переменные окружения не настроены (SMTP_USER, SMTP_PASSWORD)
+2. Неправильный пароль приложения Yandex
+3. Функция не задеплоена (проверьте, что api/send-email.js есть в проекте)
+4. Не сделан Redeploy после добавления переменных окружения
+
+Проверьте:
+- Vercel → Settings → Environment Variables
+- Vercel → Deployments → Functions → api/send-email → Logs`;
+                }
+                
+            } catch (error) {
+                result.className = 'error';
+                result.textContent = `❌ КРИТИЧЕСКАЯ ОШИБКА!
+
+${error.message}
+
+Возможные причины:
+1. Функция api/send-email.js не задеплоена
+2. Неправильный URL функции
+3. Проблемы с сетью
+
+Проверьте консоль браузера (F12) для подробностей.`;
+                console.error('Ошибка теста:', error);
+            } finally {
+                btn.disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>

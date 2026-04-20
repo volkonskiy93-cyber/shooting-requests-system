@@ -1,0 +1,194 @@
+{% extends "base.html" %}
+
+{% block title %}Рабочая панель{% endblock %}
+
+{% block styles %}
+.container {
+    max-width: var(--content-width);
+    margin: 0 auto;
+    min-height: 100vh;
+    padding: 20px;
+    display: flex;
+    align-items: center;
+}
+
+.dashboard-shell {
+    width: 100%;
+    display: grid;
+    gap: 22px;
+}
+
+.dashboard-hero,
+.dashboard-grid {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-soft);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-card);
+}
+
+.dashboard-hero {
+    padding: 38px;
+}
+
+.dashboard-kicker {
+    display: inline-flex;
+    align-items: center;
+    min-height: 34px;
+    padding: 0 14px;
+    margin-bottom: 16px;
+    border-radius: 999px;
+    background: linear-gradient(135deg, rgba(240, 179, 91, 0.16), rgba(244, 200, 138, 0.08));
+    border: 1px solid rgba(217, 135, 71, 0.12);
+    color: #8a5a2c;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+}
+
+.dashboard-hero h1 {
+    margin-bottom: 12px;
+    font-size: clamp(2.4rem, 4vw, 4.4rem);
+    line-height: 0.96;
+    letter-spacing: -0.06em;
+}
+
+.dashboard-hero p {
+    max-width: 760px;
+    color: var(--text-secondary);
+    font-size: 1rem;
+    line-height: 1.7;
+}
+
+.dashboard-meta {
+    margin-top: 18px;
+    color: var(--text-muted);
+    font-size: 0.92rem;
+}
+
+.dashboard-grid {
+    padding: 20px;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 18px;
+}
+
+.dashboard-card {
+    display: block;
+    padding: 28px;
+    border-radius: 30px;
+    background: #fff;
+    border: 1px solid var(--border-soft);
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.dashboard-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-soft);
+    border-color: rgba(17, 17, 17, 0.14);
+}
+
+.dashboard-card span {
+    display: inline-flex;
+    margin-bottom: 14px;
+    color: #8e6f53;
+    font-size: 0.76rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+}
+
+.dashboard-card h2 {
+    margin-bottom: 10px;
+    font-size: 1.7rem;
+    letter-spacing: -0.05em;
+}
+
+.dashboard-card p {
+    color: var(--text-secondary);
+    line-height: 1.65;
+}
+
+.dashboard-actions {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.dashboard-logout {
+    min-height: 48px;
+    padding: 0 18px;
+    border-radius: 18px;
+    border: 1px solid var(--border-strong);
+    background: rgba(17, 17, 17, 0.03);
+    color: var(--text-primary);
+    font-size: 0.95rem;
+    font-weight: 700;
+}
+
+@media (max-width: 768px) {
+    .container {
+        padding: 12px;
+    }
+
+    .dashboard-hero {
+        padding: 24px 20px;
+    }
+
+    .dashboard-grid {
+        grid-template-columns: 1fr;
+        padding: 14px;
+    }
+
+    .dashboard-card {
+        padding: 22px 18px;
+    }
+
+    .dashboard-actions {
+        justify-content: stretch;
+    }
+
+    .dashboard-logout {
+        width: 100%;
+    }
+}
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="dashboard-shell">
+        <section class="dashboard-hero">
+            <div class="dashboard-kicker">Администратор</div>
+            <h1>Рабочая панель</h1>
+            <p>Здесь собраны оба сценария администратора: переход в панель заявок и переход в административную панель обработки.</p>
+            <div class="dashboard-meta">Вы вошли как {{ user_email }}</div>
+        </section>
+
+        <section class="dashboard-grid">
+            <a href="/forms" class="dashboard-card">
+                <span>Панель заявок</span>
+                <h2>Заявки</h2>
+                <p>Открыть формы ТТК, ФИГАРО и заявки продюсерам.</p>
+            </a>
+
+            <a href="/admin" class="dashboard-card">
+                <span>Панель администратора</span>
+                <h2>Администрирование</h2>
+                <p>Просмотр, фильтрация, статусы и обработка поступивших заявок.</p>
+            </a>
+        </section>
+
+        <div class="dashboard-actions">
+            <button type="button" class="dashboard-logout" onclick="handleDashboardLogout()">Выйти</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function handleDashboardLogout() {
+    await fetch('/logout', { method: 'POST' });
+    window.location.href = '/';
+}
+</script>
+{% endblock %}

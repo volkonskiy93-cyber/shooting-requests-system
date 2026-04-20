@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Обновить файлы на GitHub</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
+            background: linear-gradient(135deg, #FFE5D9 0%, #FFD7BA 25%, #FFE5CC 50%, #FFF4E6 75%, #FFF8F0 100%);
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .file-section {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 25px;
+            margin-bottom: 25px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            color: #2C1810;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        h2 {
+            color: #FF6B6B;
+            margin-bottom: 15px;
+            font-size: 1.5rem;
+        }
+        .instructions {
+            background: rgba(255, 237, 213, 0.5);
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            border-left: 4px solid #FF8E53;
+        }
+        .instructions ol {
+            margin-left: 20px;
+            line-height: 1.8;
+        }
+        .file-content {
+            background: #2C1810;
+            color: #FFF8F0;
+            padding: 20px;
+            border-radius: 12px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 400px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            margin: 15px 0;
+        }
+        .copy-btn {
+            background: linear-gradient(135deg, #4A90E2 0%, #357ABD 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            margin-top: 10px;
+            transition: all 0.3s ease;
+        }
+        .copy-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(74, 144, 226, 0.4);
+        }
+        .copy-btn:active {
+            transform: translateY(0);
+        }
+        .success {
+            background: linear-gradient(135deg, #52C41A 0%, #73D13D 100%);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 10px;
+            margin-top: 10px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <h1>📋 Обновление файлов на GitHub</h1>
+    
+    <div class="instructions">
+        <h3>📝 Инструкция:</h3>
+        <ol>
+            <li>Откройте файл на GitHub (ссылка ниже)</li>
+            <li>Нажмите "Edit this file" (карандаш)</li>
+            <li>Нажмите кнопку "Скопировать содержимое" ниже</li>
+            <li>В GitHub редакторе выделите всё (Ctrl+A) и вставьте (Ctrl+V)</li>
+            <li>Внизу напишите: "Обновление стилей iOS 26"</li>
+            <li>Нажмите "Commit changes"</li>
+        </ol>
+    </div>
+
+    <div class="file-section">
+        <h2>1. index.html</h2>
+        <p><strong>Ссылка на GitHub:</strong> <a href="https://github.com/volkonskiy93-cyber/-2/edit/main/index.html" target="_blank">https://github.com/volkonskiy93-cyber/-2/edit/main/index.html</a></p>
+        <div id="index-content" class="file-content">Загрузка...</div>
+        <button class="copy-btn" onclick="copyContent('index-content', 'index-success')">📋 Скопировать содержимое index.html</button>
+        <div id="index-success" class="success">✅ Скопировано!</div>
+    </div>
+
+    <div class="file-section">
+        <h2>2. deepseek_htmlобщая.html</h2>
+        <p><strong>Ссылка на GitHub:</strong> <a href="https://github.com/volkonskiy93-cyber/-2/edit/main/deepseek_htmlобщая.html" target="_blank">https://github.com/volkonskiy93-cyber/-2/edit/main/deepseek_htmlобщая.html</a></p>
+        <div id="deepseek-content" class="file-content">Загрузка...</div>
+        <button class="copy-btn" onclick="copyContent('deepseek-content', 'deepseek-success')">📋 Скопировать содержимое deepseek_htmlобщая.html</button>
+        <div id="deepseek-success" class="success">✅ Скопировано!</div>
+    </div>
+
+    <div class="file-section">
+        <h2>3. admin.html</h2>
+        <p><strong>Ссылка на GitHub:</strong> <a href="https://github.com/volkonskiy93-cyber/-2/edit/main/admin.html" target="_blank">https://github.com/volkonskiy93-cyber/-2/edit/main/admin.html</a></p>
+        <div id="admin-content" class="file-content">Загрузка...</div>
+        <button class="copy-btn" onclick="copyContent('admin-content', 'admin-success')">📋 Скопировать содержимое admin.html</button>
+        <div id="admin-success" class="success">✅ Скопировано!</div>
+    </div>
+
+    <script>
+        async function loadFile(fileName, elementId) {
+            try {
+                const response = await fetch(fileName);
+                const content = await response.text();
+                document.getElementById(elementId).textContent = content;
+            } catch (error) {
+                document.getElementById(elementId).textContent = 'Ошибка загрузки файла: ' + error.message;
+            }
+        }
+
+        function copyContent(elementId, successId) {
+            const content = document.getElementById(elementId).textContent;
+            navigator.clipboard.writeText(content).then(() => {
+                const success = document.getElementById(successId);
+                success.style.display = 'block';
+                setTimeout(() => {
+                    success.style.display = 'none';
+                }, 2000);
+            }).catch(err => {
+                alert('Ошибка копирования. Попробуйте выделить текст вручную.');
+            });
+        }
+
+        // Загружаем файлы при открытии страницы
+        window.addEventListener('DOMContentLoaded', function() {
+            loadFile('index.html', 'index-content');
+            loadFile('deepseek_htmlобщая.html', 'deepseek-content');
+            loadFile('admin.html', 'admin-content');
+        });
+    </script>
+</body>
+</html>

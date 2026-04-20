@@ -20,6 +20,12 @@
     align-items: center;
 }
 
+.header-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
 .stats {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -44,12 +50,92 @@
     margin-bottom: 24px;
 }
 
+.filter-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    margin-top: 16px;
+}
+
+.filter-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    margin-top: 18px;
+    flex-wrap: wrap;
+}
+
+.filter-summary {
+    color: rgba(17, 17, 17, 0.62);
+    font-size: 0.95rem;
+}
+
 .applications-table {
     background: rgba(255, 255, 255, 0.9);
     backdrop-filter: blur(30px);
     border-radius: 24px;
     padding: 24px;
     overflow-x: auto;
+}
+
+.pending-users {
+    background: rgba(255, 255, 255, 0.9);
+    backdrop-filter: blur(30px);
+    border-radius: 24px;
+    padding: 24px;
+    margin-bottom: 24px;
+}
+
+.pending-users-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 18px;
+}
+
+.pending-users-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 16px;
+}
+
+.pending-user-card {
+    padding: 18px;
+    border-radius: 18px;
+    background: rgba(17, 17, 17, 0.03);
+    border: 1px solid rgba(17, 17, 17, 0.08);
+}
+
+.pending-user-card h4 {
+    margin-bottom: 8px;
+}
+
+.pending-user-card p {
+    margin: 4px 0;
+    color: rgba(17, 17, 17, 0.68);
+}
+
+.pending-user-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 14px;
+}
+
+.btn-approve {
+    background: #1f7a43;
+    color: #fff;
+}
+
+.btn-reject {
+    background: #a33a2d;
+    color: #fff;
+}
+
+.empty-state {
+    color: rgba(17, 17, 17, 0.58);
 }
 
 table {
@@ -75,22 +161,70 @@ th {
     cursor: pointer;
     margin-right: 8px;
 }
+
+.btn-secondary {
+    background: rgba(17, 17, 17, 0.06);
+    color: #111;
+}
+
+.table-status {
+    display: inline-flex;
+    align-items: center;
+    min-height: 30px;
+    padding: 0 10px;
+    border-radius: 999px;
+    background: rgba(17, 17, 17, 0.06);
+    font-size: 0.82rem;
+    font-weight: 600;
+}
+
+.table-meta {
+    color: rgba(17, 17, 17, 0.62);
+    font-size: 0.88rem;
+}
+
+@media (max-width: 768px) {
+    .header {
+        padding: 22px 20px;
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .filter-actions {
+        align-items: stretch;
+    }
+}
 {% endblock %}
 
 {% block content %}
 <div class="container">
     <div class="header">
         <h1>Панель администратора-координатора</h1>
-        <a href="/" class="btn">На главную</a>
+        <div class="header-actions">
+            <a href="/forms" class="btn">К заявкам</a>
+            <a href="/dashboard" class="btn">К рабочей панели</a>
+        </div>
     </div>
     
     <div id="stats" class="stats">
         <!-- Статистика загружается через JavaScript -->
     </div>
+
+    <div class="pending-users">
+        <div class="pending-users-header">
+            <div>
+                <h3>Новые регистрации</h3>
+                <p class="empty-state">Одобрите доступ новым пользователям, прежде чем они увидят формы заявок.</p>
+            </div>
+        </div>
+        <div id="pending-users-list" class="pending-users-grid">
+            <div class="empty-state">Загрузка регистраций...</div>
+        </div>
+    </div>
     
     <div class="filters">
         <h3>Фильтры</h3>
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-top: 16px;">
+        <div class="filter-grid">
             <select id="status-filter">
                 <option value="">Все статусы</option>
                 <option value="new">Новые</option>
@@ -107,6 +241,25 @@ th {
             <input type="date" id="date-from" placeholder="Дата от">
             <input type="date" id="date-to" placeholder="Дата до">
             <input type="text" id="search-input" placeholder="Поиск...">
+            <select id="sort-by">
+                <option value="created_at">Сортировка: по дате поступления</option>
+                <option value="shooting_date">Сортировка: по дате съемки</option>
+                <option value="contractor">Сортировка: по подрядчику</option>
+                <option value="correspondent">Сортировка: по корреспонденту</option>
+                <option value="story_title">Сортировка: по названию сюжета</option>
+                <option value="status">Сортировка: по статусу</option>
+            </select>
+            <select id="sort-dir">
+                <option value="desc">Сначала новые / по убыванию</option>
+                <option value="asc">Сначала старые / по возрастанию</option>
+            </select>
+        </div>
+        <div class="filter-actions">
+            <div id="applications-summary" class="filter-summary">Загрузка списка заявок...</div>
+            <div class="header-actions">
+                <a href="/forms" class="btn btn-secondary">Создать новую заявку</a>
+                <button type="button" id="reset-filters-btn" class="btn btn-secondary">Сбросить фильтры</button>
+            </div>
         </div>
     </div>
     
@@ -114,7 +267,9 @@ th {
         <table>
             <thead>
                 <tr>
+                    <th>Поступила</th>
                     <th>Название сюжета</th>
+                    <th>Корреспондент</th>
                     <th>Подрядчик</th>
                     <th>Дата съемки</th>
                     <th>Статус</th>

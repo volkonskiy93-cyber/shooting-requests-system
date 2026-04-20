@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Улучшенная ручная отправка - Пример</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .demo-container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 600px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        
+        .demo-button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 10px;
+            font-size: 18px;
+            cursor: pointer;
+            width: 100%;
+            margin-bottom: 20px;
+            transition: transform 0.2s;
+        }
+        
+        .demo-button:hover {
+            transform: translateY(-2px);
+        }
+        
+        /* Модальное окно */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.7);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .modal-overlay.show {
+            display: flex;
+        }
+        
+        .modal {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 600px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            position: relative;
+            animation: slideUp 0.3s ease;
+        }
+        
+        @keyframes slideUp {
+            from {
+                transform: translateY(50px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+        
+        .modal-close {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: #f0f0f0;
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s;
+        }
+        
+        .modal-close:hover {
+            background: #e0e0e0;
+        }
+        
+        .success-icon {
+            width: 80px;
+            height: 80px;
+            background: #4CAF50;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            font-size: 40px;
+        }
+        
+        .file-info {
+            background: #f5f5f5;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+        
+        .file-name {
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .file-path {
+            color: #666;
+            font-size: 14px;
+            word-break: break-all;
+        }
+        
+        .instructions {
+            background: #e3f2fd;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            border-left: 4px solid #2196F3;
+        }
+        
+        .instructions ol {
+            margin-left: 20px;
+            margin-top: 10px;
+        }
+        
+        .instructions li {
+            margin-bottom: 10px;
+            line-height: 1.6;
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 30px;
+            flex-wrap: wrap;
+        }
+        
+        .btn {
+            flex: 1;
+            min-width: 150px;
+            padding: 15px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        .btn-primary {
+            background: #2196F3;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #1976D2;
+            transform: translateY(-2px);
+        }
+        
+        .btn-secondary {
+            background: #f5f5f5;
+            color: #333;
+        }
+        
+        .btn-secondary:hover {
+            background: #e0e0e0;
+        }
+        
+        .btn-danger {
+            background: #f44336;
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background: #d32f2f;
+        }
+        
+        @media (max-width: 600px) {
+            .modal {
+                padding: 20px;
+            }
+            
+            .action-buttons {
+                flex-direction: column;
+            }
+            
+            .btn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="demo-container">
+        <h1>📧 Демо: Улучшенная ручная отправка</h1>
+        <p style="margin-bottom: 20px; color: #666;">
+            Нажмите кнопку ниже, чтобы увидеть, как будет выглядеть улучшенная версия ручной отправки.
+        </p>
+        <button class="demo-button" onclick="showImprovedManualSending()">
+            🚀 Показать улучшенную отправку
+        </button>
+    </div>
+    
+    <!-- Модальное окно -->
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="modal">
+            <button class="modal-close" onclick="closeModal()">×</button>
+            
+            <div class="success-icon">✅</div>
+            
+            <h2 style="text-align: center; margin-bottom: 20px; color: #333;">
+                Заявка создана успешно!
+            </h2>
+            
+            <div class="file-info">
+                <div class="file-name">
+                    📄 Файл Word скачан:
+                </div>
+                <div style="font-weight: bold; color: #2196F3; margin: 10px 0;">
+                    Заявка_продюсерам_01.12.2024_Название_сюжета.doc
+                </div>
+                <div class="file-path">
+                    📍 Расположение: <span id="filePath">C:\Users\...\Загрузки\</span>
+                </div>
+            </div>
+            
+            <div class="instructions">
+                <strong>📧 Инструкция по отправке:</strong>
+                <ol>
+                    <li>Нажмите кнопку "Открыть почтовый клиент" ниже</li>
+                    <li>В открывшемся письме прикрепите файл Word (он уже скачан в папку Загрузки)</li>
+                    <li>Проверьте тему и текст письма</li>
+                    <li>Нажмите "Отправить"</li>
+                </ol>
+            </div>
+            
+            <div style="background: #fff3cd; padding: 15px; border-radius: 10px; margin: 20px 0; border-left: 4px solid #ffc107;">
+                <strong>💡 Подсказка:</strong> Если файл не прикрепился автоматически, найдите его в папке "Загрузки" и прикрепите вручную.
+            </div>
+            
+            <div class="action-buttons">
+                <button class="btn btn-primary" onclick="openEmailClient()">
+                    📧 Открыть почтовый клиент
+                </button>
+                <button class="btn btn-secondary" onclick="openDownloadsFolder()">
+                    📁 Открыть папку с файлом
+                </button>
+                <button class="btn btn-danger" onclick="closeModal()">
+                    ✖ Закрыть
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Данные для демонстрации
+        const demoData = {
+            emailRecipient: 'pendeho098rus@yandex.ru',
+            fileName: 'Заявка_продюсерам_01.12.2024_Название_сюжета.doc',
+            storyTitle: 'Название сюжета',
+            applicationId: '12345678',
+            shootingDate: '01.12.2024',
+            contractor: 'producer'
+        };
+        
+        function showImprovedManualSending() {
+            const modal = document.getElementById('modalOverlay');
+            modal.classList.add('show');
+            
+            // Определяем путь к папке Загрузки
+            const downloadsPath = getDownloadsPath();
+            document.getElementById('filePath').textContent = downloadsPath;
+        }
+        
+        function closeModal() {
+            const modal = document.getElementById('modalOverlay');
+            modal.classList.remove('show');
+        }
+        
+        function getDownloadsPath() {
+            // В реальном приложении можно использовать различные методы
+            // для определения пути к папке Загрузки
+            if (navigator.userAgent.includes('Windows')) {
+                return 'C:\\Users\\[Ваше имя]\\Загрузки\\';
+            } else if (navigator.userAgent.includes('Mac')) {
+                return '/Users/[Ваше имя]/Downloads/';
+            } else {
+                return '~/Downloads/';
+            }
+        }
+        
+        function openEmailClient() {
+            const subject = encodeURIComponent(`Заявка продюсерам: ${demoData.storyTitle}`);
+            const body = encodeURIComponent(`Добрый день!
+
+Во вложении заявка продюсерам.
+
+Номер заявки: ${demoData.applicationId}
+Дата съемки: ${demoData.shootingDate}
+Название сюжета: ${demoData.storyTitle}
+
+Пожалуйста, прикрепите файл Word к этому письму.
+Файл уже скачан в папку "Загрузки".
+
+С уважением,
+Система заявок на видеосъемку`);
+            
+            const mailtoLink = `mailto:${demoData.emailRecipient}?subject=${subject}&body=${body}`;
+            window.location.href = mailtoLink;
+            
+            // Показываем подсказку
+            setTimeout(() => {
+                alert('💡 Подсказка:\n\n1. В открывшемся почтовом клиенте нажмите "Прикрепить файл"\n2. Найдите файл в папке "Загрузки"\n3. Выберите файл и прикрепите его\n4. Нажмите "Отправить"');
+            }, 500);
+        }
+        
+        function openDownloadsFolder() {
+            // В реальном приложении можно использовать различные методы
+            // для открытия папки Загрузки
+            alert('📁 В реальном приложении здесь будет открыта папка "Загрузки"\n\nНа Windows можно использовать:\n- window.open("file:///C:/Users/[User]/Downloads/")\n- Или показать инструкцию пользователю');
+        }
+        
+        // Закрытие по клику вне модального окна
+        document.getElementById('modalOverlay').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeModal();
+            }
+        });
+        
+        // Закрытие по Escape
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeModal();
+            }
+        });
+    </script>
+</body>
+</html>

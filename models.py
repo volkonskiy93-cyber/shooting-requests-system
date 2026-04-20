@@ -15,13 +15,23 @@ class User(db.Model):
     
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(255), unique=True, nullable=False, index=True)
+    full_name = db.Column(db.String(255), nullable=True)
     password_hash = db.Column(db.String(255), nullable=False)
+    role = db.Column(db.String(50), nullable=False, default='correspondent')
+    approval_status = db.Column(db.String(20), nullable=False, default='pending')
+    approved_at = db.Column(db.DateTime, nullable=True)
+    approved_by_email = db.Column(db.String(255), nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.now)
     
     def to_dict(self):
         return {
             'id': self.id,
             'email': self.email,
+            'fullName': self.full_name,
+            'role': self.role,
+            'approvalStatus': self.approval_status,
+            'approvedAt': self.approved_at.isoformat() if self.approved_at else None,
+            'approvedByEmail': self.approved_by_email,
             'created_at': self.created_at.isoformat() if self.created_at else None
         }
 

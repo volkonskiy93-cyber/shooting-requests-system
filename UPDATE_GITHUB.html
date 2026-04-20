@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Обновление GitHub - БЕЗ Python</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; max-width: 800px; margin: 0 auto; background: #f5f5f5; }
+        .container { background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1 { color: #333; }
+        .log { background: #f9f9f9; padding: 15px; border-radius: 5px; font-family: 'Courier New', monospace; max-height: 400px; overflow-y: auto; margin: 20px 0; border: 1px solid #ddd; }
+        button { padding: 15px 30px; font-size: 16px; background: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        button:hover { background: #45a049; }
+        button:disabled { background: #ccc; cursor: not-allowed; }
+        .success { color: green; font-weight: bold; }
+        .error { color: red; font-weight: bold; }
+        .info { background: #e3f2fd; padding: 15px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #2196F3; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Обновление файлов на GitHub</h1>
+        
+        <div class="info">
+            <strong>⚠️ ВАЖНО:</strong> Этот файл должен быть открыт через локальный веб-сервер!<br><br>
+            <strong>БЕЗ Python:</strong><br>
+            1. Установите Node.js: <a href="https://nodejs.org/" target="_blank">https://nodejs.org/</a><br>
+            2. Откройте командную строку в этой папке<br>
+            3. Выполните: <code>npx http-server -p 8000</code><br>
+            4. Откройте: <code>http://localhost:8000/UPDATE_GITHUB.html</code><br><br>
+            <strong>ИЛИ</strong> используйте готовый bat-файл: <code>update.bat</code>
+        </div>
+        
+        <button id="btn" onclick="updateFiles()">🔄 Обновить файлы</button>
+        <div id="log" class="log"></div>
+    </div>
+
+    <script>
+        const TOKEN = 'YOUR_GITHUB_TOKEN_HERE';
+        const REPO_OWNER = 'volkonskiy93-cyber';
+        const REPO_NAME = '-2';
+        const BASE_URL = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents`;
+
+        function log(msg, type = 'info') {
+            const logDiv = document.getElementById('log');
+            const color = type === 'success' ? 'green' : type === 'error' ? 'red' : 'black';
+            logDiv.innerHTML += `<div style="color: ${color}">${msg}</div>`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+
+        async function updateFile(fileName) {
+            log(`📄 Обновление: ${fileName}`);
+            
+            try {
+                const fileResponse = await fetch(fileName);
+                if (!fileResponse.ok) throw new Error('Не удалось загрузить файл');
+                const fileContent = await fileResponse.text();
+                log(`  ✓ Файл загружен (${fileContent.length} символов)`);
+                
+                const base64Content = btoa(unescape(encodeURIComponent(fileContent)));
+                log(`  ✓ Закодирован в base64`);
+                
+                let sha = null;
+                try {
+                    const getResponse = await fetch(`${BASE_URL}/${encodeURIComponent(fileName)}`, {
+                        headers: {
+                            'Authorization': `token ${TOKEN}`,
+                            'Accept': 'application/vnd.github.v3+json'
+                        }
+                    });
+                    if (getResponse.ok) {
+                        const data = await getResponse.json();
+                        sha = data.sha;
+                        log(`  ✓ SHA получен: ${sha.substring(0, 8)}...`);
+                    }
+                } catch (e) {
+                    log(`  ℹ Файл новый`);
+                }
+                
+                const body = { message: 'Update iOS 26 styles', content: base64Content };
+                if (sha) body.sha = sha;
+                
+                const updateResponse = await fetch(`${BASE_URL}/${encodeURIComponent(fileName)}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `token ${TOKEN}`,
+                        'Accept': 'application/vnd.github.v3+json',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(body)
+                });
+                
+                if (updateResponse.ok) {
+                    log(`  ✅ Успешно обновлен!`, 'success');
+                    return true;
+                } else {
+                    const error = await updateResponse.json();
+                    throw new Error(error.message || 'Ошибка обновления');
+                }
+            } catch (error) {
+                log(`  ❌ Ошибка: ${error.message}`, 'error');
+                return false;
+            }
+        }
+
+        async function updateFiles() {
+            const btn = document.getElementById('btn');
+            btn.disabled = true;
+            btn.textContent = '⏳ Обновление...';
+            
+            const files = ['index.html', 'deepseek_htmlобщая.html', 'admin.html'];
+            let success = 0, error = 0;
+            
+            log('🚀 Начало обновления...\n');
+            
+            for (const file of files) {
+                const result = await updateFile(file);
+                if (result) success++; else error++;
+                log('');
+                await new Promise(r => setTimeout(r, 1000));
+            }
+            
+            log(`═══════════════════════════════════════════════════`);
+            log(`📊 Результаты: ✅ ${success}  ❌ ${error}`, success === files.length ? 'success' : 'error');
+            log(`═══════════════════════════════════════════════════`);
+            
+            btn.disabled = false;
+            btn.textContent = '🔄 Обновить файлы';
+            
+            if (error === 0) {
+                log('🎉 Все файлы обновлены!', 'success');
+            }
+        }
+
+        window.addEventListener('load', () => {
+            if (window.location.protocol === 'file:') {
+                log('⚠️ Файл открыт через file:// протокол!', 'error');
+                log('Используйте локальный веб-сервер (см. инструкцию выше)', 'error');
+                document.getElementById('btn').disabled = true;
+            }
+        });
+    </script>
+</body>
+</html>

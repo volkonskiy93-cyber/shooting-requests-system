@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Детальный анализ стилей Excel шаблонов</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        input[type="file"] {
+            margin: 10px 0;
+            padding: 10px;
+            width: 100%;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 20px;
+            background: #f9f9f9;
+            border-radius: 5px;
+        }
+        pre {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            font-size: 11px;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 20px 0;
+        }
+        table td, table th {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+            font-size: 12px;
+        }
+        table th {
+            background: #4CAF50;
+            color: white;
+        }
+        .cell-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 10px;
+            margin: 10px 0;
+        }
+        .cell-card {
+            background: #fff;
+            border: 1px solid #ddd;
+            padding: 10px;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Детальный анализ стилей Excel шаблонов</h1>
+        
+        <div>
+            <h2>Заявка ФИГАРО</h2>
+            <input type="file" id="figaroFile" accept=".xlsx,.xls" />
+            <div id="figaroResult"></div>
+        </div>
+        
+        <div>
+            <h2>Заявка ТТК</h2>
+            <input type="file" id="ttkFile" accept=".xlsx,.xls" />
+            <div id="ttkResult"></div>
+        </div>
+    </div>
+    
+    <script>
+        function analyzeExcelStyles(file, type) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, {
+                    type: 'array',
+                    cellStyles: true,
+                    cellNF: true,
+                    cellHTML: false
+                });
+                
+                const sheet = workbook.Sheets[workbook.SheetNames[0]];
+                const range = XLSX.utils.decode_range(sheet['!ref'] || 'A1');
+                
+                let analysis = {
+                    cells: [],
+                    merges: sheet['!merges'] || [],
+                    cols: sheet['!cols'] || [],
+                    rows: sheet['!rows'] || [],
+                    styles: {}
+                };
+                
+                // Анализируем каждую ячейку со стилями
+                for (let R = range.s.r; R <= range.e.r; R++) {
+                    for (let C = range.s.c; C <= range.e.c; C++) {
+                        const cellAddress = XLSX.utils.encode_cell({r: R, c: C});
+                        const cell = sheet[cellAddress];
+                        
+                        if (cell) {
+                            const cellInfo = {
+                                address: cellAddress,
+                                row: R,
+                                col: C,
+                                value: cell.v,
+                                type: cell.t,
+                                formula: cell.f,
+                                style: cell.s || null,
+                                styleIndex: cell.z || null
+                            };
+                            
+                            // Если есть стиль, анализируем его
+                            if (cell.s) {
+                                cellInfo.styleDetails = {
+                                    font: cell.s.font || {},
+                                    fill: cell.s.fill || {},
+                                    border: cell.s.border || {},
+                                    alignment: cell.s.alignment || {},
+                                    numFmt: cell.s.numFmt || {}
+                                };
+                            }
+                            
+                            analysis.cells.push(cellInfo);
+                        }
+                    }
+                }
+                
+                displayDetailedAnalysis(analysis, type);
+            };
+            reader.readAsArrayBuffer(file);
+        }
+        
+        function displayDetailedAnalysis(analysis, type) {
+            const resultDiv = document.getElementById(type + 'Result');
+            
+            let html = `
+                <div class="result">
+                    <h3>📊 Детальный анализ файла:</h3>
+                    <p><strong>Всего ячеек:</strong> ${analysis.cells.length}</p>
+                    <p><strong>Объединенных областей:</strong> ${analysis.merges.length}</p>
+                    <p><strong>Настроенных столбцов:</strong> ${analysis.cols.length}</p>
+                    
+                    <h4>📐 Объединенные ячейки:</h4>
+                    <pre>${JSON.stringify(analysis.merges, null, 2)}</pre>
+                    
+                    <h4>📏 Ширина столбцов:</h4>
+                    <pre>${JSON.stringify(analysis.cols, null, 2)}</pre>
+                    
+                    <h4>🎨 Примеры ячеек со стилями (первые 30):</h4>
+                    <pre>${JSON.stringify(analysis.cells.slice(0, 30).map(c => ({
+                        address: c.address,
+                        value: c.value,
+                        style: c.styleDetails
+                    })), null, 2)}</pre>
+                    
+                    <h4>📋 Все ячейки с данными:</h4>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Адрес</th>
+                                <th>Значение</th>
+                                <th>Стиль</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+            
+            analysis.cells.forEach(cell => {
+                const styleInfo = cell.styleDetails ? 
+                    `Font: ${JSON.stringify(cell.styleDetails.font)}, Fill: ${JSON.stringify(cell.styleDetails.fill)}, Border: ${JSON.stringify(cell.styleDetails.border)}` : 
+                    'Нет стиля';
+                html += `
+                    <tr>
+                        <td>${cell.address}</td>
+                        <td>${cell.value || ''}</td>
+                        <td style="font-size: 10px;">${styleInfo.substring(0, 100)}...</td>
+                    </tr>
+                `;
+            });
+            
+            html += `
+                        </tbody>
+                    </table>
+                    
+                    <h4>📄 Полный JSON для копирования:</h4>
+                    <button onclick="copyFullData('${type}')">📋 Копировать полные данные</button>
+                    <pre id="${type}FullData" style="display:none;">${JSON.stringify(analysis, null, 2)}</pre>
+                </div>
+            `;
+            
+            resultDiv.innerHTML = html;
+        }
+        
+        function copyFullData(type) {
+            const pre = document.getElementById(type + 'FullData');
+            pre.style.display = 'block';
+            const text = pre.textContent;
+            navigator.clipboard.writeText(text).then(() => {
+                alert('✅ Данные скопированы в буфер обмена!');
+            });
+        }
+        
+        document.getElementById('figaroFile').addEventListener('change', function(e) {
+            if (e.target.files[0]) {
+                analyzeExcelStyles(e.target.files[0], 'figaro');
+            }
+        });
+        
+        document.getElementById('ttkFile').addEventListener('change', function(e) {
+            if (e.target.files[0]) {
+                analyzeExcelStyles(e.target.files[0], 'ttk');
+            }
+        });
+    </script>
+</body>
+</html>

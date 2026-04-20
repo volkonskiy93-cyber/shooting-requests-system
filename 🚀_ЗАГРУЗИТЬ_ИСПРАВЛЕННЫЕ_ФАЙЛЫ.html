@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Загрузить исправленные файлы</title>
+    <style>
+        body { font-family: Arial; max-width: 1000px; margin: 50px auto; padding: 20px; background: #f5f5f5; }
+        .container { background: white; padding: 30px; border-radius: 10px; }
+        .status { margin: 20px 0; padding: 15px; border-radius: 5px; }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .info { background: #d1ecf1; color: #0c5460; }
+        .log { margin-top: 20px; padding: 10px; background: #f8f9fa; border-radius: 5px; max-height: 500px; overflow-y: auto; font-family: monospace; font-size: 12px; }
+        button { background: #007bff; color: white; border: none; padding: 12px 24px; border-radius: 5px; cursor: pointer; font-size: 16px; margin: 5px; }
+        button:hover { background: #0056b3; }
+        button:disabled { background: #ccc; cursor: not-allowed; }
+        .file-input-group { margin: 15px 0; padding: 15px; background: #fff; border: 1px solid #dee2e6; border-radius: 5px; }
+        .file-input-group label { font-weight: bold; display: block; margin-bottom: 5px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Загрузить исправленные файлы</h1>
+        <p><strong>ВАЖНО: Выберите эти файлы для исправления отображения заявок</strong></p>
+        
+        <div class="file-input-group">
+            <label>1. forms.html (выберите deepseek_htmlобщая.html)</label>
+            <input type="file" id="formsHtml" accept=".html">
+        </div>
+        
+        <div class="file-input-group">
+            <label>2. admin.js</label>
+            <input type="file" id="adminJs" accept=".js">
+        </div>
+        
+        <button id="uploadBtn" onclick="uploadFiles()">Загрузить файлы на GitHub</button>
+        
+        <div id="status" class="status info">Выберите файлы и нажмите кнопку загрузки</div>
+        <div id="log" class="log"></div>
+    </div>
+    
+    <script>
+        const token = 'YOUR_GITHUB_TOKEN_HERE';
+        const repo = 'volkonskiy93-cyber/shooting-requests-system';
+        const baseUrl = `https://api.github.com/repos/${repo}/contents`;
+        const headers = {
+            'Authorization': `token ${token}`,
+            'Accept': 'application/vnd.github.v3+json',
+            'Content-Type': 'application/json'
+        };
+        
+        function log(msg, type = 'info') {
+            const logDiv = document.getElementById('log');
+            const time = new Date().toLocaleTimeString();
+            const color = type === 'success' ? 'green' : type === 'error' ? 'red' : 'blue';
+            logDiv.innerHTML += `<div style="color: ${color}">[${time}] ${msg}</div>`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+        
+        function showStatus(msg, type) {
+            document.getElementById('status').textContent = msg;
+            document.getElementById('status').className = `status ${type}`;
+        }
+        
+        function readFile(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = (e) => resolve(e.target.result);
+                reader.onerror = reject;
+                reader.readAsText(file, 'UTF-8');
+            });
+        }
+        
+        async function uploadFile(fileName, content, message) {
+            try {
+                const b64 = btoa(unescape(encodeURIComponent(content)));
+                
+                let sha = null;
+                try {
+                    const checkResponse = await fetch(`${baseUrl}/${encodeURIComponent(fileName)}`, {
+                        method: 'GET',
+                        headers: headers
+                    });
+                    if (checkResponse.ok) {
+                        const data = await checkResponse.json();
+                        sha = data.sha;
+                    }
+                } catch (e) {}
+                
+                const body = {
+                    message: message,
+                    content: b64
+                };
+                if (sha) body.sha = sha;
+                
+                const uploadResponse = await fetch(`${baseUrl}/${encodeURIComponent(fileName)}`, {
+                    method: 'PUT',
+                    headers: headers,
+                    body: JSON.stringify(body)
+                });
+                
+                if (uploadResponse.ok) {
+                    const result = await uploadResponse.json();
+                    log(`✅ ${fileName} загружен (SHA: ${result.commit.sha.substring(0, 8)}...)`, 'success');
+                    return true;
+                } else {
+                    const error = await uploadResponse.text();
+                    log(`❌ Ошибка загрузки ${fileName}: ${error}`, 'error');
+                    return false;
+                }
+            } catch (e) {
+                log(`❌ Ошибка: ${e.message}`, 'error');
+                return false;
+            }
+        }
+        
+        async function uploadFiles() {
+            const btn = document.getElementById('uploadBtn');
+            btn.disabled = true;
+            showStatus('Загрузка файлов...', 'info');
+            log('Начинаем загрузку файлов...', 'info');
+            
+            let success = 0;
+            let fail = 0;
+            
+            // Загружаем forms.html
+            const formsInput = document.getElementById('formsHtml');
+            if (formsInput.files && formsInput.files.length > 0) {
+                try {
+                    log('Читаем forms.html...', 'info');
+                    const content = await readFile(formsInput.files[0]);
+                    log(`Загружаем forms.html (${content.length} символов)...`, 'info');
+                    const result = await uploadFile('forms.html', content, 'Update forms.html - fix visual artifacts and save issues');
+                    if (result) success++;
+                    else fail++;
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                } catch (e) {
+                    log(`❌ Ошибка чтения forms.html: ${e.message}`, 'error');
+                    fail++;
+                }
+            } else {
+                log('⚠️ forms.html не выбран', 'error');
+                fail++;
+            }
+            
+            // Загружаем admin.js
+            const adminJsInput = document.getElementById('adminJs');
+            if (adminJsInput.files && adminJsInput.files.length > 0) {
+                try {
+                    log('Читаем admin.js...', 'info');
+                    const content = await readFile(adminJsInput.files[0]);
+                    log(`Загружаем admin.js (${content.length} символов)...`, 'info');
+                    const result = await uploadFile('admin.js', content, 'Update admin.js - fix application display');
+                    if (result) success++;
+                    else fail++;
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                } catch (e) {
+                    log(`❌ Ошибка чтения admin.js: ${e.message}`, 'error');
+                    fail++;
+                }
+            } else {
+                log('⚠️ admin.js не выбран', 'error');
+                fail++;
+            }
+            
+            btn.disabled = false;
+            
+            if (fail === 0) {
+                showStatus(`✅ Все файлы успешно загружены! (${success} файлов)`, 'success');
+                log('', 'info');
+                log('Vercel автоматически пересоберет проект через 1-2 минуты', 'info');
+                log('Ссылка: https://shooting-requests-system.vercel.app', 'info');
+            } else {
+                showStatus(`⚠️ Загружено: ${success}, Ошибок: ${fail}`, 'error');
+            }
+        }
+    </script>
+</body>
+</html>

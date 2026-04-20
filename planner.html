@@ -1,0 +1,1627 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Внутренний заказ - Планирование сюжетов</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/docx/7.8.2/docx.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Times New Roman', serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            padding: 20px;
+            font-size: 14px;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .header h1 {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            color: #2c3e50;
+            letter-spacing: 1px;
+        }
+        
+        .header .period {
+            font-size: 14px;
+            margin-top: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        .header .period input {
+            padding: 6px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 13px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+        }
+        
+        .order-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 30px;
+            border: 2px solid #2c3e50;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .order-table th {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: 1px solid #2c3e50;
+            padding: 12px 8px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 13px;
+        }
+        
+        .order-table td {
+            border: 1px solid #ddd;
+            padding: 10px 8px;
+            vertical-align: middle;
+            background: white;
+        }
+        
+        .order-table tr:nth-child(even) td {
+            background: #f8f9fa;
+        }
+        
+        .order-table tr:hover td {
+            background: #e8f4f8;
+        }
+        
+        .order-table tr.completed td {
+            background: #d4edda !important;
+            opacity: 0.8;
+        }
+        
+        .order-table tr.completed:hover td {
+            background: #c3e6cb !important;
+        }
+        
+        .status-checkbox {
+            width: 24px;
+            height: 24px;
+            cursor: pointer;
+            accent-color: #28a745;
+        }
+        
+        .production-panel {
+            margin-top: 25px;
+            padding: 20px;
+            background: linear-gradient(135deg, #fff5e6 0%, #ffe6cc 100%);
+            border: 2px solid #ff9800;
+            border-radius: 8px;
+        }
+        
+        .production-panel h3 {
+            margin-bottom: 15px;
+            font-size: 18px;
+            color: #e65100;
+            font-weight: bold;
+        }
+        
+        .production-filters {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        
+        .production-filters label {
+            font-weight: bold;
+            color: #e65100;
+        }
+        
+        .production-filters input {
+            padding: 6px 12px;
+            border: 1px solid #ff9800;
+            border-radius: 4px;
+        }
+        
+        .correspondent-production {
+            background: white;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #ff9800;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+        }
+        
+        .correspondent-production-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            font-weight: bold;
+            font-size: 15px;
+            color: #2c3e50;
+        }
+        
+        .progress-bar-container {
+            width: 100%;
+            height: 25px;
+            background: #e0e0e0;
+            border-radius: 12px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+        
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #4caf50 0%, #8bc34a 100%);
+            transition: width 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 12px;
+        }
+        
+        .production-stats {
+            display: flex;
+            gap: 20px;
+            margin-top: 10px;
+            font-size: 13px;
+        }
+        
+        .production-stat {
+            padding: 8px 12px;
+            background: #f5f5f5;
+            border-radius: 6px;
+            border: 1px solid #ddd;
+        }
+        
+        .production-stat .label {
+            color: #666;
+            font-size: 11px;
+        }
+        
+        .production-stat .value {
+            font-weight: bold;
+            font-size: 16px;
+            color: #2c3e50;
+        }
+        
+        .production-stat.completed .value {
+            color: #28a745;
+        }
+        
+        .production-stat.pending .value {
+            color: #ff9800;
+        }
+        
+        .order-table td input,
+        .order-table td select {
+            width: 100%;
+            border: none;
+            padding: 6px;
+            font-family: 'Times New Roman', serif;
+            font-size: 13px;
+            background: transparent;
+            transition: all 0.2s;
+        }
+        
+        .order-table td input:focus,
+        .order-table td select:focus {
+            outline: 2px solid #667eea;
+            background: #f0f8ff;
+            border-radius: 3px;
+        }
+        
+        .date-cell {
+            text-align: center;
+            font-weight: bold;
+            width: 130px;
+        }
+        
+        .theme-cell {
+            width: 350px;
+        }
+        
+        .correspondent-cell {
+            width: 220px;
+        }
+        
+        .editor-cell {
+            width: 180px;
+        }
+        
+        .suggestion-badge {
+            display: inline-block;
+            background: #fff3cd;
+            color: #856404;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 10px;
+            margin-left: 8px;
+            cursor: help;
+            font-weight: bold;
+            border: 1px solid #ffc107;
+        }
+        
+        .controls {
+            margin-bottom: 25px;
+            padding: 20px;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+        }
+        
+        .controls-row {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 12px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        
+        .controls-row label {
+            font-weight: bold;
+            min-width: 140px;
+            color: #495057;
+        }
+        
+        .controls-row input,
+        .controls-row select {
+            flex: 1;
+            padding: 8px 12px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            font-size: 13px;
+            transition: border-color 0.2s;
+        }
+        
+        .controls-row input:focus,
+        .controls-row select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 10px 24px;
+            cursor: pointer;
+            font-size: 13px;
+            margin-right: 10px;
+            margin-bottom: 8px;
+            border-radius: 6px;
+            font-weight: 600;
+            transition: all 0.3s;
+            box-shadow: 0 2px 6px rgba(102, 126, 234, 0.3);
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn:active {
+            transform: translateY(0);
+        }
+        
+        .btn-success {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            box-shadow: 0 2px 6px rgba(40, 167, 69, 0.3);
+        }
+        
+        .btn-success:hover {
+            box-shadow: 0 4px 12px rgba(40, 167, 69, 0.4);
+        }
+        
+        .btn-word {
+            background: linear-gradient(135deg, #2b579a 0%, #1e3a8a 100%);
+            box-shadow: 0 2px 6px rgba(43, 87, 154, 0.3);
+        }
+        
+        .btn-word:hover {
+            box-shadow: 0 4px 12px rgba(43, 87, 154, 0.4);
+        }
+        
+        .stats-panel {
+            margin-top: 25px;
+            padding: 20px;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+        }
+        
+        .stats-panel h3 {
+            margin-bottom: 15px;
+            font-size: 16px;
+            color: #2c3e50;
+            font-weight: bold;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 12px;
+        }
+        
+        .stat-item {
+            padding: 12px;
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            font-size: 12px;
+            transition: all 0.2s;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .stat-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+        
+        .stat-item .name {
+            font-weight: bold;
+            color: #495057;
+            margin-bottom: 5px;
+        }
+        
+        .stat-item .count {
+            color: #667eea;
+            font-size: 18px;
+            font-weight: bold;
+        }
+        
+        .add-row-btn {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-size: 15px;
+            margin-top: 15px;
+            border-radius: 6px;
+            font-weight: 600;
+            transition: all 0.3s;
+            box-shadow: 0 2px 6px rgba(40, 167, 69, 0.3);
+        }
+        
+        .add-row-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(40, 167, 69, 0.4);
+        }
+        
+        .delete-btn {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            cursor: pointer;
+            font-size: 11px;
+            border-radius: 4px;
+            transition: all 0.2s;
+            font-weight: bold;
+        }
+        
+        .delete-btn:hover {
+            background: #c82333;
+            transform: scale(1.05);
+        }
+        
+        .export-buttons {
+            margin-top: 25px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            text-align: center;
+            border: 1px solid #dee2e6;
+        }
+        
+        .export-buttons h3 {
+            margin-bottom: 15px;
+            color: #2c3e50;
+            font-size: 16px;
+        }
+        
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        .status-message {
+            padding: 10px 15px;
+            border-radius: 6px;
+            margin: 10px 0;
+            font-size: 13px;
+            display: inline-block;
+        }
+        
+        .status-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .status-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .applications-panel {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+            border: 2px solid #2196f3;
+            border-radius: 8px;
+        }
+        
+        .applications-panel h3 {
+            margin-bottom: 15px;
+            font-size: 18px;
+            color: #1565c0;
+            font-weight: bold;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .application-item {
+            background: white;
+            padding: 15px;
+            margin-bottom: 12px;
+            border-radius: 8px;
+            border-left: 4px solid #2196f3;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        
+        .application-item.pending {
+            border-left-color: #ff9800;
+        }
+        
+        .application-item.approved {
+            border-left-color: #4caf50;
+        }
+        
+        .application-item.rejected {
+            border-left-color: #f44336;
+            opacity: 0.7;
+        }
+        
+        .application-info {
+            flex: 1;
+            min-width: 300px;
+        }
+        
+        .application-info .theme {
+            font-weight: bold;
+            font-size: 15px;
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+        
+        .application-info .details {
+            font-size: 12px;
+            color: #666;
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .application-actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        
+        .btn-approve {
+            background: linear-gradient(135deg, #4caf50 0%, #8bc34a 100%);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            cursor: pointer;
+            font-size: 12px;
+            border-radius: 4px;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+        
+        .btn-approve:hover {
+            transform: scale(1.05);
+            box-shadow: 0 2px 8px rgba(76, 175, 80, 0.4);
+        }
+        
+        .btn-reject {
+            background: linear-gradient(135deg, #f44336 0%, #e91e63 100%);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            cursor: pointer;
+            font-size: 12px;
+            border-radius: 4px;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+        
+        .btn-reject:hover {
+            transform: scale(1.05);
+            box-shadow: 0 2px 8px rgba(244, 67, 54, 0.4);
+        }
+        
+        .btn-add-to-order {
+            background: linear-gradient(135deg, #2196f3 0%, #1976d2 100%);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            cursor: pointer;
+            font-size: 12px;
+            border-radius: 4px;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+        
+        .btn-add-to-order:hover {
+            transform: scale(1.05);
+            box-shadow: 0 2px 8px rgba(33, 150, 243, 0.4);
+        }
+        
+        .application-form {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border: 2px solid #2196f3;
+        }
+        
+        .application-form h4 {
+            margin-bottom: 15px;
+            color: #1565c0;
+            font-size: 16px;
+        }
+        
+        .form-row {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 12px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        
+        .form-row label {
+            font-weight: bold;
+            min-width: 120px;
+            color: #495057;
+        }
+        
+        .form-row input,
+        .form-row select,
+        .form-row textarea {
+            flex: 1;
+            padding: 8px 12px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            font-size: 13px;
+        }
+        
+        .form-row textarea {
+            min-height: 60px;
+            resize: vertical;
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        
+        .status-badge.pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+        
+        .status-badge.approved {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .status-badge.rejected {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .toggle-applications {
+            background: linear-gradient(135deg, #2196f3 0%, #1976d2 100%);
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            cursor: pointer;
+            font-size: 11px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>ВНУТРЕННИЙ ЗАКАЗ</h1>
+            <div class="period">
+                <label>Период планирования:</label>
+                <input type="date" id="periodStart" onchange="updateHeader()" />
+                <span>—</span>
+                <input type="date" id="periodEnd" onchange="updateHeader()" />
+            </div>
+        </div>
+        
+        <div class="controls">
+            <div class="controls-row">
+                <label>Загрузка списков:</label>
+                <button class="btn" onclick="loadCorrespondents()">📋 Загрузить корреспондентов</button>
+                <button class="btn" onclick="loadEditors()">✏️ Загрузить редакторов</button>
+                <span id="loadStatus"></span>
+            </div>
+        </div>
+        
+        <div class="applications-panel">
+            <h3>
+                <span>📝 Заявки на сюжеты</span>
+                <button class="toggle-applications" onclick="toggleApplicationsPanel()" id="toggleApplicationsBtn">▼ Свернуть</button>
+            </h3>
+            <div id="applicationsContent">
+                <div class="application-form">
+                    <h4>➕ Подать новую заявку</h4>
+                    <div class="form-row">
+                        <label>Тема сюжета:</label>
+                        <input type="text" id="applicationTheme" placeholder="Введите тему сюжета" />
+                    </div>
+                    <div class="form-row">
+                        <label>Корреспондент:</label>
+                        <select id="applicationCorrespondent">
+                            <option value="">-- Выберите --</option>
+                        </select>
+                    </div>
+                    <div class="form-row">
+                        <label>Предполагаемая дата эфира:</label>
+                        <input type="date" id="applicationDate" />
+                    </div>
+                    <div class="form-row">
+                        <label>Описание:</label>
+                        <textarea id="applicationDescription" placeholder="Дополнительная информация о сюжете"></textarea>
+                    </div>
+                    <div class="form-row">
+                        <label></label>
+                        <button class="btn btn-success" onclick="submitApplication()">📤 Подать заявку</button>
+                    </div>
+                </div>
+                
+                <div id="applicationsList">
+                    <!-- Заявки будут добавлены динамически -->
+                </div>
+            </div>
+        </div>
+        
+        <table class="order-table" id="orderTable">
+            <thead>
+                <tr>
+                    <th style="width: 50px;">№</th>
+                    <th class="date-cell">Дата эфира</th>
+                    <th class="theme-cell">Тема сюжета</th>
+                    <th class="correspondent-cell">Корреспондент</th>
+                    <th class="editor-cell">Редактор</th>
+                    <th style="width: 80px;">Статус</th>
+                    <th style="width: 70px;">Действие</th>
+                </tr>
+            </thead>
+            <tbody id="orderTableBody">
+                <!-- Строки будут добавлены динамически -->
+            </tbody>
+        </table>
+        
+        <button class="add-row-btn" onclick="addRow()">➕ Добавить строку</button>
+        
+        <div class="stats-panel">
+            <h3>📊 Статистика нагрузки корреспондентов</h3>
+            <div class="stats-grid" id="statsGrid">
+                <!-- Статистика будет добавлена динамически -->
+            </div>
+        </div>
+        
+        <div class="production-panel">
+            <h3>📈 Отслеживание выработки сюжетов</h3>
+            <div class="production-filters">
+                <label>Период отслеживания:</label>
+                <input type="date" id="productionStart" onchange="updateProductionStats()" />
+                <span>—</span>
+                <input type="date" id="productionEnd" onchange="updateProductionStats()" />
+                <button class="btn" onclick="updateProductionStats()" style="margin: 0;">🔄 Обновить</button>
+            </div>
+            <div id="productionStats">
+                <!-- Статистика выработки будет добавлена динамически -->
+            </div>
+        </div>
+        
+        <div class="export-buttons">
+            <h3>💾 Экспорт данных</h3>
+            <div class="btn-group">
+                <button class="btn btn-word" onclick="exportToWord()">📄 Выгрузить в Word</button>
+                <button class="btn btn-success" onclick="exportToCSV()">📊 Экспорт в CSV</button>
+                <button class="btn btn-success" onclick="importFromCSV()">📥 Импорт из CSV</button>
+            </div>
+            <input type="file" id="csvFileInput" accept=".csv" style="display: none;" onchange="handleCSVImport(event)" />
+        </div>
+    </div>
+
+    <script>
+        let correspondents = [];
+        let editors = [];
+        let orders = [];
+        let applications = [];
+        let rowCounter = 1;
+        let applicationsPanelExpanded = true;
+        
+        // Автоматическая загрузка списков при открытии
+        window.addEventListener('DOMContentLoaded', function() {
+            setDefaultPeriod();
+            loadFromLocalStorage();
+            loadApplications();
+            updateApplicationsList();
+        });
+        
+        function setDefaultPeriod() {
+            const today = new Date();
+            const startOfWeek = new Date(today);
+            startOfWeek.setDate(today.getDate() - today.getDay() + 1); // Понедельник
+            const endOfWeek = new Date(startOfWeek);
+            endOfWeek.setDate(startOfWeek.getDate() + 6); // Воскресенье
+            
+            document.getElementById('periodStart').value = formatDate(startOfWeek);
+            document.getElementById('periodEnd').value = formatDate(endOfWeek);
+            
+            // Устанавливаем те же даты для отслеживания выработки
+            if (document.getElementById('productionStart')) {
+                document.getElementById('productionStart').value = formatDate(startOfWeek);
+            }
+            if (document.getElementById('productionEnd')) {
+                document.getElementById('productionEnd').value = formatDate(endOfWeek);
+            }
+            
+            updateHeader();
+        }
+        
+        function formatDate(date) {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+        
+        function formatDateDisplay(dateStr) {
+            if (!dateStr) return '';
+            const date = new Date(dateStr + 'T00:00:00');
+            const day = String(date.getDate()).padStart(2, '0');
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const year = date.getFullYear();
+            return `${day}.${month}.${year}`;
+        }
+        
+        function updateHeader() {
+            const start = document.getElementById('periodStart').value;
+            const end = document.getElementById('periodEnd').value;
+        }
+        
+        function loadFromLocalStorage() {
+            const savedCorrespondents = localStorage.getItem('correspondents');
+            const savedEditors = localStorage.getItem('editors');
+            
+            if (savedCorrespondents) {
+                correspondents = JSON.parse(savedCorrespondents);
+                updateCorrespondentsSelects();
+                document.getElementById('loadStatus').innerHTML = 
+                    '<span class="status-message status-success">✓ Загружено ' + correspondents.length + ' корреспондентов</span>';
+            }
+            
+            if (savedEditors) {
+                editors = JSON.parse(savedEditors);
+                updateEditorsSelects();
+            }
+        }
+        
+        function saveToLocalStorage() {
+            localStorage.setItem('correspondents', JSON.stringify(correspondents));
+            localStorage.setItem('editors', JSON.stringify(editors));
+        }
+        
+        function loadCorrespondents() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.txt,.csv';
+            input.onchange = function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        const text = e.target.result;
+                        correspondents = text.split('\n')
+                            .map(line => line.trim())
+                            .filter(line => line.length > 0 && !line.toLowerCase().includes('name'));
+                        updateCorrespondentsSelects();
+                        saveToLocalStorage();
+                        document.getElementById('loadStatus').innerHTML = 
+                            '<span class="status-message status-success">✓ Загружено ' + correspondents.length + ' корреспондентов</span>';
+                    };
+                    reader.readAsText(file, 'UTF-8');
+                }
+            };
+            input.click();
+        }
+        
+        function loadEditors() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.txt,.csv';
+            input.onchange = function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        const text = e.target.result;
+                        editors = text.split('\n')
+                            .map(line => line.trim())
+                            .filter(line => line.length > 0 && !line.toLowerCase().includes('name'));
+                        updateEditorsSelects();
+                        saveToLocalStorage();
+                        const currentStatus = document.getElementById('loadStatus').innerHTML;
+                        document.getElementById('loadStatus').innerHTML = 
+                            currentStatus + ' <span class="status-message status-success">✓ Загружено ' + editors.length + ' редакторов</span>';
+                    };
+                    reader.readAsText(file, 'UTF-8');
+                }
+            };
+            input.click();
+        }
+        
+        function updateCorrespondentsSelects() {
+            document.querySelectorAll('.correspondent-select').forEach(select => {
+                const currentValue = select.value;
+                select.innerHTML = '<option value="">-- Выберите --</option>';
+                correspondents.forEach(corr => {
+                    const option = document.createElement('option');
+                    option.value = corr;
+                    option.textContent = corr;
+                    if (option.value === currentValue) option.selected = true;
+                    select.appendChild(option);
+                });
+            });
+        }
+        
+        function updateEditorsSelects() {
+            document.querySelectorAll('.editor-select').forEach(select => {
+                const currentValue = select.value;
+                select.innerHTML = '<option value="">-- Выберите --</option>';
+                editors.forEach(ed => {
+                    const option = document.createElement('option');
+                    option.value = ed;
+                    option.textContent = ed;
+                    if (option.value === currentValue) option.selected = true;
+                    select.appendChild(option);
+                });
+            });
+        }
+        
+        function toggleApplicationsPanel() {
+            applicationsPanelExpanded = !applicationsPanelExpanded;
+            const content = document.getElementById('applicationsContent');
+            const btn = document.getElementById('toggleApplicationsBtn');
+            
+            if (applicationsPanelExpanded) {
+                content.style.display = 'block';
+                btn.textContent = '▼ Свернуть';
+            } else {
+                content.style.display = 'none';
+                btn.textContent = '▶ Развернуть';
+            }
+        }
+        
+        function submitApplication() {
+            const theme = document.getElementById('applicationTheme').value.trim();
+            const correspondent = document.getElementById('applicationCorrespondent').value;
+            const date = document.getElementById('applicationDate').value;
+            const description = document.getElementById('applicationDescription').value.trim();
+            
+            if (!theme) {
+                alert('Пожалуйста, укажите тему сюжета');
+                return;
+            }
+            
+            if (!correspondent) {
+                alert('Пожалуйста, выберите корреспондента');
+                return;
+            }
+            
+            const application = {
+                id: Date.now() + '_' + Math.random().toString(36).substr(2, 9),
+                theme: theme,
+                correspondent: correspondent,
+                date: date,
+                description: description,
+                status: 'pending',
+                createdAt: new Date().toISOString()
+            };
+            
+            applications.push(application);
+            saveApplications();
+            updateApplicationsList();
+            
+            // Очистка формы
+            document.getElementById('applicationTheme').value = '';
+            document.getElementById('applicationCorrespondent').value = '';
+            document.getElementById('applicationDate').value = '';
+            document.getElementById('applicationDescription').value = '';
+            
+            alert('Заявка успешно подана!');
+        }
+        
+        function approveApplication(id) {
+            const app = applications.find(a => a.id === id);
+            if (app) {
+                app.status = 'approved';
+                saveApplications();
+                updateApplicationsList();
+            }
+        }
+        
+        function rejectApplication(id) {
+            const app = applications.find(a => a.id === id);
+            if (app) {
+                app.status = 'rejected';
+                saveApplications();
+                updateApplicationsList();
+            }
+        }
+        
+        function addApplicationToOrder(id) {
+            const app = applications.find(a => a.id === id);
+            if (!app) return;
+            
+            addRow(app.date);
+            const lastRow = document.querySelector('#orderTableBody tr:last-child');
+            if (lastRow) {
+                setTimeout(() => {
+                    lastRow.querySelector('.theme-input').value = app.theme;
+                    const corrSelect = lastRow.querySelector('.correspondent-select');
+                    if (corrSelect) {
+                        corrSelect.value = app.correspondent;
+                    }
+                    updateStats();
+                    updateProductionStats();
+                }, 100);
+            }
+            
+            // Удаляем заявку после добавления в заказ
+            applications = applications.filter(a => a.id !== id);
+            saveApplications();
+            updateApplicationsList();
+        }
+        
+        function updateApplicationsList() {
+            const list = document.getElementById('applicationsList');
+            const correspondentSelect = document.getElementById('applicationCorrespondent');
+            
+            // Обновляем список корреспондентов в форме заявки
+            if (correspondentSelect) {
+                const currentValue = correspondentSelect.value;
+                correspondentSelect.innerHTML = '<option value="">-- Выберите --</option>';
+                correspondents.forEach(corr => {
+                    const option = document.createElement('option');
+                    option.value = corr;
+                    option.textContent = corr;
+                    if (option.value === currentValue) option.selected = true;
+                    correspondentSelect.appendChild(option);
+                });
+            }
+            
+            if (applications.length === 0) {
+                list.innerHTML = '<p style="text-align: center; color: #999; padding: 20px;">Нет заявок</p>';
+                return;
+            }
+            
+            // Группируем по статусу
+            const pending = applications.filter(a => a.status === 'pending');
+            const approved = applications.filter(a => a.status === 'approved');
+            const rejected = applications.filter(a => a.status === 'rejected');
+            
+            let html = '';
+            
+            if (pending.length > 0) {
+                html += '<h4 style="margin: 15px 0 10px 0; color: #ff9800; font-size: 14px;">⏳ На рассмотрении (' + pending.length + ')</h4>';
+                pending.forEach(app => {
+                    html += createApplicationHTML(app);
+                });
+            }
+            
+            if (approved.length > 0) {
+                html += '<h4 style="margin: 15px 0 10px 0; color: #4caf50; font-size: 14px;">✓ Утвержденные (' + approved.length + ')</h4>';
+                approved.forEach(app => {
+                    html += createApplicationHTML(app);
+                });
+            }
+            
+            if (rejected.length > 0) {
+                html += '<h4 style="margin: 15px 0 10px 0; color: #f44336; font-size: 14px;">✕ Отклоненные (' + rejected.length + ')</h4>';
+                rejected.forEach(app => {
+                    html += createApplicationHTML(app);
+                });
+            }
+            
+            list.innerHTML = html;
+        }
+        
+        function createApplicationHTML(app) {
+            const statusClass = app.status === 'pending' ? 'pending' : 
+                                  app.status === 'approved' ? 'approved' : 'rejected';
+            const statusText = app.status === 'pending' ? 'На рассмотрении' : 
+                             app.status === 'approved' ? 'Утверждено' : 'Отклонено';
+            
+            let actionsHTML = '';
+            if (app.status === 'pending') {
+                actionsHTML = `
+                    <button class="btn-approve" onclick="approveApplication('${app.id}')">✓ Утвердить</button>
+                    <button class="btn-reject" onclick="rejectApplication('${app.id}')">✕ Отклонить</button>
+                `;
+            } else if (app.status === 'approved') {
+                actionsHTML = `
+                    <button class="btn-add-to-order" onclick="addApplicationToOrder('${app.id}')">➕ Добавить в заказ</button>
+                    <button class="btn-reject" onclick="rejectApplication('${app.id}')">✕ Отклонить</button>
+                `;
+            }
+            
+            const dateDisplay = app.date ? formatDateDisplay(app.date) : 'Не указана';
+            const descriptionHTML = app.description ? `<div style="margin-top: 5px; font-style: italic;">${app.description}</div>` : '';
+            
+            return `
+                <div class="application-item ${statusClass}">
+                    <div class="application-info">
+                        <div class="theme">${app.theme}</div>
+                        <div class="details">
+                            <span><strong>Корреспондент:</strong> ${app.correspondent}</span>
+                            <span><strong>Дата эфира:</strong> ${dateDisplay}</span>
+                            <span class="status-badge ${statusClass}">${statusText}</span>
+                        </div>
+                        ${descriptionHTML}
+                    </div>
+                    <div class="application-actions">
+                        ${actionsHTML}
+                        <button class="delete-btn" onclick="deleteApplication('${app.id}')" title="Удалить заявку">✕</button>
+                    </div>
+                </div>
+            `;
+        }
+        
+        function deleteApplication(id) {
+            if (confirm('Удалить эту заявку?')) {
+                applications = applications.filter(a => a.id !== id);
+                saveApplications();
+                updateApplicationsList();
+            }
+        }
+        
+        function saveApplications() {
+            localStorage.setItem('applications', JSON.stringify(applications));
+        }
+        
+        function loadApplications() {
+            const saved = localStorage.getItem('applications');
+            if (saved) {
+                applications = JSON.parse(saved);
+            }
+        }
+        
+        function addRow(date = '') {
+            const tbody = document.getElementById('orderTableBody');
+            const row = document.createElement('tr');
+            const rowNum = rowCounter++;
+            const rowId = 'row_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+            row.id = rowId;
+            
+            row.innerHTML = `
+                <td style="text-align: center; font-weight: bold;">${rowNum}</td>
+                <td>
+                    <input type="date" class="date-input" value="${date}" onchange="updateStats(); updateProductionStats();" />
+                </td>
+                <td>
+                    <input type="text" class="theme-input" placeholder="Введите тему сюжета" onchange="updateStats()" />
+                </td>
+                <td>
+                    <select class="correspondent-select" onchange="updateStats(); showSuggestion(this); updateProductionStats();">
+                        <option value="">-- Выберите --</option>
+                    </select>
+                </td>
+                <td>
+                    <select class="editor-select">
+                        <option value="">-- Выберите --</option>
+                    </select>
+                </td>
+                <td style="text-align: center;">
+                    <input type="checkbox" class="status-checkbox" data-row-id="${rowId}" 
+                           onchange="toggleStatus(this); updateProductionStats();" 
+                           title="Отметить как выполненный" />
+                </td>
+                <td style="text-align: center;">
+                    <button class="delete-btn" onclick="deleteRow(this)" title="Удалить строку">✕</button>
+                </td>
+            `;
+            
+            tbody.appendChild(row);
+            updateCorrespondentsSelects();
+            updateEditorsSelects();
+            loadRowStatus(rowId);
+            updateStats();
+            updateProductionStats();
+        }
+        
+        function toggleStatus(checkbox) {
+            const row = checkbox.closest('tr');
+            const rowId = row.id;
+            
+            if (checkbox.checked) {
+                row.classList.add('completed');
+            } else {
+                row.classList.remove('completed');
+            }
+            
+            saveRowStatus(rowId, checkbox.checked);
+        }
+        
+        function saveRowStatus(rowId, isCompleted) {
+            const statuses = JSON.parse(localStorage.getItem('rowStatuses') || '{}');
+            statuses[rowId] = isCompleted;
+            localStorage.setItem('rowStatuses', JSON.stringify(statuses));
+        }
+        
+        function loadRowStatus(rowId) {
+            const statuses = JSON.parse(localStorage.getItem('rowStatuses') || '{}');
+            const row = document.getElementById(rowId);
+            if (row && statuses[rowId]) {
+                const checkbox = row.querySelector('.status-checkbox');
+                if (checkbox) {
+                    checkbox.checked = true;
+                    row.classList.add('completed');
+                }
+            }
+        }
+        
+        function loadAllRowStatuses() {
+            document.querySelectorAll('#orderTableBody tr').forEach(row => {
+                if (row.id) {
+                    loadRowStatus(row.id);
+                }
+            });
+        }
+        
+        function deleteRow(btn) {
+            if (confirm('Удалить эту строку?')) {
+                const row = btn.closest('tr');
+                const rowId = row.id;
+                
+                // Удаляем статус из localStorage
+                if (rowId) {
+                    const statuses = JSON.parse(localStorage.getItem('rowStatuses') || '{}');
+                    delete statuses[rowId];
+                    localStorage.setItem('rowStatuses', JSON.stringify(statuses));
+                }
+                
+                row.remove();
+                updateRowNumbers();
+                updateStats();
+                updateProductionStats();
+            }
+        }
+        
+        function updateRowNumbers() {
+            const rows = document.querySelectorAll('#orderTableBody tr');
+            rows.forEach((row, index) => {
+                row.querySelector('td:first-child').textContent = index + 1;
+            });
+            rowCounter = rows.length + 1;
+        }
+        
+        function showSuggestion(select) {
+            select.parentElement.querySelectorAll('.suggestion-badge').forEach(badge => badge.remove());
+            
+            if (select.value) {
+                const stats = getLoadStatistics();
+                const minPlots = Math.min(...Object.values(stats));
+                const currentCount = stats[select.value] || 0;
+                
+                if (currentCount > minPlots) {
+                    const badge = document.createElement('span');
+                    badge.className = 'suggestion-badge';
+                    badge.title = `У этого корреспондента ${currentCount} сюжетов. Минимум: ${minPlots}`;
+                    badge.textContent = `⚠ ${currentCount}`;
+                    select.parentElement.appendChild(badge);
+                }
+            }
+        }
+        
+        function getLoadStatistics() {
+            const stats = {};
+            correspondents.forEach(corr => {
+                stats[corr] = 0;
+            });
+            
+            document.querySelectorAll('.correspondent-select').forEach(select => {
+                const corr = select.value;
+                if (corr && stats.hasOwnProperty(corr)) {
+                    stats[corr]++;
+                }
+            });
+            
+            return stats;
+        }
+        
+        function updateStats() {
+            const stats = getLoadStatistics();
+            const grid = document.getElementById('statsGrid');
+            
+            const sorted = Object.entries(stats)
+                .sort((a, b) => a[1] - b[1]);
+            
+            grid.innerHTML = sorted.map(([name, count]) => `
+                <div class="stat-item">
+                    <div class="name">${name}</div>
+                    <div class="count">${count} сюжетов</div>
+                </div>
+            `).join('');
+        }
+        
+        function updateProductionStats() {
+            const startDate = document.getElementById('productionStart')?.value || document.getElementById('periodStart')?.value;
+            const endDate = document.getElementById('productionEnd')?.value || document.getElementById('periodEnd')?.value;
+            
+            if (!startDate || !endDate) {
+                // Устанавливаем период по умолчанию
+                const today = new Date();
+                const startOfWeek = new Date(today);
+                startOfWeek.setDate(today.getDate() - today.getDay() + 1);
+                const endOfWeek = new Date(startOfWeek);
+                endOfWeek.setDate(startOfWeek.getDate() + 6);
+                
+                if (!document.getElementById('productionStart')?.value) {
+                    document.getElementById('productionStart').value = formatDate(startOfWeek);
+                }
+                if (!document.getElementById('productionEnd')?.value) {
+                    document.getElementById('productionEnd').value = formatDate(endOfWeek);
+                }
+                return updateProductionStats();
+            }
+            
+            const productionStats = {};
+            
+            document.querySelectorAll('#orderTableBody tr').forEach(row => {
+                const dateInput = row.querySelector('.date-input');
+                const correspondentSelect = row.querySelector('.correspondent-select');
+                const checkbox = row.querySelector('.status-checkbox');
+                
+                if (!dateInput || !correspondentSelect) return;
+                
+                const date = dateInput.value;
+                const correspondent = correspondentSelect.value;
+                const isCompleted = checkbox?.checked || false;
+                
+                if (!correspondent || !date) return;
+                
+                // Проверяем, попадает ли дата в период
+                if (date >= startDate && date <= endDate) {
+                    if (!productionStats[correspondent]) {
+                        productionStats[correspondent] = {
+                            total: 0,
+                            completed: 0,
+                            pending: 0
+                        };
+                    }
+                    
+                    productionStats[correspondent].total++;
+                    if (isCompleted) {
+                        productionStats[correspondent].completed++;
+                    } else {
+                        productionStats[correspondent].pending++;
+                    }
+                }
+            });
+            
+            const container = document.getElementById('productionStats');
+            
+            if (Object.keys(productionStats).length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: #999; padding: 20px;">Нет данных за выбранный период</p>';
+                return;
+            }
+            
+            const sorted = Object.entries(productionStats)
+                .sort((a, b) => {
+                    // Сортируем по проценту выполнения
+                    const percentA = a[1].total > 0 ? (a[1].completed / a[1].total) : 0;
+                    const percentB = b[1].total > 0 ? (b[1].completed / b[1].total) : 0;
+                    return percentA - percentB;
+                });
+            
+            container.innerHTML = sorted.map(([name, stats]) => {
+                const percent = stats.total > 0 ? Math.round((stats.completed / stats.total) * 100) : 0;
+                
+                return `
+                    <div class="correspondent-production">
+                        <div class="correspondent-production-header">
+                            <span>${name}</span>
+                            <span style="color: #28a745; font-size: 18px;">${percent}%</span>
+                        </div>
+                        <div class="progress-bar-container">
+                            <div class="progress-bar" style="width: ${percent}%">
+                                ${percent > 0 ? percent + '%' : ''}
+                            </div>
+                        </div>
+                        <div class="production-stats">
+                            <div class="production-stat">
+                                <div class="label">Всего сюжетов</div>
+                                <div class="value">${stats.total}</div>
+                            </div>
+                            <div class="production-stat completed">
+                                <div class="label">Выполнено</div>
+                                <div class="value">${stats.completed}</div>
+                            </div>
+                            <div class="production-stat pending">
+                                <div class="label">В работе</div>
+                                <div class="value">${stats.pending}</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        function exportToWord() {
+            const startDate = document.getElementById('periodStart').value;
+            const endDate = document.getElementById('periodEnd').value;
+            const periodText = startDate && endDate 
+                ? `на ${formatDateDisplay(startDate)} - ${formatDateDisplay(endDate)}`
+                : '';
+            
+            // Создаем HTML для Word
+            let htmlContent = `
+                <html xmlns:o='urn:schemas-microsoft-com:office:office' 
+                      xmlns:w='urn:schemas-microsoft-com:office:word' 
+                      xmlns='http://www.w3.org/TR/REC-html40'>
+                <head>
+                    <meta charset='utf-8'>
+                    <title>Внутренний заказ</title>
+                    <style>
+                        @page {
+                            size: A4;
+                            margin: 2cm;
+                        }
+                        body {
+                            font-family: 'Times New Roman', serif;
+                            font-size: 12pt;
+                        }
+                        h1 {
+                            text-align: center;
+                            font-size: 16pt;
+                            font-weight: bold;
+                            margin-bottom: 10pt;
+                            text-transform: uppercase;
+                        }
+                        .period {
+                            text-align: center;
+                            font-size: 12pt;
+                            margin-bottom: 20pt;
+                        }
+                        table {
+                            width: 100%;
+                            border-collapse: collapse;
+                            margin-top: 10pt;
+                            border: 2px solid black;
+                        }
+                        th {
+                            background: #e0e0e0;
+                            border: 1px solid black;
+                            padding: 8pt;
+                            text-align: center;
+                            font-weight: bold;
+                            font-size: 11pt;
+                        }
+                        td {
+                            border: 1px solid black;
+                            padding: 6pt;
+                            font-size: 11pt;
+                        }
+                        .number-cell {
+                            text-align: center;
+                            width: 30pt;
+                        }
+                        .date-cell {
+                            text-align: center;
+                            width: 100pt;
+                        }
+                    </style>
+                </head>
+                <body>
+                    <h1>ВНУТРЕННИЙ ЗАКАЗ</h1>
+                    <div class="period">${periodText ? 'Период: ' + periodText : ''}</div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th class="number-cell">№</th>
+                                <th class="date-cell">Дата эфира</th>
+                                <th>Тема сюжета</th>
+                                <th>Корреспондент</th>
+                                <th>Редактор</th>
+                                <th>Статус</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+            
+            document.querySelectorAll('#orderTableBody tr').forEach((row, index) => {
+                const date = row.querySelector('.date-input')?.value || '';
+                const theme = row.querySelector('.theme-input')?.value || '';
+                const correspondent = row.querySelector('.correspondent-select')?.value || '';
+                const editor = row.querySelector('.editor-select')?.value || '';
+                const isCompleted = row.querySelector('.status-checkbox')?.checked || false;
+                const status = isCompleted ? 'Выполнено' : 'В работе';
+                
+                if (date || theme || correspondent || editor) {
+                    htmlContent += `
+                        <tr>
+                            <td class="number-cell">${index + 1}</td>
+                            <td class="date-cell">${formatDateDisplay(date)}</td>
+                            <td>${theme}</td>
+                            <td>${correspondent}</td>
+                            <td>${editor}</td>
+                            <td style="text-align: center;">${status}</td>
+                        </tr>
+                    `;
+                }
+            });
+            
+            htmlContent += `
+                        </tbody>
+                    </table>
+                </body>
+                </html>
+            `;
+            
+            // Создаем blob и скачиваем
+            const blob = new Blob(['\ufeff' + htmlContent], { type: 'application/msword' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `Внутренний_заказ_${formatDateDisplay(startDate) || 'документ'}.doc`;
+            link.click();
+        }
+        
+        function exportToCSV() {
+            const rows = [];
+            document.querySelectorAll('#orderTableBody tr').forEach(row => {
+                const date = row.querySelector('.date-input')?.value || '';
+                const theme = row.querySelector('.theme-input')?.value || '';
+                const correspondent = row.querySelector('.correspondent-select')?.value || '';
+                const editor = row.querySelector('.editor-select')?.value || '';
+                const status = row.querySelector('.status-checkbox')?.checked ? 'Выполнено' : 'В работе';
+                
+                if (date || theme || correspondent || editor) {
+                    rows.push([date, theme, correspondent, editor, status].join(','));
+                }
+            });
+            
+            const csv = [
+                'Дата эфира,Тема сюжета,Корреспондент,Редактор,Статус',
+                ...rows
+            ].join('\n');
+            
+            const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = 'Внутренний_заказ.csv';
+            link.click();
+        }
+        
+        function importFromCSV() {
+            document.getElementById('csvFileInput').click();
+        }
+        
+        function handleCSVImport(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const text = e.target.result;
+                const lines = text.split('\n').filter(line => line.trim());
+                const headers = lines[0].split(',');
+                
+                document.getElementById('orderTableBody').innerHTML = '';
+                rowCounter = 1;
+                
+                for (let i = 1; i < lines.length; i++) {
+                    const values = lines[i].split(',');
+                    const date = values[0]?.trim() || '';
+                    const theme = values[1]?.trim() || '';
+                    const correspondent = values[2]?.trim() || '';
+                    const editor = values[3]?.trim() || '';
+                    const status = values[4]?.trim() || '';
+                    
+                    if (date || theme || correspondent || editor) {
+                        addRow(date);
+                        const lastRow = document.querySelector('#orderTableBody tr:last-child');
+                        if (lastRow) {
+                            lastRow.querySelector('.theme-input').value = theme;
+                            const corrSelect = lastRow.querySelector('.correspondent-select');
+                            const editorSelect = lastRow.querySelector('.editor-select');
+                            const checkbox = lastRow.querySelector('.status-checkbox');
+                            
+                            setTimeout(() => {
+                                corrSelect.value = correspondent;
+                                editorSelect.value = editor;
+                                if (status === 'Выполнено' && checkbox) {
+                                    checkbox.checked = true;
+                                    toggleStatus(checkbox);
+                                }
+                                updateStats();
+                                updateProductionStats();
+                            }, 100);
+                        }
+                    }
+                }
+                
+                updateCorrespondentsSelects();
+                updateEditorsSelects();
+                updateStats();
+            };
+            reader.readAsText(file);
+        }
+        
+        // Инициализация: добавляем несколько пустых строк
+        window.addEventListener('DOMContentLoaded', function() {
+            setTimeout(() => {
+                for (let i = 0; i < 5; i++) {
+                    addRow();
+                }
+                loadAllRowStatuses();
+                updateProductionStats();
+            }, 100);
+        });
+    </script>
+</body>
+</html>

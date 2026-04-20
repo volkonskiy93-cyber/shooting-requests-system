@@ -1,0 +1,1864 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Система заявок на видеосъемку</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        /* Главная страница */
+        .main-screen {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 80vh;
+            text-align: center;
+        }
+        
+        .main-screen h1 {
+            color: #2c3e50;
+            margin-bottom: 40px;
+            font-size: 2.5rem;
+        }
+        
+        .contractor-select {
+            display: flex;
+            gap: 30px;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-top: 20px;
+        }
+        
+        .contractor-card {
+            background: white;
+            border-radius: 15px;
+            padding: 40px;
+            width: 350px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+            cursor: pointer;
+            border: 3px solid transparent;
+        }
+        
+        .contractor-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.15);
+        }
+        
+        .contractor-card.figaro {
+            border-color: #3498db;
+        }
+        
+        .contractor-card.ttk {
+            border-color: #e74c3c;
+        }
+        
+        .contractor-card.producer {
+            border-color: #9b59b6;
+        }
+        
+        .contractor-card h2 {
+            margin-bottom: 20px;
+            font-size: 1.8rem;
+        }
+        
+        .contractor-card.figaro h2 {
+            color: #3498db;
+        }
+        
+        .contractor-card.ttk h2 {
+            color: #e74c3c;
+        }
+        
+        .contractor-card.producer h2 {
+            color: #9b59b6;
+        }
+        
+        .contractor-card p {
+            color: #7f8c8d;
+            line-height: 1.6;
+            margin-bottom: 25px;
+        }
+        
+        .select-btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+        }
+        
+        .btn-figaro {
+            background-color: #3498db;
+            color: white;
+        }
+        
+        .btn-figaro:hover {
+            background-color: #2980b9;
+        }
+        
+        .btn-ttk {
+            background-color: #e74c3c;
+            color: white;
+        }
+        
+        .btn-ttk:hover {
+            background-color: #c0392b;
+        }
+        
+        .btn-producer {
+            background-color: #9b59b6;
+            color: white;
+        }
+        
+        .btn-producer:hover {
+            background-color: #8e44ad;
+        }
+        
+        /* Общие стили для форм */
+        .form-container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+            margin-top: 20px;
+            display: none;
+        }
+        
+        .form-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid;
+        }
+        
+        .form-header.figaro {
+            border-color: #3498db;
+        }
+        
+        .form-header.ttk {
+            border-color: #e74c3c;
+        }
+        
+        .form-header.producer {
+            border-color: #9b59b6;
+        }
+        
+        .form-header h1 {
+            color: #2c3e50;
+        }
+        
+        .back-btn {
+            padding: 10px 25px;
+            background-color: #95a5a6;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.3s ease;
+        }
+        
+        .back-btn:hover {
+            background-color: #7f8c8d;
+        }
+        
+        .header-info {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 25px;
+            font-size: 14px;
+            color: #7f8c8d;
+        }
+        
+        .form-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 25px;
+        }
+        
+        .form-table td {
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            vertical-align: top;
+        }
+        
+        .form-table tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        
+        .form-table tr:hover {
+            background-color: #f1f8ff;
+        }
+        
+        .label {
+            font-weight: 600;
+            color: #2c3e50;
+            white-space: nowrap;
+            width: 30%;
+        }
+        
+        input, textarea, select {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #bdc3c7;
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-size: 14px;
+        }
+        
+        .figaro input:focus, .figaro textarea:focus, .figaro select:focus {
+            border-color: #3498db;
+            outline: none;
+            box-shadow: 0 0 5px rgba(52, 152, 219, 0.3);
+        }
+        
+        .ttk input:focus, .ttk textarea:focus, .ttk select:focus {
+            border-color: #e74c3c;
+            outline: none;
+            box-shadow: 0 0 5px rgba(231, 76, 60, 0.3);
+        }
+        
+        .producer input:focus, .producer textarea:focus, .producer select:focus {
+            border-color: #9b59b6;
+            outline: none;
+            box-shadow: 0 0 5px rgba(155, 89, 182, 0.3);
+        }
+        
+        textarea {
+            min-height: 80px;
+            resize: vertical;
+        }
+        
+        .equipment-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        
+        .equipment-table th {
+            background-color: #2c3e50;
+            color: white;
+            padding: 12px;
+            text-align: left;
+        }
+        
+        .equipment-table td {
+            padding: 10px;
+            border: 1px solid #ddd;
+        }
+        
+        .small-input {
+            width: 60px;
+        }
+        
+        .date-time-group {
+            display: flex;
+            gap: 15px;
+        }
+        
+        .date-time-group > div {
+            flex: 1;
+        }
+        
+        .form-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 15px;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #ddd;
+        }
+        
+        button {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .submit-btn {
+            background-color: #2ecc71;
+            color: white;
+        }
+        
+        .submit-btn:hover {
+            background-color: #27ae60;
+        }
+        
+        .reset-btn {
+            background-color: #e74c3c;
+            color: white;
+        }
+        
+        .reset-btn:hover {
+            background-color: #c0392b;
+        }
+        
+        .required::after {
+            content: " *";
+            color: #e74c3c;
+        }
+        
+        .note {
+            font-size: 12px;
+            color: #7f8c8d;
+            margin-top: 5px;
+        }
+        
+        .section-title {
+            background-color: #ecf0f1;
+            font-weight: bold;
+            text-align: center;
+            padding: 10px;
+            margin: 20px 0 10px 0;
+            border-radius: 5px;
+        }
+        
+        /* Активное состояние */
+        .active {
+            display: block !important;
+        }
+        
+        /* Адаптивные стили для мобильных устройств */
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .main-screen h1 {
+                font-size: 1.8rem;
+            }
+            
+            .contractor-select {
+                flex-direction: column;
+                gap: 20px;
+            }
+            
+            .contractor-card {
+                width: 100%;
+                padding: 25px;
+            }
+            
+            .contractor-card h2 {
+                font-size: 1.4rem;
+            }
+            
+            .form-container {
+                padding: 20px;
+            }
+            
+            .form-header {
+                flex-direction: column;
+                gap: 15px;
+                align-items: flex-start;
+            }
+            
+            .form-header h1 {
+                font-size: 1.3rem;
+            }
+            
+            .header-info {
+                flex-direction: column;
+                gap: 10px;
+                font-size: 12px;
+            }
+            
+            .form-table {
+                display: block;
+            }
+            
+            .form-table td {
+                padding: 10px;
+                display: block;
+                width: 100%;
+                border-left: none;
+                border-right: none;
+            }
+            
+            .form-table tr {
+                display: block;
+                margin-bottom: 10px;
+                border: 1px solid #ddd;
+                border-radius: 5px;
+                background-color: white;
+            }
+            
+            .form-table tr:nth-child(even) {
+                background-color: white;
+            }
+            
+            .label {
+                width: 100%;
+                margin-bottom: 5px;
+                font-size: 0.9rem;
+                padding-bottom: 5px;
+                border-bottom: 1px solid #eee;
+            }
+            
+            input, textarea, select {
+                font-size: 16px; /* Предотвращает зум на iOS */
+                width: 100%;
+            }
+            
+            .equipment-table {
+                display: block;
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+            
+            .equipment-table table {
+                min-width: 600px;
+            }
+            
+            .date-time-group {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .form-actions {
+                flex-direction: column;
+            }
+            
+            .form-actions button {
+                width: 100%;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .main-screen h1 {
+                font-size: 1.5rem;
+            }
+            
+            .contractor-card {
+                padding: 20px;
+            }
+            
+            .contractor-card h2 {
+                font-size: 1.2rem;
+            }
+            
+            .form-container {
+                padding: 15px;
+            }
+            
+            .form-header h1 {
+                font-size: 1.1rem;
+            }
+            
+            .form-table td {
+                padding: 8px;
+            }
+            
+            .equipment-table table {
+                min-width: 500px;
+                font-size: 0.85rem;
+            }
+            
+            .equipment-table th,
+            .equipment-table td {
+                padding: 6px;
+            }
+            
+            h3 {
+                font-size: 1.1rem;
+            }
+            
+            .back-btn {
+                width: 100%;
+                text-align: center;
+            }
+        }
+        
+        /* Улучшения для touch-устройств */
+        @media (hover: none) and (pointer: coarse) {
+            button, .back-btn, .select-btn {
+                min-height: 44px; /* Минимальный размер для удобного нажатия */
+                touch-action: manipulation;
+            }
+            
+            .contractor-card:hover {
+                transform: none;
+            }
+            
+            .contractor-card:active {
+                transform: scale(0.98);
+            }
+            
+            input, textarea, select {
+                font-size: 16px; /* Предотвращает зум на iOS при фокусе */
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Главный экран выбора -->
+        <div id="mainScreen" class="main-screen active">
+            <h1>Система заявок на видеосъемку</h1>
+            <p style="color: #7f8c8d; margin-bottom: 40px; max-width: 600px; font-size: 1.1rem;">
+                Выберите тип заявки для создания заявки на видеосъемку программы "Доброе утро"
+            </p>
+            <div style="margin-bottom: 20px;">
+                <button class="back-btn" onclick="window.location.href='index.html'">← Вернуться на главную</button>
+            </div>
+            
+            <div class="contractor-select">
+                <div class="contractor-card figaro" onclick="selectContractor('figaro')">
+                    <h2>ВЕК XXL (ФИГАРО)</h2>
+                    <p>Заказ-наряд на видеосъемку для подрядчика "ВЕК XXL. TMC"</p>
+                    <button class="select-btn btn-figaro">Выбрать ФИГАРО</button>
+                </div>
+                
+                <div class="contractor-card ttk" onclick="selectContractor('ttk')">
+                    <h2>Технологический центр ТВ (ТТК)</h2>
+                    <p>Заказ-наряд на видеосъемку для подрядчика "Технологический центр ТВ"</p>
+                    <button class="select-btn btn-ttk">Выбрать ТТК</button>
+                </div>
+                
+                <div class="contractor-card producer" onclick="selectContractor('producer')">
+                    <h2>Заявка продюсерам</h2>
+                    <p>Заявка на видеосъемку для продюсеров программы "Доброе утро"</p>
+                    <button class="select-btn btn-producer">Создать заявку</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Форма ФИГАРО -->
+        <div id="formFigaro" class="form-container figaro">
+            <div class="form-header figaro">
+                <h1>Заявка на видеосъемку - ВЕК XXL (ФИГАРО)</h1>
+                <button class="back-btn" onclick="goBack()">← Назад к выбору</button>
+            </div>
+            
+            <div class="header-info">
+                <div>Подрядчик "ВЕК XXL. TMC"</div>
+                <div>Заказ-наряд на видеосъемку</div>
+                <div>ДУТ "Доброе утро"</div>
+            </div>
+            
+            <form id="shooting-request-form-figaro">
+                <table class="form-table">
+                    <tr>
+                        <td class="label required">Название сюжета:</td>
+                        <td>
+                            <input type="text" id="figaro-story-title" name="story-title" placeholder="Введите название сюжета" required>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="label required">Аннотация к съемке и адрес локации:</td>
+                        <td>
+                            <textarea id="figaro-annotation" name="annotation" placeholder="Введите аннотацию и адрес локации" required></textarea>
+                            <div class="note">Пример: Роскачество, Тимирязевская академия Кафедра Пчеловодства, магазин</div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="label">Примечания (погода, парковка и т.д.):</td>
+                        <td>
+                            <textarea id="figaro-notes" name="notes" placeholder="Введите примечания"></textarea>
+                            <div class="note">Пример: на улице и в помещении, в магазинах и салонах интервью и съемки</div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="label">Аккредитация:</td>
+                        <td>
+                            <select id="figaro-accreditation" name="accreditation">
+                                <option value="yes">ДА</option>
+                                <option value="no">НЕТ</option>
+                            </select>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td colspan="2" style="background-color: #ecf0f1; font-weight: bold; text-align: center;">
+                            Ответственные за проведение съемок
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="label">Режиссер (редактор):</td>
+                        <td>
+                            <select id="figaro-director" name="director">
+                                <option value="">-- Выберите редактора --</option>
+                                <option value="baklanova">Бакланова Н</option>
+                                <option value="varkentin">Варкентин О</option>
+                                <option value="dubasova">Дубасова Т</option>
+                                <option value="zheleznov">Железнов А</option>
+                                <option value="izvarina">Изварина М</option>
+                                <option value="kazandzhan">Казанджан И</option>
+                                <option value="lomovtsev">Ломовцев Э</option>
+                                <option value="materanskaya">Матеранская И</option>
+                                <option value="mironova">Миронова Н</option>
+                            </select>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="label">Корреспондент:</td>
+                        <td>
+                            <select id="figaro-correspondent" name="correspondent">
+                                <option value="">-- Выберите корреспондента --</option>
+                                <option value="abrosimova">Абросимова А.</option>
+                                <option value="alkova">Алькова И.</option>
+                                <option value="astrahanceva">Астраханцева А.</option>
+                                <option value="belyanskaya">Белянская Л</option>
+                                <option value="bronzova">Бронзова М</option>
+                                <option value="vashuk">Вашук А.</option>
+                                <option value="grebenshikova">Гребенщикова А.</option>
+                                <option value="zavidova">Завидова А.</option>
+                                <option value="ivanova">Иванова А</option>
+                                <option value="ionkina">Ионкина К</option>
+                                <option value="kobrin">Кобрин И</option>
+                                <option value="kovaleva">Ковалева Н.</option>
+                                <option value="kozlova">Козлова Ю.</option>
+                                <option value="korolkova">Королькова А.</option>
+                                <option value="kremeshnaya">Кремешная А.</option>
+                                <option value="krylova">Крылова А.</option>
+                                <option value="kulabuhova">Кулабухова М</option>
+                                <option value="kuzmin-a">Кузьмин А.</option>
+                                <option value="kuzmin-d">Кузьмин Д.</option>
+                                <option value="kuskova">Кускова М.</option>
+                                <option value="lyubchenko">Любченко Н.</option>
+                                <option value="makaryan">Макарян К.</option>
+                                <option value="molostova">Молостова Ю.</option>
+                                <option value="nesterov">Нестеров Ю.</option>
+                                <option value="neymanis">Нейманис С.</option>
+                                <option value="nikishova">Никишова Е.</option>
+                                <option value="nikishicheva">Никишичева О.</option>
+                                <option value="nikolaeva">Николаева М.</option>
+                                <option value="novohatnyaya">Новохатняя А.</option>
+                                <option value="obolenskih">Оболенских В</option>
+                                <option value="orehova">Орехова А.</option>
+                                <option value="popov">Попов В.</option>
+                                <option value="popova-a">Попова А.</option>
+                                <option value="popova-e">Попова Е.</option>
+                                <option value="pravdina">Правдина Н.</option>
+                                <option value="radkevich">Радкевич А</option>
+                                <option value="ryzhova">Рыжова А.</option>
+                                <option value="savelyeva">Савельева А.</option>
+                                <option value="soldatova">Солдатова А.</option>
+                                <option value="sotnik">Сотник С.</option>
+                                <option value="teliya">Телия А.</option>
+                                <option value="torubarova">Торубарова Д</option>
+                                <option value="fedorova">Федорова В.</option>
+                                <option value="zhukova">Жукова М.</option>
+                                <option value="sherstobitova">Шерстобитова О</option>
+                                <option value="shuvalova">Шувалова Ю.</option>
+                                <option value="yunyaev">Юняев Р.</option>
+                                <option value="yakunina">Якунина О</option>
+                            </select>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="label">Продюсер:</td>
+                        <td>
+                            <select id="figaro-producer" name="producer">
+                                <option value="">-- Выберите продюсера --</option>
+                                <option value="bykova">Быкова</option>
+                                <!-- Другие фамилии будут подгружаться отдельно -->
+                            </select>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="label">Оператор:</td>
+                        <td>
+                            <select id="figaro-operator" name="operator">
+                                <option value="">-- Выберите оператора --</option>
+                                <option value="rozhkov">Рожков</option>
+                                <option value="ivanovsky">Ивановский</option>
+                                <option value="likhachev">Лихачёв</option>
+                                <!-- Другие фамилии будут подгружаться отдельно -->
+                            </select>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="label">Видео инженер:</td>
+                        <td>
+                            <select id="figaro-video-engineer" name="video-engineer">
+                                <option value="">-- Выберите видео инженера --</option>
+                                <!-- Фамилии будут подгружаться отдельно -->
+                            </select>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td colspan="2" style="background-color: #ecf0f1; font-weight: bold; text-align: center;">
+                            Даты и время
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="label">Дата подачи заявки:</td>
+                        <td>
+                            <input type="date" id="figaro-application-date" name="application-date" required>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="label">Дата съемки:</td>
+                        <td>
+                            <input type="date" id="figaro-shooting-date" name="shooting-date" required>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="label">Время выезда и завершения съемки:</td>
+                        <td>
+                            <div class="date-time-group">
+                                <div>
+                                    <input type="time" id="figaro-start-time" name="start-time" value="09:00">
+                                </div>
+                                <div style="text-align: center; line-height: 40px;">-</div>
+                                <div>
+                                    <input type="time" id="figaro-end-time" name="end-time" value="18:00">
+                                </div>
+                            </div>
+                            <div class="note">По умолчанию: 9:00 - 18:00</div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="label">Дата эфира:</td>
+                        <td>
+                            <input type="date" id="figaro-broadcast-date" name="broadcast-date">
+                            <div class="note">Оставьте пустым, если дата эфира по готовности</div>
+                        </td>
+                    </tr>
+                </table>
+                
+                <h3>Оборудование</h3>
+                
+                <table class="equipment-table">
+                    <thead>
+                        <tr>
+                            <th width="40%">Основной комплект</th>
+                            <th width="40%">Дополнительное оборудование</th>
+                            <th width="20%">Выбор дополнительного оборудования</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>
+                                камера HD SONY (XDCAM, HDCAM) c Объективом CANON\17 накамерным светом
+                                <input type="number" class="small-input" value="1" min="0" max="10"> шт
+                            </td>
+                            <td>Экшн-камера, карты памяти 2шт, система стабилизации или крепления.</td>
+                            <td>
+                                <select class="small-input">
+                                    <option value="0">0</option>
+                                    <option value="1">1</option>
+                                    <option value="2">2</option>
+                                    <option value="3">3</option>
+                                </select>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Аккумулятор <input type="number" class="small-input" value="2" min="0" max="10"> шт</td>
+                            <td>Микрофон ручной с Логотипом Первого канала. Плагон.</td>
+                            <td>
+                                <select class="small-input">
+                                    <option value="0">0</option>
+                                    <option value="1">1</option>
+                                    <option value="2">2</option>
+                                    <option value="3">3</option>
+                                </select>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Карта памяти <input type="number" class="small-input" value="2" min="0" max="10"> шт</td>
+                            <td>Микрофон ручной (проводной) с Логотипом Первого канала. Звуковой кабель xlr 5м.</td>
+                            <td>
+                                <select class="small-input">
+                                    <option value="0">0</option>
+                                    <option value="1">1</option>
+                                    <option value="2">2</option>
+                                    <option value="3">3</option>
+                                </select>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                Комплект света: DEDOLIGHT 3 прибора.(направленный свет) 1 прибор(заполняющий свет)
+                                <input type="number" class="small-input" value="1" min="0" max="10"> шт
+                            </td>
+                            <td>Радиосистема SENNHEISER EK 100 "ПЕТЛЯ" 1 ШТ.</td>
+                            <td>
+                                <select class="small-input">
+                                    <option value="0">0</option>
+                                    <option value="1" selected>1</option>
+                                    <option value="2">2</option>
+                                    <option value="3">3</option>
+                                </select>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Светоотражатель флекс <input type="number" class="small-input" value="1" min="0" max="10"> шт</td>
+                            <td>"Удочка" микрофонная SENNHEISER.</td>
+                            <td>
+                                <select class="small-input">
+                                    <option value="0">0</option>
+                                    <option value="1">1</option>
+                                    <option value="2">2</option>
+                                    <option value="3">3</option>
+                                </select>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Кофр транспортный <input type="number" class="small-input" value="1" min="0" max="10"> шт</td>
+                            <td>Лайтпанель 1шт Bi-Color Flood DMX.</td>
+                            <td>
+                                <select class="small-input">
+                                    <option value="0">0</option>
+                                    <option value="1" selected>1</option>
+                                    <option value="2">2</option>
+                                    <option value="3">3</option>
+                                </select>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Дождевик (зимник) для камеры <input type="number" class="small-input" value="1" min="0" max="10"> шт</td>
+                            <td>Фильтры.</td>
+                            <td>
+                                <select class="small-input">
+                                    <option value="0">0</option>
+                                    <option value="1">1</option>
+                                    <option value="2">2</option>
+                                    <option value="3">3</option>
+                                </select>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Наушники SENNHEISER HD280 <input type="number" class="small-input" value="1" min="0" max="10"> шт</td>
+                            <td>Объектив широкоугольный 11*</td>
+                            <td>
+                                <select class="small-input">
+                                    <option value="0">0</option>
+                                    <option value="1">1</option>
+                                    <option value="2">2</option>
+                                    <option value="3">3</option>
+                                </select>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Штатив для видеокамеры <input type="number" class="small-input" value="1" min="0" max="10"> шт</td>
+                            <td>Широкоугольная линза.</td>
+                            <td>
+                                <select class="small-input">
+                                    <option value="0">0</option>
+                                    <option value="1">1</option>
+                                    <option value="2">2</option>
+                                    <option value="3">3</option>
+                                </select>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td></td>
+                            <td>Монитор к камере.</td>
+                            <td>
+                                <select class="small-input">
+                                    <option value="0">0</option>
+                                    <option value="1">1</option>
+                                    <option value="2">2</option>
+                                    <option value="3">3</option>
+                                </select>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <div class="form-actions">
+                    <button type="reset" class="reset-btn">Очистить форму</button>
+                    <button type="submit" class="submit-btn">Отправить заявку</button>
+                </div>
+            </form>
+        </div>
+        
+        <!-- Форма ТТК -->
+        <div id="formTTK" class="form-container ttk">
+            <div class="form-header ttk">
+                <h1>Заявка на видеосъемку - Технологический центр ТВ (ТТК)</h1>
+                <button class="back-btn" onclick="goBack()">← Назад к выбору</button>
+            </div>
+            
+            <div class="header-info">
+                <div>Подрядчик "Технологический центр ТВ"</div>
+                <div>Заказ-наряд на видеосъемку</div>
+                <div>ДУТ "Доброе утро"</div>
+            </div>
+            
+            <form id="shooting-request-form-ttk">
+                <table class="form-table">
+                    <tr>
+                        <td class="label required">Название сюжета:</td>
+                        <td>
+                            <input type="text" id="ttk-story-title" name="story-title" placeholder="Введите название сюжета" required>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="label required">Аннотация к съемке и адрес локации:</td>
+                        <td>
+                            <textarea id="ttk-annotation" name="annotation" placeholder="Введите аннотацию и адрес локации" required></textarea>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="label">Примечания (погода, парковка и т.д.):</td>
+                        <td>
+                            <textarea id="ttk-notes" name="notes" placeholder="Введите примечания"></textarea>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="label">Аккредитация:</td>
+                        <td>
+                            <select id="ttk-accreditation" name="accreditation">
+                                <option value="no" selected>НЕТ</option>
+                                <option value="yes">ДА</option>
+                            </select>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="label">Уточнения (если нужно):</td>
+                        <td>
+                            <textarea id="ttk-clarifications" name="clarifications" placeholder="Введите уточнения"></textarea>
+                        </td>
+                    </tr>
+                    
+                    <tr>
+                        <td colspan="2" class="section-title">
+                            Ответственные за проведение съемок
+                        </td>
+                    </tr>
+                    
+                    <tr>
+                        <td class="label">Режиссер (редактор):</td>
+                        <td>
+                            <select id="ttk-director" name="director">
+                                <option value="">-- Выберите редактора --</option>
+                                <option value="baklanova">Бакланова Н</option>
+                                <option value="varkentin">Варкентин О</option>
+                                <option value="dubasova">Дубасова Т</option>
+                                <option value="zheleznov">Железнов А</option>
+                                <option value="izvarina">Изварина М</option>
+                                <option value="kazandzhan">Казанджан И</option>
+                                <option value="lomovtsev">Ломовцев Э</option>
+                                <option value="materanskaya">Матеранская И</option>
+                                <option value="mironova">Миронова Н</option>
+                            </select>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="label">Корреспондент:</td>
+                        <td>
+                            <select id="ttk-correspondent" name="correspondent">
+                                <option value="">-- Выберите корреспондента --</option>
+                                <option value="abrosimova">Абросимова А.</option>
+                                <option value="alkova">Алькова И.</option>
+                                <option value="astrahanceva">Астраханцева А.</option>
+                                <option value="belyanskaya">Белянская Л</option>
+                                <option value="bronzova">Бронзова М</option>
+                                <option value="vashuk">Вашук А.</option>
+                                <option value="grebenshikova">Гребенщикова А.</option>
+                                <option value="zavidova">Завидова А.</option>
+                                <option value="ivanova">Иванова А</option>
+                                <option value="ionkina">Ионкина К</option>
+                                <option value="kobrin">Кобрин И</option>
+                                <option value="kovaleva">Ковалева Н.</option>
+                                <option value="kozlova">Козлова Ю.</option>
+                                <option value="korolkova">Королькова А.</option>
+                                <option value="kremeshnaya">Кремешная А.</option>
+                                <option value="krylova">Крылова А.</option>
+                                <option value="kulabuhova">Кулабухова М</option>
+                                <option value="kuzmin-a">Кузьмин А.</option>
+                                <option value="kuzmin-d">Кузьмин Д.</option>
+                                <option value="kuskova">Кускова М.</option>
+                                <option value="lyubchenko">Любченко Н.</option>
+                                <option value="makaryan">Макарян К.</option>
+                                <option value="molostova">Молостова Ю.</option>
+                                <option value="nesterov">Нестеров Ю.</option>
+                                <option value="neymanis">Нейманис С.</option>
+                                <option value="nikishova">Никишова Е.</option>
+                                <option value="nikishicheva">Никишичева О.</option>
+                                <option value="nikolaeva">Николаева М.</option>
+                                <option value="novohatnyaya">Новохатняя А.</option>
+                                <option value="obolenskih">Оболенских В</option>
+                                <option value="orehova">Орехова А.</option>
+                                <option value="popov">Попов В.</option>
+                                <option value="popova-a">Попова А.</option>
+                                <option value="popova-e">Попова Е.</option>
+                                <option value="pravdina">Правдина Н.</option>
+                                <option value="radkevich">Радкевич А</option>
+                                <option value="ryzhova">Рыжова А.</option>
+                                <option value="savelyeva">Савельева А.</option>
+                                <option value="soldatova">Солдатова А.</option>
+                                <option value="sotnik">Сотник С.</option>
+                                <option value="teliya">Телия А.</option>
+                                <option value="torubarova">Торубарова Д</option>
+                                <option value="fedorova">Федорова В.</option>
+                                <option value="zhukova">Жукова М.</option>
+                                <option value="sherstobitova">Шерстобитова О</option>
+                                <option value="shuvalova">Шувалова Ю.</option>
+                                <option value="yunyaev">Юняев Р.</option>
+                                <option value="yakunina">Якунина О</option>
+                            </select>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="label">Продюсер:</td>
+                        <td>
+                            <select id="ttk-producer" name="producer">
+                                <option value="">-- Выберите продюсера --</option>
+                                <!-- Фамилии будут подгружаться отдельно -->
+                            </select>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="label">Оператор:</td>
+                        <td>
+                            <select id="ttk-operator" name="operator">
+                                <option value="">-- Выберите оператора --</option>
+                                <!-- Фамилии будут подгружаться отдельно -->
+                            </select>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="label">Видео инженер:</td>
+                        <td>
+                            <select id="ttk-video-engineer" name="video-engineer">
+                                <option value="">-- Выберите видео инженера --</option>
+                                <!-- Фамилии будут подгружаться отдельно -->
+                            </select>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="label">Номер автомобиля:</td>
+                        <td>
+                            <input type="text" id="ttk-car-number" name="car-number" placeholder="Введите номер автомобиля">
+                        </td>
+                    </tr>
+                    
+                    <tr>
+                        <td colspan="2" class="section-title">
+                            Даты и время
+                        </td>
+                    </tr>
+                    
+                    <tr>
+                        <td class="label">Дата подачи заявки:</td>
+                        <td>
+                            <input type="date" id="ttk-application-date" name="application-date" required>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="label">Дата съемки:</td>
+                        <td>
+                            <input type="date" id="ttk-shooting-date" name="shooting-date" required>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="label">Время выезда и завершения съемки:</td>
+                        <td>
+                            <div class="date-time-group">
+                                <div>
+                                    <input type="time" id="ttk-start-time" name="start-time" value="13:00">
+                                </div>
+                                <div style="text-align: center; line-height: 40px;">-</div>
+                                <div>
+                                    <input type="time" id="ttk-end-time" name="end-time" value="22:00">
+                                </div>
+                            </div>
+                            <div class="note">По умолчанию: 13:00 - 22:00</div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="label">Продление:</td>
+                        <td>
+                            <input type="text" id="ttk-extension" name="extension" placeholder="Укажите продление при необходимости">
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="label">Дата эфира:</td>
+                        <td>
+                            <input type="date" id="ttk-broadcast-date" name="broadcast-date">
+                            <div class="note">Оставьте пустым, если дата эфира по готовности</div>
+                        </td>
+                    </tr>
+                </table>
+                
+                <h3>Оборудование - Основной комплект 1</h3>
+                
+                <table class="equipment-table">
+                    <thead>
+                        <tr>
+                            <th width="40%">Основной комплект</th>
+                            <th width="40%">Дополнительное оборудование</th>
+                            <th width="20%">Выбор дополнительного оборудования</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>
+                                Камера PANASONIC AG-HPX500E c накамерным светом
+                                <input type="number" class="small-input" value="1" min="0" max="10"> шт
+                            </td>
+                            <td>Экшн-камера Gopro 11 карты памяти 2шт, система стабилизации или крепления.</td>
+                            <td>
+                                <select class="small-input">
+                                    <option value="0" selected>0</option>
+                                    <option value="1">1</option>
+                                    <option value="2">2</option>
+                                    <option value="3">3</option>
+                                </select>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Объектив CANON\17 <input type="number" class="small-input" value="1" min="0" max="10"> шт</td>
+                            <td>Удочка микрофонная SENNHEISER.</td>
+                            <td>
+                                <select class="small-input">
+                                    <option value="0" selected>0</option>
+                                    <option value="1">1</option>
+                                    <option value="2">2</option>
+                                    <option value="3">3</option>
+                                </select>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Штатив для видеокамеры SACHTLER v 18 <input type="number" class="small-input" value="1" min="0" max="10"> шт</td>
+                            <td></td>
+                            <td></td>
+                        </tr>
+                        <tr>
+                            <td>Наушники SENNHEISER HD280 <input type="number" class="small-input" value="1" min="0" max="10"> шт</td>
+                            <td></td>
+                            <td></td>
+                        </tr>
+                        <tr>
+                            <td>Аккумулятор BEILLEN BL-F-BP190 <input type="number" class="small-input" value="2" min="0" max="10"> шт</td>
+                            <td></td>
+                            <td></td>
+                        </tr>
+                        <tr>
+                            <td>Карта памяти PANASONIC AJ-P2EO32XG <input type="number" class="small-input" value="4" min="0" max="10"> шт</td>
+                            <td></td>
+                            <td></td>
+                        </tr>
+                        <tr>
+                            <td>
+                                Комплект света: DEDOLIGHT 3 прибора (направленный свет). Lowell tota-light 1T-10E 1 прибор (заполняющий свет)
+                                <input type="number" class="small-input" value="1" min="0" max="10"> шт
+                            </td>
+                            <td></td>
+                            <td></td>
+                        </tr>
+                        <tr>
+                            <td>Радиосистема SENNHEISER EK 100 "ПЕТЛЯ" <input type="number" class="small-input" value="1" min="0" max="10"> шт</td>
+                            <td>Радиосистема SENNHEISER EK 100 "ПЕТЛЯ" 1 шт.</td>
+                            <td>
+                                <select class="small-input">
+                                    <option value="0" selected>0</option>
+                                    <option value="1">1</option>
+                                    <option value="2">2</option>
+                                    <option value="3">3</option>
+                                </select>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Система оцифровки NEXTO DI (жесткий диск) <input type="number" class="small-input" value="1" min="0" max="10"> шт</td>
+                            <td>Звуковой пульт SHURE.</td>
+                            <td>
+                                <select class="small-input">
+                                    <option value="0" selected>0</option>
+                                    <option value="1">1</option>
+                                    <option value="2">2</option>
+                                    <option value="3">3</option>
+                                </select>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Микрофон ручной (проводной) с Логотипом Первого канала. Звуковой кабель xlr 5м. <input type="number" class="small-input" value="1" min="0" max="10"> шт</td>
+                            <td></td>
+                            <td></td>
+                        </tr>
+                        <tr>
+                            <td>Лайтпанель TECPRO FELLONI <input type="number" class="small-input" value="1" min="0" max="10"> шт</td>
+                            <td>Лайтпанель TECPRO FELLONI 1 шт.</td>
+                            <td>
+                                <select class="small-input">
+                                    <option value="0" selected>0</option>
+                                    <option value="1">1</option>
+                                    <option value="2">2</option>
+                                    <option value="3">3</option>
+                                </select>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Видеомонитор контрольный <input type="number" class="small-input" value="1" min="0" max="10"> шт</td>
+                            <td>Объектив широкоугольный 12"</td>
+                            <td>
+                                <select class="small-input">
+                                    <option value="0" selected>0</option>
+                                    <option value="1">1</option>
+                                    <option value="2">2</option>
+                                    <option value="3">3</option>
+                                </select>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Дождевик (зимник) для камеры <input type="number" class="small-input" value="1" min="0" max="10"> шт</td>
+                            <td>Коптер.</td>
+                            <td>
+                                <select class="small-input">
+                                    <option value="0" selected>0</option>
+                                    <option value="1">1</option>
+                                    <option value="2">2</option>
+                                    <option value="3">3</option>
+                                </select>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td></td>
+                            <td>Рюкзак для прямого включения "Live-U"</td>
+                            <td>
+                                <select class="small-input">
+                                    <option value="0" selected>0</option>
+                                    <option value="1">1</option>
+                                    <option value="2">2</option>
+                                    <option value="3">3</option>
+                                </select>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td></td>
+                            <td>Стедикам ronin rs</td>
+                            <td>
+                                <select class="small-input">
+                                    <option value="0" selected>0</option>
+                                    <option value="1">1</option>
+                                    <option value="2">2</option>
+                                    <option value="3">3</option>
+                                </select>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td></td>
+                            <td>Видеокамера SONY FX 3</td>
+                            <td>
+                                <select class="small-input">
+                                    <option value="0" selected>0</option>
+                                    <option value="1">1</option>
+                                    <option value="2">2</option>
+                                    <option value="3">3</option>
+                                </select>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td></td>
+                            <td>Камера Panasonic AJ-PX270</td>
+                            <td>
+                                <select class="small-input">
+                                    <option value="0" selected>0</option>
+                                    <option value="1">1</option>
+                                    <option value="2">2</option>
+                                    <option value="3">3</option>
+                                </select>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <table class="form-table" style="margin-top: 30px;">
+                    <tr>
+                        <td class="label">Дата и время сдачи материала в инжест:</td>
+                        <td>
+                            <input type="datetime-local" id="ttk-submission-date" name="submission-date">
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="label">Инженер инжеста ФИО:</td>
+                        <td>
+                            <input type="text" id="ttk-engineer-name" name="engineer-name" placeholder="Введите ФИО инженера">
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="label">Подпись:</td>
+                        <td>
+                            <input type="text" id="ttk-signature" name="signature" placeholder="Подпись">
+                        </td>
+                    </tr>
+                </table>
+                
+                <div class="form-actions">
+                    <button type="reset" class="reset-btn">Очистить форму</button>
+                    <button type="submit" class="submit-btn">Отправить заявку</button>
+                </div>
+            </form>
+        </div>
+        
+        <!-- Форма для продюсеров -->
+        <div id="formProducer" class="form-container producer">
+            <div class="form-header producer">
+                <h1>Заявка продюсерам</h1>
+                <button class="back-btn" onclick="goBack()">← Назад к выбору</button>
+            </div>
+            
+            <div class="header-info">
+                <div>Заявка на видеосъемку</div>
+                <div>Программа "Доброе утро"</div>
+                <div>Для продюсеров</div>
+            </div>
+            
+            <form id="shooting-request-form-producer">
+                <table class="form-table">
+                    <tr>
+                        <td class="label required">Название сюжета:</td>
+                        <td>
+                            <input type="text" id="producer-story-title" name="story-title" placeholder="Введите название сюжета" required>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="label required">Краткое содержание сюжета:</td>
+                        <td>
+                            <textarea id="producer-summary" name="summary" placeholder="Введите краткое содержание сюжета" required></textarea>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="label">Герои:</td>
+                        <td>
+                            <textarea id="producer-heroes" name="heroes" placeholder="Укажите героев сюжета"></textarea>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="label required">Дата съемки:</td>
+                        <td>
+                            <input type="date" id="producer-shooting-date" name="shooting-date" required>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="label required">Время съемки:</td>
+                        <td>
+                            <div class="date-time-group">
+                                <div>
+                                    <input type="time" id="producer-start-time" name="start-time" required>
+                                </div>
+                                <div style="text-align: center; line-height: 40px;">-</div>
+                                <div>
+                                    <input type="time" id="producer-end-time" name="end-time" required>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="label required">Корреспондент:</td>
+                        <td>
+                            <select id="producer-correspondent" name="correspondent" required>
+                                <option value="">-- Выберите корреспондента --</option>
+                                <option value="abrosimova">Абросимова А.</option>
+                                <option value="alkova">Алькова И.</option>
+                                <option value="astrahanceva">Астраханцева А.</option>
+                                <option value="belyanskaya">Белянская Л</option>
+                                <option value="bronzova">Бронзова М</option>
+                                <option value="vashuk">Вашук А.</option>
+                                <option value="grebenshikova">Гребенщикова А.</option>
+                                <option value="zavidova">Завидова А.</option>
+                                <option value="ivanova">Иванова А</option>
+                                <option value="ionkina">Ионкина К</option>
+                                <option value="kobrin">Кобрин И</option>
+                                <option value="kovaleva">Ковалева Н.</option>
+                                <option value="kozlova">Козлова Ю.</option>
+                                <option value="korolkova">Королькова А.</option>
+                                <option value="kremeshnaya">Кремешная А.</option>
+                                <option value="krylova">Крылова А.</option>
+                                <option value="kulabuhova">Кулабухова М</option>
+                                <option value="kuzmin-a">Кузьмин А.</option>
+                                <option value="kuzmin-d">Кузьмин Д.</option>
+                                <option value="kuskova">Кускова М.</option>
+                                <option value="lyubchenko">Любченко Н.</option>
+                                <option value="makaryan">Макарян К.</option>
+                                <option value="molostova">Молостова Ю.</option>
+                                <option value="nesterov">Нестеров Ю.</option>
+                                <option value="neymanis">Нейманис С.</option>
+                                <option value="nikishova">Никишова Е.</option>
+                                <option value="nikishicheva">Никишичева О.</option>
+                                <option value="nikolaeva">Николаева М.</option>
+                                <option value="novohatnyaya">Новохатняя А.</option>
+                                <option value="obolenskih">Оболенских В</option>
+                                <option value="orehova">Орехова А.</option>
+                                <option value="popov">Попов В.</option>
+                                <option value="popova-a">Попова А.</option>
+                                <option value="popova-e">Попова Е.</option>
+                                <option value="pravdina">Правдина Н.</option>
+                                <option value="radkevich">Радкевич А</option>
+                                <option value="ryzhova">Рыжова А.</option>
+                                <option value="savelyeva">Савельева А.</option>
+                                <option value="soldatova">Солдатова А.</option>
+                                <option value="sotnik">Сотник С.</option>
+                                <option value="teliya">Телия А.</option>
+                                <option value="torubarova">Торубарова Д</option>
+                                <option value="fedorova">Федорова В.</option>
+                                <option value="zhukova">Жукова М.</option>
+                                <option value="sherstobitova">Шерстобитова О</option>
+                                <option value="shuvalova">Шувалова Ю.</option>
+                                <option value="yunyaev">Юняев Р.</option>
+                                <option value="yakunina">Якунина О</option>
+                            </select>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="label required">Контакты корреспондента:</td>
+                        <td>
+                            <input type="text" id="producer-correspondent-contacts" name="correspondent-contacts" placeholder="Введите контакты корреспондента (телефон, email)" required>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="label required">Редактор:</td>
+                        <td>
+                            <select id="producer-director" name="director" required>
+                                <option value="">-- Выберите редактора --</option>
+                                <option value="baklanova">Бакланова Н</option>
+                                <option value="varkentin">Варкентин О</option>
+                                <option value="dubasova">Дубасова Т</option>
+                                <option value="zheleznov">Железнов А</option>
+                                <option value="izvarina">Изварина М</option>
+                                <option value="kazandzhan">Казанджан И</option>
+                                <option value="lomovtsev">Ломовцев Э</option>
+                                <option value="materanskaya">Матеранская И</option>
+                                <option value="mironova">Миронова Н</option>
+                            </select>
+                        </td>
+                    </tr>
+                </table>
+                
+                <div class="form-actions">
+                    <button type="reset" class="reset-btn">Очистить форму</button>
+                    <button type="submit" class="submit-btn">Отправить заявку</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Функция для выбора подрядчика
+        function selectContractor(contractor) {
+            const mainScreen = document.getElementById('mainScreen');
+            const formFigaro = document.getElementById('formFigaro');
+            const formTTK = document.getElementById('formTTK');
+            const formProducer = document.getElementById('formProducer');
+            
+            // Скрываем все
+            mainScreen.classList.remove('active');
+            formFigaro.classList.remove('active');
+            formTTK.classList.remove('active');
+            formProducer.classList.remove('active');
+            
+            // Показываем выбранную форму
+            if (contractor === 'figaro') {
+                formFigaro.classList.add('active');
+                // Устанавливаем дату подачи заявки на сегодня для ФИГАРО
+                document.getElementById('figaro-application-date').valueAsDate = new Date();
+                // Устанавливаем минимальную дату для съемки
+                const today = new Date().toISOString().split('T')[0];
+                document.getElementById('figaro-shooting-date').min = today;
+                document.getElementById('figaro-broadcast-date').min = today;
+            } else if (contractor === 'ttk') {
+                formTTK.classList.add('active');
+                // Устанавливаем дату подачи заявки на сегодня для ТТК
+                const today = new Date().toISOString().split('T')[0];
+                document.getElementById('ttk-application-date').value = today;
+                // Устанавливаем минимальные даты
+                document.getElementById('ttk-shooting-date').min = today;
+                document.getElementById('ttk-broadcast-date').min = today;
+                // Устанавливаем минимальную дату для сдачи материала
+                const now = new Date();
+                const currentDateTime = now.toISOString().slice(0, 16);
+                document.getElementById('ttk-submission-date').min = currentDateTime;
+            } else if (contractor === 'producer') {
+                formProducer.classList.add('active');
+                // Устанавливаем минимальную дату для съемки
+                const today = new Date().toISOString().split('T')[0];
+                document.getElementById('producer-shooting-date').min = today;
+                // Добавляем обработчик для автоматического названия по дате съемки
+                document.getElementById('producer-shooting-date').addEventListener('change', function() {
+                    updateStoryTitleFromDate('producer');
+                });
+            }
+        }
+        
+        // Функция для возврата на главный экран
+        function goBack() {
+            const mainScreen = document.getElementById('mainScreen');
+            const formFigaro = document.getElementById('formFigaro');
+            const formTTK = document.getElementById('formTTK');
+            const formProducer = document.getElementById('formProducer');
+            
+            // Скрываем все формы
+            formFigaro.classList.remove('active');
+            formTTK.classList.remove('active');
+            formProducer.classList.remove('active');
+            
+            // Показываем главный экран
+            mainScreen.classList.add('active');
+        }
+        
+        // Функция для автоматического обновления названия сюжета на основе даты съемки
+        function updateStoryTitleFromDate(formType) {
+            let shootingDateInput, titleInput;
+            
+            if (formType === 'figaro') {
+                shootingDateInput = document.getElementById('figaro-shooting-date');
+                titleInput = document.getElementById('figaro-story-title');
+            } else if (formType === 'ttk') {
+                shootingDateInput = document.getElementById('ttk-shooting-date');
+                titleInput = document.getElementById('ttk-story-title');
+            } else if (formType === 'producer') {
+                shootingDateInput = document.getElementById('producer-shooting-date');
+                titleInput = document.getElementById('producer-story-title');
+            }
+            
+            if (shootingDateInput && titleInput && shootingDateInput.value) {
+                const date = new Date(shootingDateInput.value);
+                // Форматируем дату в формат ДД.ММ.ГГГГ
+                const day = String(date.getDate()).padStart(2, '0');
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const year = date.getFullYear();
+                const formattedDate = `${day}.${month}.${year}`;
+                
+                // Устанавливаем название в формате "Съемка от ДД.ММ.ГГГГ"
+                titleInput.value = `Съемка от ${formattedDate}`;
+            }
+        }
+        
+        // Функция сбора данных оборудования
+        function collectEquipment(formId) {
+            const equipment = [];
+            const equipmentTable = document.querySelector(`#${formId} .equipment-table tbody`);
+            if (equipmentTable) {
+                const rows = equipmentTable.querySelectorAll('tr');
+                rows.forEach(row => {
+                    const mainEquip = row.querySelector('td:first-child')?.textContent?.trim() || '';
+                    const additionalEquip = row.querySelector('td:nth-child(2)')?.textContent?.trim() || '';
+                    const quantityInput = row.querySelector('td:first-child input[type="number"]');
+                    const additionalSelect = row.querySelector('td:last-child select');
+                    
+                    if (mainEquip || additionalEquip) {
+                        equipment.push({
+                            main: mainEquip.replace(/\s+/g, ' '),
+                            additional: additionalEquip.replace(/\s+/g, ' '),
+                            mainQuantity: quantityInput ? parseInt(quantityInput.value) || 0 : 0,
+                            additionalQuantity: additionalSelect ? parseInt(additionalSelect.value) || 0 : 0
+                        });
+                    }
+                });
+            }
+            return equipment;
+        }
+
+        // Обработка отправки формы ФИГАРО
+        document.getElementById('shooting-request-form-figaro').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            // Проверка обязательных полей
+            const requiredFields = document.querySelectorAll('#shooting-request-form-figaro [required]');
+            let isValid = true;
+            
+            requiredFields.forEach(field => {
+                if (!field.value.trim()) {
+                    isValid = false;
+                    field.style.borderColor = '#e74c3c';
+                } else {
+                    field.style.borderColor = '#bdc3c7';
+                }
+            });
+            
+            if (!isValid) {
+                alert('Пожалуйста, заполните все обязательные поля (отмечены *).');
+                return;
+            }
+            
+            // Собираем данные формы
+            const formData = {
+                contractor: 'figaro',
+                storyTitle: document.getElementById('figaro-story-title').value,
+                annotation: document.getElementById('figaro-annotation').value,
+                notes: document.getElementById('figaro-notes').value,
+                accreditation: document.getElementById('figaro-accreditation').value,
+                director: document.getElementById('figaro-director').value,
+                correspondent: document.getElementById('figaro-correspondent').value,
+                producer: document.getElementById('figaro-producer').value,
+                operator: document.getElementById('figaro-operator').value,
+                videoEngineer: document.getElementById('figaro-video-engineer').value,
+                applicationDate: document.getElementById('figaro-application-date').value,
+                shootingDate: document.getElementById('figaro-shooting-date').value,
+                startTime: document.getElementById('figaro-start-time').value,
+                endTime: document.getElementById('figaro-end-time').value,
+                broadcastDate: document.getElementById('figaro-broadcast-date').value || null,
+                equipment: collectEquipment('shooting-request-form-figaro')
+            };
+            
+            // Сохраняем через applicationManager
+            if (typeof applicationManager !== 'undefined') {
+                const newApp = applicationManager.createApplication(formData);
+                alert('Заявка ВЕК XXL (ФИГАРО) успешно отправлена! Номер заявки: ' + newApp.id.substring(0, 8));
+                this.reset();
+                goBack();
+            } else {
+                alert('Ошибка: система данных не загружена. Убедитесь, что файл data.js подключен.');
+            }
+        });
+        
+        // Обработка отправки формы ТТК
+        document.getElementById('shooting-request-form-ttk').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            // Проверка обязательных полей
+            const requiredFields = document.querySelectorAll('#shooting-request-form-ttk [required]');
+            let isValid = true;
+            
+            requiredFields.forEach(field => {
+                if (!field.value.trim()) {
+                    isValid = false;
+                    field.style.borderColor = '#e74c3c';
+                } else {
+                    field.style.borderColor = '#bdc3c7';
+                }
+            });
+            
+            if (!isValid) {
+                alert('Пожалуйста, заполните все обязательные поля (отмечены *).');
+                return;
+            }
+            
+            // Собираем данные формы
+            const formData = {
+                contractor: 'ttk',
+                storyTitle: document.getElementById('ttk-story-title').value,
+                annotation: document.getElementById('ttk-annotation').value,
+                notes: document.getElementById('ttk-notes').value,
+                accreditation: document.getElementById('ttk-accreditation').value,
+                clarifications: document.getElementById('ttk-clarifications').value,
+                director: document.getElementById('ttk-director').value,
+                correspondent: document.getElementById('ttk-correspondent').value,
+                producer: document.getElementById('ttk-producer').value,
+                operator: document.getElementById('ttk-operator').value,
+                videoEngineer: document.getElementById('ttk-video-engineer').value,
+                carNumber: document.getElementById('ttk-car-number').value,
+                applicationDate: document.getElementById('ttk-application-date').value,
+                shootingDate: document.getElementById('ttk-shooting-date').value,
+                startTime: document.getElementById('ttk-start-time').value,
+                endTime: document.getElementById('ttk-end-time').value,
+                extension: document.getElementById('ttk-extension').value,
+                broadcastDate: document.getElementById('ttk-broadcast-date').value || null,
+                submissionDate: document.getElementById('ttk-submission-date').value || null,
+                engineerName: document.getElementById('ttk-engineer-name').value,
+                signature: document.getElementById('ttk-signature').value,
+                equipment: collectEquipment('shooting-request-form-ttk')
+            };
+            
+            // Сохраняем через applicationManager
+            if (typeof applicationManager !== 'undefined') {
+                const newApp = applicationManager.createApplication(formData);
+                alert('Заявка ТТК успешно отправлена! Номер заявки: ' + newApp.id.substring(0, 8));
+                this.reset();
+                goBack();
+            } else {
+                alert('Ошибка: система данных не загружена. Убедитесь, что файл data.js подключен.');
+            }
+        });
+        
+        // Обработка отправки формы для продюсеров
+        document.getElementById('shooting-request-form-producer').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            // Проверка обязательных полей
+            const requiredFields = document.querySelectorAll('#shooting-request-form-producer [required]');
+            let isValid = true;
+            
+            requiredFields.forEach(field => {
+                if (!field.value.trim()) {
+                    isValid = false;
+                    field.style.borderColor = '#e74c3c';
+                } else {
+                    field.style.borderColor = '#bdc3c7';
+                }
+            });
+            
+            if (!isValid) {
+                alert('Пожалуйста, заполните все обязательные поля (отмечены *).');
+                return;
+            }
+            
+            // Получаем текстовые значения из select элементов перед отправкой
+            const correspondentSelect = document.getElementById('producer-correspondent');
+            const directorSelect = document.getElementById('producer-director');
+            const correspondentText = correspondentSelect.options[correspondentSelect.selectedIndex]?.text || correspondentSelect.value;
+            const directorText = directorSelect.options[directorSelect.selectedIndex]?.text || directorSelect.value;
+            
+            // Собираем данные формы
+            const formData = {
+                contractor: 'producer',
+                storyTitle: document.getElementById('producer-story-title').value,
+                summary: document.getElementById('producer-summary').value,
+                heroes: document.getElementById('producer-heroes').value,
+                shootingDate: document.getElementById('producer-shooting-date').value,
+                startTime: document.getElementById('producer-start-time').value,
+                endTime: document.getElementById('producer-end-time').value,
+                correspondent: document.getElementById('producer-correspondent').value,
+                correspondentText: correspondentText,
+                correspondentContacts: document.getElementById('producer-correspondent-contacts').value,
+                director: document.getElementById('producer-director').value,
+                directorText: directorText,
+                applicationDate: new Date().toISOString().split('T')[0]
+            };
+            
+            // Сохраняем через applicationManager
+            if (typeof applicationManager !== 'undefined') {
+                const newApp = applicationManager.createApplication(formData);
+                
+                // Создаем и отправляем Word документ
+                createAndSendWordDocument(formData, newApp.id);
+                
+                alert('Заявка продюсерам успешно создана! Номер заявки: ' + newApp.id.substring(0, 8) + '\n\nWord документ будет создан и предложен для отправки на pendeho098rus@yandex.ru');
+                this.reset();
+                goBack();
+            } else {
+                alert('Ошибка: система данных не загружена. Убедитесь, что файл data.js подключен.');
+            }
+        });
+        
+        // Сброс стилей при вводе для всех форм
+        document.querySelectorAll('input, textarea, select').forEach(element => {
+            element.addEventListener('input', function() {
+                this.style.borderColor = '#bdc3c7';
+            });
+        });
+        
+        // Инициализация дат при загрузке страницы
+        document.addEventListener('DOMContentLoaded', function() {
+            // Устанавливаем дату подачи заявки на сегодня для ФИГАРО (на случай если форма открывается напрямую)
+            document.getElementById('figaro-application-date').valueAsDate = new Date();
+            
+            // Добавляем обработчик для автоматического названия по дате съемки для ФИГАРО
+            document.getElementById('figaro-shooting-date').addEventListener('change', function() {
+                updateStoryTitleFromDate('figaro');
+            });
+            
+            // Устанавливаем дату подачи заявки на сегодня для ТТК
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('ttk-application-date').value = today;
+            
+            // Добавляем обработчик для автоматического названия по дате съемки для ТТК
+            document.getElementById('ttk-shooting-date').addEventListener('change', function() {
+                updateStoryTitleFromDate('ttk');
+            });
+            
+            // Добавляем обработчик для автоматического названия по дате съемки для продюсеров
+            document.getElementById('producer-shooting-date').addEventListener('change', function() {
+                updateStoryTitleFromDate('producer');
+            });
+        });
+        
+        // Функция создания Word документа для заявки продюсерам
+        function createAndSendWordDocument(formData, applicationId) {
+            try {
+                // Используем сохраненные текстовые значения
+                const correspondentText = formData.correspondentText || formData.correspondent || '-';
+                const directorText = formData.directorText || formData.director || '-';
+                
+                // Форматируем дату
+                const formatDate = (dateString) => {
+                    if (!dateString) return '';
+                    const date = new Date(dateString + 'T00:00:00');
+                    const day = String(date.getDate()).padStart(2, '0');
+                    const month = String(date.getMonth() + 1).padStart(2, '0');
+                    const year = date.getFullYear();
+                    return `${day}.${month}.${year}`;
+                };
+                
+                // Создаем HTML контент для Word документа
+                const htmlContent = `<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Заявка продюсерам</title>
+    <style>
+        body { font-family: 'Times New Roman', serif; font-size: 12pt; margin: 2cm; line-height: 1.5; }
+        h1 { font-size: 16pt; font-weight: bold; text-align: center; margin-bottom: 20pt; }
+        h2 { text-align: center; font-size: 14pt; margin-bottom: 20pt; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10pt; }
+        td { padding: 6pt; vertical-align: top; }
+        .label-cell { font-weight: bold; width: 30%; }
+    </style>
+</head>
+<body>
+    <h1>Заявка продюсерам</h1>
+    <h2>Программа "Доброе утро"</h2>
+    <table>
+        <tr><td class="label-cell">Название сюжета:</td><td>${formData.storyTitle || '-'}</td></tr>
+        <tr><td class="label-cell">Краткое содержание сюжета:</td><td>${(formData.summary || '').replace(/\n/g, '<br>')}</td></tr>
+        ${formData.heroes ? `<tr><td class="label-cell">Герои:</td><td>${formData.heroes.replace(/\n/g, '<br>')}</td></tr>` : ''}
+        <tr><td class="label-cell">Дата съемки:</td><td>${formatDate(formData.shootingDate)}</td></tr>
+        <tr><td class="label-cell">Время съемки:</td><td>${formData.startTime || '-'} - ${formData.endTime || '-'}</td></tr>
+        <tr><td class="label-cell">Корреспондент:</td><td>${correspondentText || '-'}</td></tr>
+        <tr><td class="label-cell">Контакты корреспондента:</td><td>${formData.correspondentContacts || '-'}</td></tr>
+        <tr><td class="label-cell">Редактор:</td><td>${directorText || '-'}</td></tr>
+        <tr><td class="label-cell">Дата подачи заявки:</td><td>${formatDate(formData.applicationDate)}</td></tr>
+    </table>
+    <div style="margin-top: 30pt; font-size: 10pt; color: #666;"><p>Номер заявки: ${applicationId.substring(0, 8)}</p></div>
+</body>
+</html>`;
+                
+                // Создаем Blob с HTML содержимым
+                const blob = new Blob(['\ufeff', htmlContent], { type: 'application/msword' });
+                
+                // Создаем ссылку для скачивания
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                
+                // Имя файла
+                const fileName = `Заявка_продюсерам_${formatDate(formData.shootingDate)}_${(formData.storyTitle || applicationId.substring(0, 8)).substring(0, 20)}.doc`;
+                link.download = fileName.replace(/[<>:"/\\|?*]/g, '_');
+                
+                // Добавляем ссылку на страницу и кликаем по ней
+                document.body.appendChild(link);
+                link.click();
+                
+                // Удаляем ссылку и освобождаем URL
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+                
+                // Показываем информацию об отправке
+                setTimeout(() => {
+                    const sendEmail = confirm('Документ Word создан и скачан.\n\nХотите открыть почтовый клиент для отправки на pendeho098rus@yandex.ru?');
+                    if (sendEmail) {
+                        const subject = encodeURIComponent(`Заявка продюсерам: ${formData.storyTitle || 'Новая заявка'}`);
+                        const body = encodeURIComponent(`Добрый день!\n\nВо вложении заявка продюсерам.\n\nНомер заявки: ${applicationId.substring(0, 8)}\nДата съемки: ${formatDate(formData.shootingDate)}`);
+                        window.location.href = `mailto:pendeho098rus@yandex.ru?subject=${subject}&body=${body}`;
+                    }
+                }, 500);
+                
+            } catch (error) {
+                console.error('Ошибка при создании Word документа:', error);
+                alert('Ошибка при создании Word документа: ' + error.message);
+            }
+        }
+    </script>
+    <script src="data.js"></script>
+</body>
+</html>

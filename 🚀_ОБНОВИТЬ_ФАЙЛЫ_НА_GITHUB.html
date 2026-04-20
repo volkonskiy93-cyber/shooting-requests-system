@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Обновление файлов на GitHub</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .status {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 5px;
+            display: none;
+        }
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .log {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 5px;
+            max-height: 400px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .log-item {
+            margin: 5px 0;
+            padding: 5px;
+        }
+        .log-item.success {
+            color: #28a745;
+        }
+        .log-item.error {
+            color: #dc3545;
+        }
+        .log-item.info {
+            color: #007bff;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Обновление файлов на GitHub</h1>
+        <p>Этот инструмент обновит все файлы проекта на GitHub через API.</p>
+        
+        <button id="updateBtn" onclick="updateFiles()">Обновить все файлы</button>
+        <button onclick="checkStatus()">Проверить статус</button>
+        
+        <div id="status" class="status"></div>
+        <div id="log" class="log"></div>
+    </div>
+
+    <script>
+        const token = 'YOUR_GITHUB_TOKEN_HERE';
+        const repo = 'volkonskiy93-cyber/-2';
+        const baseUrl = `https://api.github.com/repos/${repo}/contents`;
+        
+        const headers = {
+            'Authorization': `token ${token}`,
+            'Accept': 'application/vnd.github.v3+json'
+        };
+        
+        function log(message, type = 'info') {
+            const logDiv = document.getElementById('log');
+            const item = document.createElement('div');
+            item.className = `log-item ${type}`;
+            item.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logDiv.appendChild(item);
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+        
+        function showStatus(message, type) {
+            const statusDiv = document.getElementById('status');
+            statusDiv.textContent = message;
+            statusDiv.className = `status ${type}`;
+            statusDiv.style.display = 'block';
+        }
+        
+        async function updateFile(fileName, fileContent, commitMessage) {
+            try {
+                log(`Обновление ${fileName}...`, 'info');
+                
+                // Получаем SHA существующего файла
+                let sha = null;
+                try {
+                    const getResponse = await fetch(`${baseUrl}/${encodeURIComponent(fileName)}`, {
+                        method: 'GET',
+                        headers: headers
+                    });
+                    if (getResponse.ok) {
+                        const data = await getResponse.json();
+                        sha = data.sha;
+                    }
+                } catch (e) {
+                    // Файл не существует, создаем новый
+                }
+                
+                // Кодируем в base64
+                const b64 = btoa(unescape(encodeURIComponent(fileContent)));
+                
+                // Создаем тело запроса
+                const body = {
+                    message: commitMessage,
+                    content: b64
+                };
+                
+                if (sha) {
+                    body.sha = sha;
+                }
+                
+                // Отправляем запрос
+                const response = await fetch(`${baseUrl}/${encodeURIComponent(fileName)}`, {
+                    method: 'PUT',
+                    headers: {
+                        ...headers,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(body)
+                });
+                
+                if (response.ok) {
+                    log(`${fileName} - OK`, 'success');
+                    return true;
+                } else {
+                    const error = await response.text();
+                    log(`${fileName} - ERROR: ${error}`, 'error');
+                    return false;
+                }
+            } catch (error) {
+                log(`${fileName} - ERROR: ${error.message}`, 'error');
+                return false;
+            }
+        }
+        
+        async function loadLocalFile(fileName) {
+            try {
+                const response = await fetch(fileName);
+                if (response.ok) {
+                    return await response.text();
+                } else {
+                    throw new Error(`Не удалось загрузить файл: ${fileName}`);
+                }
+            } catch (error) {
+                log(`Ошибка загрузки ${fileName}: ${error.message}`, 'error');
+                return null;
+            }
+        }
+        
+        async function updateFiles() {
+            const btn = document.getElementById('updateBtn');
+            btn.disabled = true;
+            document.getElementById('log').innerHTML = '';
+            showStatus('Обновление файлов...', 'info');
+            
+            const files = [
+                { name: 'index.html', message: 'Update index.html' },
+                { name: 'admin.html', message: 'Update admin.html' },
+                { name: 'auth.js', message: 'Update auth.js' },
+                { name: 'data.js', message: 'Update data.js' },
+                { name: 'admin.js', message: 'Update admin.js' },
+                { name: 'vercel.json', message: 'Update vercel.json - fix configuration' },
+                { name: 'package.json', message: 'Update package.json' }
+            ];
+            
+            let success = 0;
+            let fail = 0;
+            
+            // Обновляем обычные файлы
+            for (const file of files) {
+                const content = await loadLocalFile(file.name);
+                if (content) {
+                    const result = await updateFile(file.name, content, file.message);
+                    if (result) success++;
+                    else fail++;
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                } else {
+                    fail++;
+                }
+            }
+            
+            // Обновляем deepseek_htmlобщая.html
+            // Пробуем разные варианты имени файла
+            const deepseekVariants = [
+                'deepseek_htmlобщая.html',
+                'deepseek_html%D0%BE%D0%B1%D1%89%D0%B0%D1%8F.html'
+            ];
+            
+            let deepseekUpdated = false;
+            for (const variant of deepseekVariants) {
+                try {
+                    const response = await fetch(variant);
+                    if (response.ok) {
+                        const content = await response.text();
+                        const result = await updateFile(variant, content, 'Update deepseek_htmlобщая.html - добавлена функция выгрузки в DOC');
+                        if (result) {
+                            success++;
+                            deepseekUpdated = true;
+                            break;
+                        }
+                    }
+                } catch (e) {
+                    continue;
+                }
+            }
+            
+            if (!deepseekUpdated) {
+                log('deepseek_htmlобщая.html не найден локально', 'error');
+                fail++;
+            }
+            
+            btn.disabled = false;
+            
+            if (fail === 0) {
+                showStatus(`✅ Все файлы успешно обновлены! (${success} файлов)`, 'success');
+                log('', 'info');
+                log('Ссылка на проект: https://2-git-main-pendehos-projects.vercel.app', 'info');
+                log('Подождите 1-2 минуты для автоматического деплоя на Vercel', 'info');
+            } else {
+                showStatus(`⚠️ Обновлено: ${success}, Ошибок: ${fail}`, 'error');
+            }
+        }
+        
+        async function checkStatus() {
+            showStatus('Проверка статуса...', 'info');
+            log('Проверка файлов на GitHub...', 'info');
+            
+            const files = ['index.html', 'admin.html', 'auth.js', 'data.js', 'admin.js', 'vercel.json', 'package.json'];
+            
+            for (const fileName of files) {
+                try {
+                    const response = await fetch(`${baseUrl}/${encodeURIComponent(fileName)}`, {
+                        method: 'GET',
+                        headers: headers
+                    });
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        log(`${fileName} - существует (SHA: ${data.sha.substring(0, 8)}...)`, 'success');
+                    } else {
+                        log(`${fileName} - не найден`, 'error');
+                    }
+                } catch (error) {
+                    log(`${fileName} - ошибка проверки: ${error.message}`, 'error');
+                }
+            }
+        }
+    </script>
+</body>
+</html>

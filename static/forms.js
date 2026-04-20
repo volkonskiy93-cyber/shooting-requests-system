@@ -16,6 +16,7 @@ function selectContractor(contractor) {
   const target = forms[contractor];
   if (target) {
     target.classList.add('active');
+    _applyProfileDefaults();
 
     // init dates like in legacy
     const today = _getTodayIso();
@@ -100,6 +101,295 @@ function _getTodayIso() {
   return new Date().toISOString().split('T')[0];
 }
 
+const _correspondentStorageKey = 'davinci.correspondentName';
+const _correspondentContactsStorageKey = 'davinci.correspondentContacts';
+
+function _storageGet(key) {
+  try {
+    return window.localStorage.getItem(key) || '';
+  } catch (error) {
+    return '';
+  }
+}
+
+function _storageSet(key, value) {
+  try {
+    const normalized = (value || '').trim();
+    if (normalized) {
+      window.localStorage.setItem(key, normalized);
+    } else {
+      window.localStorage.removeItem(key);
+    }
+  } catch (error) {
+    // Ignore browser storage errors.
+  }
+}
+
+function _currentUserProfile() {
+  return window.currentUserProfile || {};
+}
+
+function _preferredCorrespondentName() {
+  const profileName = (_currentUserProfile().fullName || '').trim();
+  return profileName || _storageGet(_correspondentStorageKey);
+}
+
+function _preferredCorrespondentContacts() {
+  const profileEmail = (_currentUserProfile().email || '').trim();
+  return profileEmail || _storageGet(_correspondentContactsStorageKey);
+}
+
+function _applyProfileDefaults() {
+  const correspondentName = _preferredCorrespondentName();
+  ['figaro-correspondent', 'ttk-correspondent', 'producer-correspondent'].forEach((id) => {
+    const input = document.getElementById(id);
+    if (input && !input.value.trim() && correspondentName) {
+      input.value = correspondentName;
+    }
+  });
+
+  const contactsInput = document.getElementById('producer-correspondent-contacts');
+  const correspondentContacts = _preferredCorrespondentContacts();
+  if (contactsInput && !contactsInput.value.trim() && correspondentContacts) {
+    contactsInput.value = correspondentContacts;
+  }
+}
+
+function _initProfileAutofill() {
+  [
+    ['figaro-correspondent', _correspondentStorageKey],
+    ['ttk-correspondent', _correspondentStorageKey],
+    ['producer-correspondent', _correspondentStorageKey],
+    ['producer-correspondent-contacts', _correspondentContactsStorageKey],
+  ].forEach(([id, key]) => {
+    const input = document.getElementById(id);
+    if (!input) return;
+    input.addEventListener('input', () => _storageSet(key, input.value));
+    input.addEventListener('change', () => _storageSet(key, input.value));
+  });
+
+  _applyProfileDefaults();
+}
+
+let _successModalTimer = null;
+let _autocompletePanel = null;
+let _activeAutocompleteInput = null;
+let _sendingSplashCounter = 0;
+
+function _ensureSuccessModal() {
+  let modal = document.getElementById('brandSuccessModal');
+  if (modal) return modal;
+
+  modal = document.createElement('div');
+  modal.id = 'brandSuccessModal';
+  modal.className = 'brand-success-modal';
+  modal.innerHTML = `
+    <div class="brand-success-backdrop" data-success-close="true"></div>
+    <div class="brand-success-dialog" role="dialog" aria-modal="true" aria-labelledby="brandSuccessTitle">
+      <div class="brand-success-kicker">Доброе утро</div>
+      <h3 id="brandSuccessTitle">Заявка успешно отправлена</h3>
+      <p>Файл сформирован, заявка сохранена и отправлена адресату.</p>
+      <button type="button" class="brand-success-button">Понятно</button>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+
+  modal.addEventListener('click', (event) => {
+    if (event.target instanceof HTMLElement && event.target.dataset.successClose === 'true') {
+      hideSuccessModal();
+    }
+  });
+
+  const button = modal.querySelector('.brand-success-button');
+  if (button) {
+    button.addEventListener('click', hideSuccessModal);
+  }
+
+  return modal;
+}
+
+function _ensureSendingSplash() {
+  let splash = document.getElementById('brandSendingSplash');
+  if (splash) return splash;
+
+  splash = document.createElement('div');
+  splash.id = 'brandSendingSplash';
+  splash.className = 'brand-sending-splash';
+  splash.innerHTML = `
+    <div class="brand-sending-backdrop"></div>
+    <div class="brand-sending-dialog" role="status" aria-live="polite" aria-labelledby="brandSendingTitle">
+      <div class="brand-sending-kicker">Доброе утро</div>
+      <div class="brand-sending-spinner" aria-hidden="true"></div>
+      <h3 id="brandSendingTitle">Отправляем заявку</h3>
+      <p>Подождите немного, файл формируется и уходит адресату.</p>
+    </div>
+  `;
+
+  document.body.appendChild(splash);
+  return splash;
+}
+
+function showSendingSplash() {
+  _sendingSplashCounter += 1;
+  const splash = _ensureSendingSplash();
+  splash.classList.add('is-visible');
+  document.body.classList.add('modal-open');
+}
+
+function hideSendingSplash() {
+  _sendingSplashCounter = Math.max(0, _sendingSplashCounter - 1);
+  if (_sendingSplashCounter > 0) return;
+
+  const splash = document.getElementById('brandSendingSplash');
+  if (splash) {
+    splash.classList.remove('is-visible');
+  }
+  document.body.classList.remove('modal-open');
+}
+
+function showSuccessModal(message) {
+  hideSendingSplash();
+  const modal = _ensureSuccessModal();
+  const text = modal.querySelector('p');
+  if (text && message) {
+    text.textContent = message;
+  }
+
+  modal.classList.add('is-visible');
+  document.body.classList.add('modal-open');
+
+  if (_successModalTimer) clearTimeout(_successModalTimer);
+  _successModalTimer = window.setTimeout(() => {
+    hideSuccessModal();
+  }, 3500);
+}
+
+function hideSuccessModal() {
+  const modal = document.getElementById('brandSuccessModal');
+  if (!modal) return;
+  modal.classList.remove('is-visible');
+  document.body.classList.remove('modal-open');
+  if (_successModalTimer) {
+    clearTimeout(_successModalTimer);
+    _successModalTimer = null;
+  }
+}
+
+function _ensureAutocompletePanel() {
+  if (_autocompletePanel) return _autocompletePanel;
+
+  _autocompletePanel = document.createElement('div');
+  _autocompletePanel.id = 'brandAutocompletePanel';
+  _autocompletePanel.className = 'brand-autocomplete-panel';
+  document.body.appendChild(_autocompletePanel);
+
+  return _autocompletePanel;
+}
+
+function _hideAutocompletePanel() {
+  if (!_autocompletePanel) return;
+  _autocompletePanel.classList.remove('is-visible');
+  _autocompletePanel.innerHTML = '';
+  _activeAutocompleteInput = null;
+}
+
+function _getDatalistOptions(input) {
+  const listId = input.dataset.listSource;
+  if (!listId) return [];
+
+  const list = document.getElementById(listId);
+  if (!list) return [];
+
+  return Array.from(list.querySelectorAll('option'))
+    .map((option) => (option.value || '').trim())
+    .filter(Boolean);
+}
+
+function _positionAutocompletePanel(input) {
+  const panel = _ensureAutocompletePanel();
+  const rect = input.getBoundingClientRect();
+  panel.style.left = `${rect.left + window.scrollX}px`;
+  panel.style.top = `${rect.bottom + window.scrollY + 8}px`;
+  panel.style.width = `${rect.width}px`;
+}
+
+function _renderAutocompleteOptions(input) {
+  const panel = _ensureAutocompletePanel();
+  const options = _getDatalistOptions(input);
+  const query = (input.value || '').trim().toLowerCase();
+
+  const filtered = query
+    ? options.filter((item) => item.toLowerCase().includes(query))
+    : options;
+
+  if (!filtered.length) {
+    _hideAutocompletePanel();
+    return;
+  }
+
+  panel.innerHTML = filtered
+    .slice(0, 12)
+    .map((item) => `<button type="button" class="brand-autocomplete-option">${item}</button>`)
+    .join('');
+
+  panel.querySelectorAll('.brand-autocomplete-option').forEach((button) => {
+    button.addEventListener('pointerdown', (event) => {
+      event.preventDefault();
+      input.value = button.textContent || '';
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+      input.dispatchEvent(new Event('change', { bubbles: true }));
+      _hideAutocompletePanel();
+      input.focus();
+    });
+  });
+
+  _positionAutocompletePanel(input);
+  panel.classList.add('is-visible');
+  _activeAutocompleteInput = input;
+}
+
+function _initCustomDatalists() {
+  const inputs = document.querySelectorAll('input[list]');
+  if (!inputs.length) return;
+
+  inputs.forEach((input) => {
+    const listId = input.getAttribute('list');
+    if (!listId) return;
+
+    input.dataset.listSource = listId;
+    input.removeAttribute('list');
+    input.setAttribute('autocomplete', 'off');
+
+    input.addEventListener('focus', () => _renderAutocompleteOptions(input));
+    input.addEventListener('click', () => _renderAutocompleteOptions(input));
+    input.addEventListener('input', () => _renderAutocompleteOptions(input));
+    input.addEventListener('blur', () => {
+      window.setTimeout(() => {
+        if (_activeAutocompleteInput === input) {
+          _hideAutocompletePanel();
+        }
+      }, 120);
+    });
+  });
+
+  document.addEventListener('click', (event) => {
+    const target = event.target;
+    if (!(target instanceof HTMLElement)) return;
+    if (target.closest('.brand-autocomplete-panel')) return;
+    if (target.matches('input[data-list-source]')) return;
+    _hideAutocompletePanel();
+  });
+
+  window.addEventListener('resize', () => {
+    if (_activeAutocompleteInput) _positionAutocompletePanel(_activeAutocompleteInput);
+  });
+
+  window.addEventListener('scroll', () => {
+    if (_activeAutocompleteInput) _positionAutocompletePanel(_activeAutocompleteInput);
+  }, true);
+}
+
 function _initPickers() {
   if (typeof flatpickr === 'undefined') return;
 
@@ -181,6 +471,97 @@ function _initPickers() {
     ttkShoot.addEventListener('change', updateMin);
     updateMin();
   }
+}
+
+function _syncTtkMainKitMode() {
+  const toggle = document.getElementById('ttk-without-main-kit');
+  const table = document.querySelector('#shooting-request-form-ttk .equipment-table');
+  const mainInputs = document.querySelectorAll('#shooting-request-form-ttk input[name^="main-qty-"]');
+  const mainHeader = document.querySelector('#shooting-request-form-ttk .ttk-main-header');
+  const mainTexts = document.querySelectorAll('#shooting-request-form-ttk .eq-main-text');
+  const addTexts = document.querySelectorAll('#shooting-request-form-ttk .eq-add-text');
+  const rows = document.querySelectorAll('#shooting-request-form-ttk .equipment-table tbody tr');
+
+  if (!toggle || !table || !mainInputs.length) return;
+
+  const withoutMainKit = Boolean(toggle.checked);
+
+  if (mainHeader) {
+    mainHeader.textContent = withoutMainKit
+      ? (mainHeader.dataset.noKitText || mainHeader.textContent)
+      : (mainHeader.dataset.defaultText || mainHeader.textContent);
+  }
+
+  mainTexts.forEach((node) => {
+    node.textContent = withoutMainKit
+      ? (node.dataset.noKitText || '')
+      : (node.dataset.defaultText || '');
+  });
+
+  addTexts.forEach((node) => {
+    node.textContent = withoutMainKit
+      ? (node.dataset.noKitText || node.dataset.defaultText || '')
+      : (node.dataset.defaultText || '');
+  });
+
+  rows.forEach((row) => {
+    const mainText = row.querySelector('.eq-main-text');
+    row.classList.toggle('without-main-row', withoutMainKit && mainText && !mainText.textContent.trim());
+  });
+
+  mainInputs.forEach((input) => {
+    const cell = input.closest('td');
+    if (withoutMainKit) {
+      if (input.dataset.savedValue === undefined) {
+        input.dataset.savedValue = input.value;
+      }
+      input.value = '0';
+      input.disabled = true;
+      input.style.display = 'none';
+      if (cell) {
+        cell.classList.add('no-kit-cell');
+      }
+    } else {
+      input.disabled = false;
+      input.style.display = '';
+      if (input.dataset.savedValue !== undefined) {
+        input.value = input.dataset.savedValue;
+        delete input.dataset.savedValue;
+      } else {
+        input.value = input.defaultValue || input.value || '0';
+      }
+      if (cell) {
+        cell.classList.remove('no-kit-cell');
+      }
+    }
+  });
+
+  table.classList.toggle('without-main-kit', withoutMainKit);
+}
+
+function _resetTtkMainKitMode() {
+  const toggle = document.getElementById('ttk-without-main-kit');
+  const table = document.querySelector('#shooting-request-form-ttk .equipment-table');
+  const mainInputs = document.querySelectorAll('#shooting-request-form-ttk input[name^="main-qty-"]');
+
+  if (toggle) toggle.checked = false;
+
+  mainInputs.forEach((input) => {
+    input.disabled = false;
+    delete input.dataset.savedValue;
+    input.value = input.defaultValue || '0';
+    input.style.display = '';
+  });
+
+  if (table) table.classList.remove('without-main-kit');
+}
+
+function _initTtkMainKitToggle() {
+  const toggle = document.getElementById('ttk-without-main-kit');
+  if (!toggle) return;
+
+  toggle.addEventListener('change', _syncTtkMainKitMode);
+  _syncTtkMainKitMode();
 }
 
 function collectEquipment(formId) {
@@ -389,6 +770,7 @@ async function exportToExcel(contractorType) {
       extension: document.getElementById('ttk-extension')?.value || '',
       broadcastDate: document.getElementById('ttk-broadcast-date')?.value || null,
       submissionDate: document.getElementById('ttk-submission-date')?.value || null,
+      withoutMainKit: document.getElementById('ttk-without-main-kit')?.checked || false,
       equipment: collectEquipment('shooting-request-form-ttk'),
     };
   } else {
@@ -409,9 +791,10 @@ async function exportToExcel(contractorType) {
     }
 
     const blob = await resp.blob();
+    const explicitName = resp.headers.get('X-Download-Filename');
     const cd = resp.headers.get('Content-Disposition') || '';
     const m = cd.match(/filename\\*=UTF-8''([^;]+)|filename=\"?([^\";]+)\"?/i);
-    const fileName = decodeURIComponent(m?.[1] || m?.[2] || 'Заявка.xlsx');
+    const fileName = explicitName || decodeURIComponent(m?.[1] || m?.[2] || 'Заявка.xlsx');
 
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -435,6 +818,9 @@ document.addEventListener('DOMContentLoaded', () => {
   window.exportToExcel = exportToExcel;
 
   _initPickers();
+  _initTtkMainKitToggle();
+  _initCustomDatalists();
+  _initProfileAutofill();
 
   const figaroForm = document.getElementById('shooting-request-form-figaro');
   const ttkForm = document.getElementById('shooting-request-form-ttk');
@@ -472,13 +858,19 @@ document.addEventListener('DOMContentLoaded', () => {
       };
 
       try {
+        showSendingSplash();
         await _postApplication(payload);
-        alert('Заявка успешно отправлена!');
         figaroForm.reset();
         goBack();
+        showSuccessModal('Файл сформирован, заявка сохранена и отправлена адресату.');
       } catch (err) {
+        hideSendingSplash();
         alert(`Ошибка отправки: ${err.message}`);
       }
+    });
+
+    figaroForm.addEventListener('reset', () => {
+      setTimeout(_applyProfileDefaults, 0);
     });
   }
 
@@ -514,17 +906,28 @@ document.addEventListener('DOMContentLoaded', () => {
         extension: document.getElementById('ttk-extension')?.value || '',
         broadcastDate: document.getElementById('ttk-broadcast-date')?.value || null,
         submissionDate: document.getElementById('ttk-submission-date')?.value || null,
+        withoutMainKit: document.getElementById('ttk-without-main-kit')?.checked || false,
         equipment: collectEquipment('shooting-request-form-ttk'),
       };
 
       try {
+        showSendingSplash();
         await _postApplication(payload);
-        alert('Заявка успешно отправлена!');
         ttkForm.reset();
+        _resetTtkMainKitMode();
         goBack();
+        showSuccessModal('Файл сформирован, заявка сохранена и отправлена адресату.');
       } catch (err) {
+        hideSendingSplash();
         alert(`Ошибка отправки: ${err.message}`);
       }
+    });
+
+    ttkForm.addEventListener('reset', () => {
+      setTimeout(() => {
+        _resetTtkMainKitMode();
+        _applyProfileDefaults();
+      }, 0);
     });
   }
 
@@ -550,13 +953,19 @@ document.addEventListener('DOMContentLoaded', () => {
       };
 
       try {
+        showSendingSplash();
         await _postApplication(payload);
-        alert('Заявка успешно отправлена!');
         producerForm.reset();
         goBack();
+        showSuccessModal('Заявка сохранена и успешно отправлена.');
       } catch (err) {
+        hideSendingSplash();
         alert(`Ошибка отправки: ${err.message}`);
       }
+    });
+
+    producerForm.addEventListener('reset', () => {
+      setTimeout(_applyProfileDefaults, 0);
     });
   }
 });

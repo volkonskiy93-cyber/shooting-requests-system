@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Система заявок на видеосъемку - Вход</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .login-container {
+            background: white;
+            border-radius: 20px;
+            padding: 50px;
+            max-width: 600px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            text-align: center;
+        }
+        
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+            font-size: 2.5rem;
+        }
+        
+        .subtitle {
+            color: #7f8c8d;
+            margin-bottom: 40px;
+            font-size: 1.1rem;
+        }
+        
+        .role-select {
+            display: flex;
+            gap: 30px;
+            flex-direction: column;
+        }
+        
+        .role-card {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            border-radius: 15px;
+            padding: 30px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 3px solid transparent;
+        }
+        
+        .role-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            border-color: #667eea;
+        }
+        
+        .role-card.correspondent {
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            color: white;
+        }
+        
+        .role-card.admin {
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+            color: white;
+        }
+        
+        .role-card h2 {
+            margin-bottom: 10px;
+            font-size: 1.8rem;
+        }
+        
+        .role-card p {
+            font-size: 1rem;
+            opacity: 0.9;
+        }
+        
+        .icon {
+            font-size: 3rem;
+            margin-bottom: 15px;
+        }
+        
+        /* Адаптивные стили для мобильных устройств */
+        @media (max-width: 768px) {
+            .login-container {
+                padding: 30px 20px;
+            }
+            
+            h1 {
+                font-size: 1.8rem;
+            }
+            
+            .subtitle {
+                font-size: 0.95rem;
+                margin-bottom: 30px;
+            }
+            
+            .role-card {
+                padding: 20px;
+            }
+            
+            .role-card h2 {
+                font-size: 1.4rem;
+            }
+            
+            .icon {
+                font-size: 2.5rem;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            body {
+                padding: 10px;
+            }
+            
+            .login-container {
+                padding: 20px 15px;
+            }
+            
+            h1 {
+                font-size: 1.5rem;
+            }
+            
+            .role-card {
+                padding: 20px 15px;
+            }
+            
+            .role-card h2 {
+                font-size: 1.2rem;
+            }
+            
+            .role-card p {
+                font-size: 0.9rem;
+            }
+            
+            .icon {
+                font-size: 2rem;
+            }
+        }
+        
+        /* Улучшения для touch-устройств */
+        @media (hover: none) and (pointer: coarse) {
+            .role-card:hover {
+                transform: none;
+            }
+            
+            .role-card:active {
+                transform: scale(0.98);
+                opacity: 0.9;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <h1>Добро пожаловать</h1>
+        <p class="subtitle">Система заявок на видеосъемку программы "Доброе утро"</p>
+        
+        <div class="role-select">
+            <div class="role-card correspondent" onclick="selectRole('correspondent')">
+                <div class="icon">📝</div>
+                <h2>Корреспондент</h2>
+                <p>Создание и отправка заявок на видеосъемку</p>
+            </div>
+            
+            <div class="role-card admin" onclick="selectRole('admin')">
+                <div class="icon">👨‍💼</div>
+                <h2>Администратор-Координатор</h2>
+                <p>Просмотр и обработка заявок на видеосъемку</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function selectRole(role) {
+            if (role === 'correspondent') {
+                window.location.href = 'deepseek_htmlобщая.html';
+            } else if (role === 'admin') {
+                window.location.href = 'admin.html';
+            }
+        }
+    </script>
+</body>
+</html>

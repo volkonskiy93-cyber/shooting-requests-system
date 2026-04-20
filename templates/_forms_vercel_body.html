@@ -2,12 +2,12 @@
         <!-- Главный экран выбора -->
         <div id="mainScreen" class="main-screen active">
             <h1>Система заявок на видеосъемку</h1>
-            <p style="color: #7f8c8d; margin-bottom: 20px; max-width: 600px; font-size: 1.1rem;">
+            <p class="screen-subtitle">
                 Выберите тип заявки для создания заявки на видеосъемку программы "Доброе утро"
             </p>
-            <div style="margin-bottom: 20px; display: flex; gap: 15px; justify-content: center;">
+            <div class="screen-actions">
                 <button class="back-btn" onclick="window.location.href='/'">← На главную</button>
-                <button class="back-btn archive-btn" onclick="window.location.href='/archive'">📁 Архив моих заявок</button>
+                <button class="back-btn archive-btn" onclick="window.location.href='/archive'">Архив моих заявок</button>
             </div>
             
             <div class="contractor-select">
@@ -76,7 +76,7 @@
                         </td>
                     </tr>
                     <tr>
-                        <td colspan="2" style="background-color: #ecf0f1; font-weight: bold; text-align: center;">
+                        <td colspan="2" class="section-divider">
                             Ответственные за проведение съемок
                         </td>
                     </tr>
@@ -95,11 +95,7 @@
                     <tr>
                         <td class="label">Продюсер:</td>
                         <td>
-                            <select id="figaro-producer" name="producer">
-                                <option value="">-- Выберите продюсера --</option>
-                                <option value="bykova">Быкова</option>
-                                <!-- Другие фамилии будут подгружаться отдельно -->
-                            </select>
+                            <input type="text" id="figaro-producer" name="producer" list="producers-list" placeholder="Выберите из списка или введите вручную">
                         </td>
                     </tr>
                     <tr>
@@ -115,7 +111,7 @@
                         </td>
                     </tr>
                     <tr>
-                        <td colspan="2" style="background-color: #ecf0f1; font-weight: bold; text-align: center;">
+                        <td colspan="2" class="section-divider">
                             Даты и время
                         </td>
                     </tr>
@@ -138,7 +134,7 @@
                                 <div>
                                     <input type="text" class="time-input" id="figaro-start-time" name="start-time" value="09:00" inputmode="numeric" autocomplete="off">
                                 </div>
-                                <div style="text-align: center; line-height: 40px;">-</div>
+                                <div class="time-separator">-</div>
                                 <div>
                                     <input type="text" class="time-input" id="figaro-end-time" name="end-time" value="18:00" inputmode="numeric" autocomplete="off">
                                 </div>
@@ -316,10 +312,10 @@
                 </table>
                 
                 <div class="form-actions">
-                    <button type="reset" class="reset-btn">Очистить форму</button>
-                    <button type="button" class="excel-btn" onclick="exportToExcel('figaro')" title="Выгрузит заявку в формате Excel (XLSX) с точным шаблоном">📊 Выгрузить Excel</button>
-                    <button type="button" class="doc-btn" onclick="exportToDOC('figaro')" title="Выгрузит заявку в формате Word (DOC)">📝 Выгрузить в DOC</button>
                     <button type="submit" class="submit-btn">Отправить заявку</button>
+                    <button type="button" class="excel-btn" onclick="exportToExcel('figaro')" title="Выгрузит заявку в формате Excel (XLSX) с точным шаблоном">Выгрузить Excel</button>
+                    <button type="button" class="doc-btn" onclick="exportToDOC('figaro')" title="Выгрузит заявку в формате Word (DOC)">Выгрузить в DOC</button>
+                    <button type="reset" class="reset-btn">Очистить форму</button>
                 </div>
             </form>
         </div>
@@ -394,10 +390,7 @@
                     <tr>
                         <td class="label">Продюсер:</td>
                         <td>
-                            <select id="ttk-producer" name="producer">
-                                <option value="">-- Выберите продюсера --</option>
-                                <!-- Фамилии будут подгружаться отдельно -->
-                            </select>
+                            <input type="text" id="ttk-producer" name="producer" list="producers-list" placeholder="Выберите из списка или введите вручную">
                         </td>
                     </tr>
                     <tr>
@@ -444,7 +437,7 @@
                                 <div>
                                     <input type="text" class="time-input" id="ttk-start-time" name="start-time" value="09:00" inputmode="numeric" autocomplete="off">
                                 </div>
-                                <div style="text-align: center; line-height: 40px;">-</div>
+                                <div class="time-separator">-</div>
                                 <div>
                                     <input type="text" class="time-input" id="ttk-end-time" name="end-time" value="18:00" inputmode="numeric" autocomplete="off">
                                 </div>
@@ -467,86 +460,98 @@
                     </tr>
                 </table>
                 
-                <h3>Оборудование - Основной комплект 1</h3>
+                <div class="equipment-heading">
+                    <h3>Оборудование - Основной комплект 1</h3>
+                    <label class="kit-toggle" for="ttk-without-main-kit">
+                        <input type="checkbox" id="ttk-without-main-kit" name="without-main-kit">
+                        <span>Без основного комплекта</span>
+                    </label>
+                </div>
+                <div class="note">Если включить этот режим, основной комплект не попадет в заявку ТТК, а дополнительное оборудование останется доступным.</div>
                 
                 <table class="equipment-table">
                     <thead>
                         <tr>
-                            <th width="40%">Основной комплект</th>
+                            <th width="40%" class="ttk-main-header" data-default-text="Основной комплект" data-no-kit-text="Без основного комплекта">Основной комплект</th>
                             <th width="40%">Дополнительное оборудование</th>
                             <th width="20%">Выбор дополнительного оборудования</th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr>
-                            <td>Камера PANASONIC AG-HPX500E <input type="number" class="small-input" value="1" min="0" max="10" name="main-qty-0"> шт</td>
-                            <td>Экшн-камера Gopro 11...</td>
+                            <td><span class="eq-main-text" data-default-text="Камера PANASONIC AG-HPX500E" data-no-kit-text="Штатив для видеокамеры SACHTLER v 18 -1 шт, Наушники SENNHEISER HD280 -1 шт">Камера PANASONIC AG-HPX500E</span> <input type="number" class="small-input" value="1" min="0" max="10" name="main-qty-0"> шт</td>
+                            <td><span class="eq-add-text" data-default-text="Экшн-камера Gopro 11..." data-no-kit-text="Экшн-камера Gopro 11 карты памяти 2шт, система стабилизации или крепления.">Экшн-камера Gopro 11...</span></td>
                             <td><select class="small-input" name="add-qty-0"><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option></select></td>
                         </tr>
                         <tr>
-                            <td>Объектив CANON\17 <input type="number" class="small-input" value="1" min="0" max="10" name="main-qty-1"> шт</td>
-                            <td>Удочка микрофонная SENNHEISER.</td>
+                            <td><span class="eq-main-text" data-default-text="Объектив CANON\17" data-no-kit-text="Аккумулятор BEILLEN BL-F-BP190 -2 шт.">Объектив CANON\17</span> <input type="number" class="small-input" value="1" min="0" max="10" name="main-qty-1"> шт</td>
+                            <td><span class="eq-add-text" data-default-text="Удочка микрофонная SENNHEISER." data-no-kit-text="Удочка микрофонная SENNHEISER.">Удочка микрофонная SENNHEISER.</span></td>
                             <td><select class="small-input" name="add-qty-1"><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option></select></td>
                         </tr>
                         <tr>
-                            <td>Штатив для видеокамеры SACHTLER v 18 <input type="number" class="small-input" value="1" min="0" max="10" name="main-qty-2"> шт</td>
-                            <td>Рюкзак для прямого включения "Live-U"</td>
-                            <td><select class="small-input" name="add-qty-13"><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option></select></td>
-                        </tr>
-                        <tr>
-                            <td>Наушники SENNHEISER HD280 <input type="number" class="small-input" value="1" min="0" max="10" name="main-qty-3"> шт</td>
-                            <td>Стедикам ronin rs</td>
-                            <td><select class="small-input" name="add-qty-14"><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option></select></td>
-                        </tr>
-                        <tr>
-                            <td>Аккумулятор BEILLEN BL-F-BP190 <input type="number" class="small-input" value="2" min="0" max="10" name="main-qty-4"> шт</td>
-                            <td>Видеокамера SONY FX 3</td>
-                            <td><select class="small-input" name="add-qty-15"><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option></select></td>
-                        </tr>
-                        <tr>
-                            <td>Карта памяти PANASONIC AJ-P2EO32XG <input type="number" class="small-input" value="4" min="0" max="10" name="main-qty-5"> шт</td>
-                            <td>Камера Panasonic AJ-PX270</td>
-                            <td><select class="small-input" name="add-qty-16"><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option></select></td>
-                        </tr>
-                        <tr>
-                            <td>Комплект света: DEDOLIGHT 3 прибора... <input type="number" class="small-input" value="1" min="0" max="10" name="main-qty-6"> шт</td>
-                            <td></td>
+                            <td><span class="eq-main-text" data-default-text="Штатив для видеокамеры SACHTLER v 18" data-no-kit-text="Карта памяти PANASONIC AJ-P2EO32XG -4 шт.">Штатив для видеокамеры SACHTLER v 18</span> <input type="number" class="small-input" value="1" min="0" max="10" name="main-qty-2"> шт</td>
+                            <td><span class="eq-add-text" data-default-text="" data-no-kit-text=""></span></td>
                             <td></td>
                         </tr>
                         <tr>
-                            <td>Радиосистема SENNHEISER EK 100 "ПЕТЛЯ" <input type="number" class="small-input" value="1" min="0" max="10" name="main-qty-7"> шт</td>
-                            <td>Радиосистема SENNHEISER EK 100 "ПЕТЛЯ" 1 шт.</td>
+                            <td><span class="eq-main-text" data-default-text="Наушники SENNHEISER HD280" data-no-kit-text="Комплект света: DEDOLIGHT 3 прибора (направленный свет). Lowell tota-light 1T-10E 1 прибор (заполняющий свет)">Наушники SENNHEISER HD280</span> <input type="number" class="small-input" value="1" min="0" max="10" name="main-qty-3"> шт</td>
+                            <td><span class="eq-add-text" data-default-text="" data-no-kit-text=""></span></td>
+                            <td></td>
+                        </tr>
+                        <tr>
+                            <td><span class="eq-main-text" data-default-text="Аккумулятор BEILLEN BL-F-BP190" data-no-kit-text="Радиосистема SENNHEISER EK 100 &quot;ПЕТЛЯ&quot;. 1 шт.">Аккумулятор BEILLEN BL-F-BP190</span> <input type="number" class="small-input" value="2" min="0" max="10" name="main-qty-4"> шт</td>
+                            <td><span class="eq-add-text" data-default-text="Радиосистема SENNHEISER EK 100 &quot;ПЕТЛЯ&quot; 1 шт." data-no-kit-text="Радиосистема SENNHEISER EK 100 &quot;ПЕТЛЯ&quot;. 1 шт.">Радиосистема SENNHEISER EK 100 "ПЕТЛЯ" 1 шт.</span></td>
+                            <td><select class="small-input" name="add-qty-4"><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option></select></td>
+                        </tr>
+                        <tr>
+                            <td><span class="eq-main-text" data-default-text="Карта памяти PANASONIC AJ-P2EO32XG" data-no-kit-text="Система оцифровки NEXTO DI">Карта памяти PANASONIC AJ-P2EO32XG</span> <input type="number" class="small-input" value="4" min="0" max="10" name="main-qty-5"> шт</td>
+                            <td><span class="eq-add-text" data-default-text="Звуковой пульт SHURE." data-no-kit-text="Звуковой пульт SHURE.">Звуковой пульт SHURE.</span></td>
+                            <td><select class="small-input" name="add-qty-5"><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option></select></td>
+                        </tr>
+                        <tr>
+                            <td><span class="eq-main-text" data-default-text="Комплект света: DEDOLIGHT 3 прибора..." data-no-kit-text="Микрофон ручной (проводной) с Логотипом Первого канала. Звуковой кабель xlr 5м.">Комплект света: DEDOLIGHT 3 прибора...</span> <input type="number" class="small-input" value="1" min="0" max="10" name="main-qty-6"> шт</td>
+                            <td><span class="eq-add-text" data-default-text="" data-no-kit-text="Микрофон ручной с Логотипом Первого канала. Плагон."></span></td>
+                            <td></td>
+                        </tr>
+                        <tr>
+                            <td><span class="eq-main-text" data-default-text="Радиосистема SENNHEISER EK 100 &quot;ПЕТЛЯ&quot;" data-no-kit-text="Лайтпанель 1 ШТ. TECPRO FELLONI.">Радиосистема SENNHEISER EK 100 "ПЕТЛЯ"</span> <input type="number" class="small-input" value="1" min="0" max="10" name="main-qty-7"> шт</td>
+                            <td><span class="eq-add-text" data-default-text="Лайтпанель TECPRO FELLONI 1 шт." data-no-kit-text="Лайтпанель 1 ШТ. TECPRO FELLONI.">Лайтпанель TECPRO FELLONI 1 шт.</span></td>
                             <td><select class="small-input" name="add-qty-7"><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option></select></td>
                         </tr>
                         <tr>
-                            <td>Система оцифровки NEXTO DI <input type="number" class="small-input" value="1" min="0" max="10" name="main-qty-8"> шт</td>
-                            <td>Звуковой пульт SHURE.</td>
+                            <td><span class="eq-main-text" data-default-text="Система оцифровки NEXTO DI" data-no-kit-text="Видеомонитор контрольный.">Система оцифровки NEXTO DI</span> <input type="number" class="small-input" value="1" min="0" max="10" name="main-qty-8"> шт</td>
+                            <td><span class="eq-add-text" data-default-text="Объектив широкоугольный 12&quot;" data-no-kit-text="Объектив широкоугольный.">Объектив широкоугольный 12"</span></td>
                             <td><select class="small-input" name="add-qty-8"><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option></select></td>
                         </tr>
                         <tr>
-                            <td>Микрофон ручной (проводной) <input type="number" class="small-input" value="1" min="0" max="10" name="main-qty-9"> шт</td>
-                            <td></td>
-                            <td></td>
+                            <td><span class="eq-main-text" data-default-text="Микрофон ручной (проводной)" data-no-kit-text="Дождевик (зимник) для камеры.">Микрофон ручной (проводной)</span> <input type="number" class="small-input" value="1" min="0" max="10" name="main-qty-9"> шт</td>
+                            <td><span class="eq-add-text" data-default-text="Коптер." data-no-kit-text="Коптер.">Коптер.</span></td>
+                            <td><select class="small-input" name="add-qty-9"><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option></select></td>
                         </tr>
                         <tr>
-                            <td>Лайтпанель TECPRO FELLONI <input type="number" class="small-input" value="1" min="0" max="10" name="main-qty-10"> шт</td>
-                            <td>Лайтпанель TECPRO FELLONI 1 шт.</td>
+                            <td><span class="eq-main-text" data-default-text="Лайтпанель TECPRO FELLONI" data-no-kit-text=""></span> <input type="number" class="small-input" value="1" min="0" max="10" name="main-qty-10"> шт</td>
+                            <td><span class="eq-add-text" data-default-text="Рюкзак для прямого включения &quot;Live-U&quot;" data-no-kit-text="Рюкзак для прямого включения &quot;Live-U&quot;.">Рюкзак для прямого включения "Live-U"</span></td>
                             <td><select class="small-input" name="add-qty-10"><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option></select></td>
                         </tr>
                         <tr>
-                            <td>Видеомонитор контрольный <input type="number" class="small-input" value="1" min="0" max="10" name="main-qty-11"> шт</td>
-                            <td>Объектив широкоугольный 12"</td>
+                            <td><span class="eq-main-text" data-default-text="Видеомонитор контрольный" data-no-kit-text=""></span> <input type="number" class="small-input" value="1" min="0" max="10" name="main-qty-11"> шт</td>
+                            <td><span class="eq-add-text" data-default-text="Стедикам ronin rs" data-no-kit-text="Стедикам ronin rs">Стедикам ronin rs</span></td>
                             <td><select class="small-input" name="add-qty-11"><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option></select></td>
                         </tr>
                         <tr>
-                            <td>Дождевик (зимник) для камеры <input type="number" class="small-input" value="1" min="0" max="10" name="main-qty-12"> шт</td>
-                            <td>Коптер.</td>
+                            <td><span class="eq-main-text" data-default-text="Дождевик (зимник) для камеры" data-no-kit-text=""></span> <input type="number" class="small-input" value="1" min="0" max="10" name="main-qty-12"> шт</td>
+                            <td><span class="eq-add-text" data-default-text="Видеокамера SONY FX 3" data-no-kit-text="Видеокамера SONY FX 3">Видеокамера SONY FX 3</span></td>
                             <td><select class="small-input" name="add-qty-12"><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option></select></td>
+                        </tr>
+                        <tr>
+                            <td><span class="eq-main-text" data-default-text="" data-no-kit-text=""></span></td>
+                            <td><span class="eq-add-text" data-default-text="Камера Panasonic AJ-PX270" data-no-kit-text="Камера Panasonic AJ-PX270">Камера Panasonic AJ-PX270</span></td>
+                            <td><select class="small-input" name="add-qty-13"><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option></select></td>
                         </tr>
                     </tbody>
                 </table>
                 
-                <table class="form-table" style="margin-top: 30px;">
+                <table class="form-table inline-form-table">
                     <tr>
                         <td class="label">Дата и время сдачи материала в инжест:</td>
                         <td>
@@ -568,10 +573,10 @@
                 </table>
                 
                 <div class="form-actions">
-                    <button type="reset" class="reset-btn">Очистить форму</button>
-                    <button type="button" class="excel-btn" onclick="exportToExcel('ttk')" title="Выгрузит заявку в формате Excel (XLSX) с точным шаблоном">📊 Выгрузить Excel</button>
-                    <button type="button" class="doc-btn" onclick="exportToDOC('ttk')" title="Выгрузит заявку в формате Word (DOC)">📝 Выгрузить в DOC</button>
                     <button type="submit" class="submit-btn">Отправить заявку</button>
+                    <button type="button" class="excel-btn" onclick="exportToExcel('ttk')" title="Выгрузит заявку в формате Excel (XLSX) с точным шаблоном">Выгрузить Excel</button>
+                    <button type="button" class="doc-btn" onclick="exportToDOC('ttk')" title="Выгрузит заявку в формате Word (DOC)">Выгрузить в DOC</button>
+                    <button type="reset" class="reset-btn">Очистить форму</button>
                 </div>
             </form>
         </div>
@@ -622,7 +627,7 @@
                                 <div>
                                     <input type="text" class="time-input" id="producer-start-time" name="start-time" required inputmode="numeric" autocomplete="off">
                                 </div>
-                                <div style="text-align: center; line-height: 40px;">-</div>
+                                <div class="time-separator">-</div>
                                 <div>
                                     <input type="text" class="time-input" id="producer-end-time" name="end-time" required inputmode="numeric" autocomplete="off">
                                 </div>
@@ -650,9 +655,9 @@
                 </table>
                 
                 <div class="form-actions">
-                    <button type="reset" class="reset-btn">Очистить форму</button>
-                    <button type="button" class="doc-btn" onclick="exportToDOC('producer')" title="Выгрузит заявку в формате Word (DOC)">📝 Выгрузить в DOC</button>
                     <button type="submit" class="submit-btn">Отправить заявку</button>
+                    <button type="button" class="doc-btn" onclick="exportToDOC('producer')" title="Выгрузит заявку в формате Word (DOC)">Выгрузить в DOC</button>
+                    <button type="reset" class="reset-btn">Очистить форму</button>
                 </div>
             </form>
         </div>
@@ -666,6 +671,7 @@
         <option value="Железнов А">
         <option value="Изварина М">
         <option value="Казанджан И">
+        <option value="Кулабухова М.">
         <option value="Ломовцев Э">
         <option value="Матеранская И">
         <option value="Миронова Н">
@@ -688,7 +694,6 @@
         <option value="Королькова А.">
         <option value="Кремешная А.">
         <option value="Крылова А.">
-        <option value="Кулабухова М">
         <option value="Кузьмин А.">
         <option value="Кузьмин Д.">
         <option value="Кускова М.">
@@ -721,3 +726,5 @@
         <option value="Юняев Р.">
         <option value="Якунина О">
     </datalist>
+
+    <datalist id="producers-list"></datalist>

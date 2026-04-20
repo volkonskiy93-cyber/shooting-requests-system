@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Обновление через GitHub API</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; max-width: 800px; margin: 0 auto; }
+        .log { background: #f5f5f5; padding: 15px; border-radius: 5px; font-family: monospace; max-height: 500px; overflow-y: auto; }
+        .success { color: green; }
+        .error { color: red; }
+        button { padding: 10px 20px; font-size: 16px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>🚀 Обновление файлов через GitHub API</h1>
+    <button onclick="updateFiles()">Обновить файлы</button>
+    <div id="log" class="log"></div>
+
+    <script>
+        const TOKEN = 'YOUR_GITHUB_TOKEN_HERE';
+        const REPO_OWNER = 'volkonskiy93-cyber';
+        const REPO_NAME = '-2';
+        const BASE_URL = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents`;
+
+        function log(msg, type = 'info') {
+            const logDiv = document.getElementById('log');
+            const color = type === 'success' ? 'green' : type === 'error' ? 'red' : 'black';
+            logDiv.innerHTML += `<div style="color: ${color}">${msg}</div>`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+
+        async function updateFile(fileName) {
+            log(`📄 Обновление: ${fileName}`);
+            
+            try {
+                // Загружаем локальный файл
+                const fileResponse = await fetch(fileName);
+                if (!fileResponse.ok) throw new Error('Не удалось загрузить файл');
+                const fileContent = await fileResponse.text();
+                log(`  ✓ Файл загружен (${fileContent.length} символов)`);
+                
+                // Base64
+                const base64Content = btoa(unescape(encodeURIComponent(fileContent)));
+                log(`  ✓ Закодирован в base64`);
+                
+                // Получаем SHA
+                let sha = null;
+                try {
+                    const getResponse = await fetch(`${BASE_URL}/${encodeURIComponent(fileName)}`, {
+                        headers: {
+                            'Authorization': `token ${TOKEN}`,
+                            'Accept': 'application/vnd.github.v3+json'
+                        }
+                    });
+                    if (getResponse.ok) {
+                        const data = await getResponse.json();
+                        sha = data.sha;
+                        log(`  ✓ SHA получен: ${sha.substring(0, 8)}...`);
+                    }
+                } catch (e) {
+                    log(`  ℹ Файл новый`);
+                }
+                
+                // Обновляем
+                const body = { message: 'Update iOS 26 styles', content: base64Content };
+                if (sha) body.sha = sha;
+                
+                const updateResponse = await fetch(`${BASE_URL}/${encodeURIComponent(fileName)}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `token ${TOKEN}`,
+                        'Accept': 'application/vnd.github.v3+json',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(body)
+                });
+                
+                if (updateResponse.ok) {
+                    log(`  ✅ Успешно обновлен!`, 'success');
+                    return true;
+                } else {
+                    const error = await updateResponse.json();
+                    throw new Error(error.message || 'Ошибка обновления');
+                }
+            } catch (error) {
+                log(`  ❌ Ошибка: ${error.message}`, 'error');
+                return false;
+            }
+        }
+
+        async function updateFiles() {
+            const files = ['index.html', 'deepseek_htmlобщая.html', 'admin.html'];
+            let success = 0, error = 0;
+            
+            log('🚀 Начало обновления...\n');
+            
+            for (const file of files) {
+                const result = await updateFile(file);
+                if (result) success++; else error++;
+                log('');
+                await new Promise(r => setTimeout(r, 1000));
+            }
+            
+            log(`═══════════════════════════════════════════════════`);
+            log(`📊 Результаты: ✅ ${success}  ❌ ${error}`);
+            log(`═══════════════════════════════════════════════════`);
+            
+            if (error === 0) {
+                log('🎉 Все файлы обновлены!', 'success');
+            }
+        }
+
+        // Автозапуск
+        window.addEventListener('load', () => {
+            if (window.location.protocol === 'http:' || window.location.protocol === 'https:') {
+                setTimeout(updateFiles, 500);
+            } else {
+                log('⚠️ Откройте через локальный веб-сервер: python -m http.server 8000', 'error');
+            }
+        });
+    </script>
+</body>
+</html>

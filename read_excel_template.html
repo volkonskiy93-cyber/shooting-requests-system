@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Анализ структуры Excel шаблонов</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        input[type="file"] {
+            margin: 10px 0;
+            padding: 10px;
+            width: 100%;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 20px;
+            background: #f9f9f9;
+            border-radius: 5px;
+        }
+        pre {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            font-size: 12px;
+        }
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 20px 0;
+        }
+        table td, table th {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        table th {
+            background: #4CAF50;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📊 Анализ структуры Excel шаблонов</h1>
+        
+        <div>
+            <h2>Заявка ФИГАРО</h2>
+            <input type="file" id="figaroFile" accept=".xlsx,.xls" />
+            <div id="figaroResult"></div>
+        </div>
+        
+        <div>
+            <h2>Заявка ТТК</h2>
+            <input type="file" id="ttkFile" accept=".xlsx,.xls" />
+            <div id="ttkResult"></div>
+        </div>
+    </div>
+    
+    <script>
+        function analyzeExcel(file, type) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, {type: 'array', cellStyles: true});
+                const sheet = workbook.Sheets[workbook.SheetNames[0]];
+                
+                // Получаем диапазон ячеек
+                const range = XLSX.utils.decode_range(sheet['!ref'] || 'A1');
+                
+                let analysis = {
+                    cells: [],
+                    merges: sheet['!merges'] || [],
+                    cols: sheet['!cols'] || [],
+                    rows: sheet['!rows'] || []
+                };
+                
+                // Анализируем каждую ячейку
+                for (let R = range.s.r; R <= range.e.r; R++) {
+                    for (let C = range.s.c; C <= range.e.c; C++) {
+                        const cellAddress = XLSX.utils.encode_cell({r: R, c: C});
+                        const cell = sheet[cellAddress];
+                        
+                        if (cell) {
+                            analysis.cells.push({
+                                address: cellAddress,
+                                value: cell.v,
+                                type: cell.t,
+                                style: cell.s || {},
+                                formula: cell.f
+                            });
+                        }
+                    }
+                }
+                
+                displayAnalysis(analysis, type);
+            };
+            reader.readAsArrayBuffer(file);
+        }
+        
+        function displayAnalysis(analysis, type) {
+            const resultDiv = document.getElementById(type + 'Result');
+            
+            let html = `
+                <div class="result">
+                    <h3>Структура файла:</h3>
+                    <p>Всего ячеек с данными: ${analysis.cells.length}</p>
+                    <p>Объединенных областей: ${analysis.merges.length}</p>
+                    <p>Настроенных столбцов: ${analysis.cols.length}</p>
+                    
+                    <h4>Объединенные ячейки:</h4>
+                    <pre>${JSON.stringify(analysis.merges, null, 2)}</pre>
+                    
+                    <h4>Ширина столбцов:</h4>
+                    <pre>${JSON.stringify(analysis.cols, null, 2)}</pre>
+                    
+                    <h4>Примеры ячеек (первые 20):</h4>
+                    <pre>${JSON.stringify(analysis.cells.slice(0, 20), null, 2)}</pre>
+                </div>
+            `;
+            
+            resultDiv.innerHTML = html;
+        }
+        
+        document.getElementById('figaroFile').addEventListener('change', function(e) {
+            if (e.target.files[0]) {
+                analyzeExcel(e.target.files[0], 'figaro');
+            }
+        });
+        
+        document.getElementById('ttkFile').addEventListener('change', function(e) {
+            if (e.target.files[0]) {
+                analyzeExcel(e.target.files[0], 'ttk');
+            }
+        });
+    </script>
+</body>
+</html>

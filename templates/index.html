@@ -4,217 +4,442 @@
 
 {% block styles %}
 .container {
-    max-width: 600px;
+    max-width: var(--content-width);
     margin: 0 auto;
+    min-height: 100vh;
     padding: 20px;
     display: flex;
     align-items: center;
-    justify-content: center;
-    min-height: 100vh;
 }
 
 .login-container {
-    background: rgba(255, 255, 255, 0.9);
-    backdrop-filter: blur(30px) saturate(180%);
-    -webkit-backdrop-filter: blur(30px) saturate(180%);
-    border-radius: 28px;
-    padding: 50px;
     width: 100%;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1), 
-                0 8px 25px rgba(0, 0, 0, 0.05),
-                inset 0 1px 0 rgba(255, 255, 255, 0.6);
-    text-align: center;
-    border: 1px solid rgba(255, 255, 255, 0.4);
-    animation: slideUp 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    display: grid;
+    grid-template-columns: minmax(0, 1.05fr) minmax(320px, 520px);
+    gap: 24px;
+    align-items: stretch;
 }
 
-@keyframes slideUp {
-    from {
-        opacity: 0;
-        transform: translateY(30px) scale(0.95);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0) scale(1);
-    }
+.intro-panel,
+.auth-panel {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-soft);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-card);
 }
 
-h1 {
-    color: #2C1810;
-    margin-bottom: 12px;
-    font-size: 3rem;
+.intro-panel {
+    padding: 56px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-height: 420px;
+}
+
+.eyebrow {
+    display: inline-flex;
+    align-items: center;
+    width: fit-content;
+    min-height: 34px;
+    padding: 0 14px;
+    margin-bottom: 20px;
+    border-radius: 999px;
+    background: linear-gradient(135deg, rgba(240, 179, 91, 0.16), rgba(244, 200, 138, 0.08));
+    border: 1px solid rgba(217, 135, 71, 0.16);
+    color: #8a5a2c;
+    font-size: 12px;
     font-weight: 700;
-    letter-spacing: -1px;
-    background: linear-gradient(135deg, #FF6B6B 0%, #FF8E53 50%, #FFA07A 100%);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+}
+
+.hero h1 {
+    max-width: 720px;
+    margin-bottom: 22px;
+    font-size: clamp(3.2rem, 5.4vw, 5.8rem);
+    line-height: 0.9;
+    font-weight: 700;
+    letter-spacing: -0.065em;
+    color: var(--text-primary);
+}
+
+.hero h1 .sunrise-accent {
+    display: block;
+    background: linear-gradient(135deg, #b86b31 0%, var(--accent-sunrise) 50%, #efcb80 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
 }
 
-.subtitle {
-    color: #5C4A3A;
-    margin-bottom: 45px;
-    font-size: 1.15rem;
+.auth-panel {
+    padding: 30px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.auth-top {
+    margin-bottom: 26px;
+}
+
+.auth-top::before {
+    content: "Доступ";
+    display: inline-flex;
+    align-items: center;
+    min-height: 32px;
+    padding: 0 12px;
+    margin-bottom: 14px;
+    border-radius: 999px;
+    background: linear-gradient(135deg, rgba(240, 179, 91, 0.16), rgba(244, 200, 138, 0.08));
+    border: 1px solid rgba(217, 135, 71, 0.14);
+    color: #8a5a2c;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+}
+
+.auth-title {
+    margin-bottom: 12px;
+    font-size: 1.9rem;
+    font-weight: 700;
+    letter-spacing: -0.05em;
+}
+
+.status-banner {
+    display: none;
+    margin-bottom: 18px;
+    padding: 14px 16px;
+    border-radius: 18px;
+    font-size: 0.92rem;
+    line-height: 1.55;
+}
+
+.status-banner.active {
+    display: block;
+}
+
+.status-banner.info {
+    background: rgba(17, 17, 17, 0.04);
+    border: 1px solid rgba(17, 17, 17, 0.08);
+    color: var(--text-secondary);
+}
+
+.status-banner.success {
+    background: rgba(31, 122, 67, 0.1);
+    border: 1px solid rgba(31, 122, 67, 0.2);
+    color: #1f7a43;
+}
+
+.status-banner.error {
+    background: rgba(163, 58, 45, 0.1);
+    border: 1px solid rgba(163, 58, 45, 0.2);
+    color: #9e3a30;
+}
+
+.role-field {
+    margin-bottom: 12px;
+}
+
+.role-field label {
+    display: block;
+    margin-bottom: 8px;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.role-field select {
+    width: 100%;
+    min-height: 56px;
+    padding: 0 18px;
+    border: 1px solid var(--border-strong);
+    border-radius: 16px;
+    background: #fff;
+    color: var(--text-primary);
+    font-size: 16px;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.role-field select:focus {
+    outline: none;
+    border-color: #111;
+    box-shadow: 0 0 0 4px rgba(17, 17, 17, 0.06);
+}
+
+.logged-in-panel {
+    display: none;
+    padding: 26px;
+    background: var(--bg-secondary);
+    border-radius: 28px;
+    border: 1px solid var(--border-soft);
+}
+
+.logged-in-panel.active {
+    display: block;
+}
+
+.logged-in-panel h3 {
+    margin-bottom: 10px;
+    font-size: 1.35rem;
+    letter-spacing: -0.04em;
+}
+
+.logged-in-panel p {
+    color: var(--text-secondary);
     line-height: 1.6;
 }
 
-.role-select {
+.logged-in-actions {
     display: flex;
-    gap: 24px;
-    flex-direction: column;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 18px;
 }
 
-.role-card {
-    background: rgba(255, 255, 255, 0.85);
-    backdrop-filter: blur(20px) saturate(180%);
-    -webkit-backdrop-filter: blur(20px) saturate(180%);
-    border-radius: 24px;
-    padding: 35px;
-    cursor: pointer;
-    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    border: 1px solid rgba(255, 255, 255, 0.4);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
-}
-
-.role-card:hover {
-    transform: translateY(-8px) scale(1.02);
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.12);
-}
-
-.role-card.correspondent {
-    background: linear-gradient(135deg, rgba(74, 144, 226, 0.15) 0%, rgba(74, 144, 226, 0.25) 100%);
-}
-
-.role-card.admin {
-    background: linear-gradient(135deg, rgba(255, 107, 107, 0.15) 0%, rgba(255, 107, 107, 0.25) 100%);
-}
-
-.role-card h2 {
-    margin-bottom: 12px;
-    font-size: 2rem;
+.logged-in-actions button,
+.logged-in-actions a {
+    flex: 1 1 220px;
+    min-height: 52px;
+    margin: 0;
+    padding: 0 18px;
+    border-radius: 18px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.95rem;
     font-weight: 700;
-    color: #2C1810;
+}
+
+.btn-secondary {
+    background: rgba(17, 17, 17, 0.03);
+    color: var(--text-primary);
+    border: 1px solid rgba(17, 17, 17, 0.08);
 }
 
 .form-section {
-    margin-bottom: 30px;
-    padding: 28px;
-    background: rgba(255, 255, 255, 0.6);
-    backdrop-filter: blur(15px);
-    border-radius: 20px;
     display: none;
+    margin-bottom: 20px;
+    padding: 26px;
+    background: var(--bg-secondary);
+    border-radius: 28px;
+    border: 1px solid var(--border-soft);
 }
 
 .form-section.active {
     display: block;
 }
 
+.section-title {
+    margin-bottom: 18px;
+    font-size: 1.2rem;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    color: var(--text-primary);
+}
+
 input {
     width: 100%;
-    padding: 14px 18px;
-    margin-bottom: 14px;
-    border: 1.5px solid rgba(92, 74, 58, 0.2);
-    border-radius: 14px;
+    min-height: 56px;
+    padding: 0 18px;
+    margin-bottom: 12px;
+    border: 1px solid var(--border-strong);
+    border-radius: 16px;
+    background: #fff;
+    color: var(--text-primary);
     font-size: 16px;
-    background: rgba(255, 255, 255, 0.8);
-    color: #2C1810;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+input::placeholder {
+    color: #9b968f;
+}
+
+input:focus {
+    outline: none;
+    border-color: #111;
+    box-shadow: 0 0 0 4px rgba(17, 17, 17, 0.06);
 }
 
 button {
     width: 100%;
-    padding: 16px 32px;
+    min-height: 56px;
+    padding: 0 22px;
     border: none;
-    border-radius: 16px;
-    font-size: 17px;
-    font-weight: 600;
+    border-radius: 18px;
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
     cursor: pointer;
-    margin-bottom: 16px;
-    transition: all 0.3s;
+    margin-bottom: 14px;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
 }
 
-.btn-primary {
-    background: linear-gradient(135deg, #4A90E2 0%, #357ABD 100%);
-    color: white;
+button:hover {
+    transform: translateY(-1px);
 }
 
+.btn-primary,
 .btn-success {
-    background: linear-gradient(135deg, #52C41A 0%, #73D13D 100%);
-    color: white;
+    background: linear-gradient(135deg, #1a1713 0%, #4b3321 100%);
+    color: #fff;
+    box-shadow: 0 12px 24px rgba(75, 51, 33, 0.16);
+}
+
+.btn-primary:hover,
+.btn-success:hover {
+    box-shadow: 0 18px 30px rgba(75, 51, 33, 0.22);
+}
+
+.auth-switch {
+    text-align: center;
+    font-size: 0.94rem;
+    color: var(--text-secondary);
+}
+
+.auth-switch a {
+    font-weight: 700;
+    text-decoration: underline;
+    text-underline-offset: 3px;
 }
 
 .user-info {
-    margin-bottom: 25px;
-    padding: 20px;
-    background: linear-gradient(135deg, rgba(82, 196, 26, 0.15) 0%, rgba(115, 209, 61, 0.15) 100%);
-    backdrop-filter: blur(15px);
+    display: none;
+    margin-bottom: 18px;
+    padding: 18px 20px;
+    background: var(--bg-muted);
+    border: 1px solid var(--border-soft);
     border-radius: 20px;
-    display: none;
-}
-
-.user-info {
-    margin-bottom: 30px;
-    padding: 25px;
-    background: rgba(255, 255, 255, 0.15);
-    backdrop-filter: blur(20px);
-    border-radius: 24px;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    display: none;
-    color: white;
+    color: var(--text-primary);
 }
 
 .user-info.active {
     display: block;
+}
+
+.user-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+}
+
+.user-row p {
+    margin: 0;
+    color: var(--text-secondary);
+}
+
+.logout-btn {
+    width: auto;
+    min-height: 44px;
+    margin: 0;
+    padding: 0 18px;
+    background: transparent;
+    color: var(--text-primary);
+    border: 1px solid var(--border-strong);
+    box-shadow: none;
+}
+
+@media (max-width: 1120px) {
+    .login-container {
+        grid-template-columns: 1fr;
+    }
+
+    .intro-panel {
+        min-height: auto;
+    }
+}
+
+@media (max-width: 768px) {
+    .container {
+        padding: 12px;
+    }
+
+    .intro-panel,
+    .auth-panel {
+        border-radius: 28px;
+    }
+
+    .intro-panel {
+        padding: 28px 22px;
+        gap: 28px;
+    }
+
+    .hero h1 {
+        font-size: 2.8rem;
+    }
+
+    .auth-panel {
+        padding: 18px;
+    }
+
+    .form-section {
+        padding: 20px 18px;
+    }
+
+    .user-row {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .logout-btn {
+        width: 100%;
+    }
 }
 {% endblock %}
 
 {% block content %}
 <div class="container">
     <div class="login-container">
-        <h1>Добро пожаловать</h1>
-        <p class="subtitle">Система заявок на видеосъемку программы "Доброе утро"</p>
-        
-        <!-- Форма авторизации -->
-        <div id="auth-section" class="form-section active">
-            <h3 style="font-size: 1.5rem; margin-bottom: 20px; color: #2C1810;">Вход в систему</h3>
-            <input type="email" id="user-email" placeholder="Введите ваш email">
-            <input type="password" id="user-password" placeholder="Введите пароль">
-            <button class="btn-primary" onclick="handleLogin()">Войти</button>
-            <div style="text-align: center; font-size: 0.95rem; color: #5C4A3A;">
-                Нет аккаунта? <a href="#" onclick="showRegister(); return false;" style="color: #4A90E2;">Зарегистрироваться</a>
+        <section class="intro-panel">
+            <div class="hero">
+                <span class="eyebrow">Dobroe Utro</span>
+                <h1>Система подачи<span class="sunrise-accent">заявок</span></h1>
             </div>
-        </div>
-        
-        <!-- Форма регистрации -->
-        <div id="register-section" class="form-section">
-            <h3 style="font-size: 1.5rem; margin-bottom: 20px; color: #2C1810;">Регистрация</h3>
-            <input type="email" id="reg-email" placeholder="Введите ваш email">
-            <input type="password" id="reg-password" placeholder="Придумайте пароль (мин. 4 символа)">
-            <input type="password" id="reg-password-confirm" placeholder="Повторите пароль">
-            <button class="btn-success" onclick="handleRegister()">Зарегистрироваться</button>
-            <div style="text-align: center; font-size: 0.95rem; color: #5C4A3A;">
-                Уже есть аккаунт? <a href="#" onclick="showLogin(); return false;" style="color: #4A90E2;">Войти</a>
+        </section>
+
+        <section class="auth-panel">
+            <div class="auth-top">
+                <h2 class="auth-title">Панель регистрации и входа</h2>
             </div>
-        </div>
-        
-        <!-- Информация о пользователе -->
-        <div id="user-info" class="user-info">
-            <p style="margin: 0 0 15px 0; color: #2C1810;">Вы вошли как: <strong id="user-email-display"></strong></p>
-            <button onclick="handleLogout()" style="padding: 12px 24px; background: rgba(92, 74, 58, 0.1); color: #5C4A3A; border: 1.5px solid rgba(92, 74, 58, 0.2); border-radius: 12px; cursor: pointer;">Выйти</button>
-        </div>
-        
-        <div class="role-select">
-            <div class="role-card correspondent" onclick="selectRole('correspondent')">
-                <div style="font-size: 3.5rem; margin-bottom: 20px;">📝</div>
-                <h2>Корреспондент</h2>
-                <p>Создание и отправка заявок на видеосъемку</p>
+
+            <div id="auth-status" class="status-banner info"></div>
+
+            <div id="auth-section" class="form-section active">
+                <h3 class="section-title">Вход</h3>
+                <input type="email" id="user-email" placeholder="Введите email">
+                <input type="password" id="user-password" placeholder="Введите пароль">
+                <button class="btn-primary" onclick="handleLogin()">Войти</button>
+                <div class="auth-switch">
+                    Нет аккаунта? <a href="#" onclick="showRegister(); return false;">Зарегистрироваться</a>
+                </div>
             </div>
-            
-            <div class="role-card admin" onclick="selectRole('admin')">
-                <div style="font-size: 3.5rem; margin-bottom: 20px;">👨‍💼</div>
-                <h2>Администратор-Координатор</h2>
-                <p>Просмотр и обработка заявок на видеосъемку</p>
+
+            <div id="register-section" class="form-section">
+                <h3 class="section-title">Регистрация</h3>
+                <input type="text" id="reg-first-name" placeholder="Введите имя" required>
+                <input type="text" id="reg-last-name" placeholder="Введите фамилию" required>
+                <input type="email" id="reg-email" placeholder="Введите email">
+                <input type="password" id="reg-password" placeholder="Придумайте пароль (мин. 4 символа)">
+                <input type="password" id="reg-password-confirm" placeholder="Повторите пароль">
+                <button class="btn-success" onclick="handleRegister()">Создать аккаунт</button>
+                <div class="auth-switch">
+                    Уже есть аккаунт? <a href="#" onclick="showLogin(); return false;">Войти</a>
+                </div>
             </div>
-        </div>
+
+            <div id="logged-in-panel" class="logged-in-panel">
+                <h3>Вы уже в системе</h3>
+                <p>Пользователь: <strong id="user-name-display"></strong></p>
+                <p>Аккаунт: <strong id="user-email-display"></strong></p>
+                <p id="user-role-copy">Откройте нужный рабочий раздел.</p>
+                <div class="logged-in-actions">
+                    <a id="primary-work-link" class="btn-primary" href="/forms">Открыть заявки</a>
+                    <a id="secondary-work-link" class="btn-secondary" href="/admin" style="display:none;">Открыть админ-панель</a>
+                    <button type="button" class="logout-btn" onclick="handleLogout()">Выйти</button>
+                </div>
+            </div>
+        </section>
     </div>
 </div>
 {% endblock %}
@@ -223,14 +448,56 @@ button {
 <script>
 const API_BASE = '{{ url_for("index") }}';
 
+function showAuthMessage(message, kind = 'info') {
+    const banner = document.getElementById('auth-status');
+    if (!banner) return;
+    banner.textContent = message || '';
+    banner.className = `status-banner ${kind} active`;
+}
+
+function clearAuthMessage() {
+    const banner = document.getElementById('auth-status');
+    if (!banner) return;
+    banner.textContent = '';
+    banner.className = 'status-banner info';
+}
+
 function showLogin() {
     document.getElementById('auth-section').classList.add('active');
     document.getElementById('register-section').classList.remove('active');
+    document.getElementById('logged-in-panel').classList.remove('active');
 }
 
 function showRegister() {
     document.getElementById('auth-section').classList.remove('active');
     document.getElementById('register-section').classList.add('active');
+    document.getElementById('logged-in-panel').classList.remove('active');
+    clearAuthMessage();
+}
+
+function showLoggedInPanel(email, role, fullName) {
+    document.getElementById('auth-section').classList.remove('active');
+    document.getElementById('register-section').classList.remove('active');
+    document.getElementById('logged-in-panel').classList.add('active');
+    document.getElementById('user-email-display').textContent = email || '';
+    document.getElementById('user-name-display').textContent = fullName || 'Без имени';
+    clearAuthMessage();
+
+    const primaryLink = document.getElementById('primary-work-link');
+    const secondaryLink = document.getElementById('secondary-work-link');
+    const roleCopy = document.getElementById('user-role-copy');
+
+    if (role === 'admin') {
+        primaryLink.href = '/forms';
+        primaryLink.textContent = 'Открыть заявки';
+        secondaryLink.style.display = 'inline-flex';
+        roleCopy.textContent = 'Для администратора доступны отправка заявок и административная панель.';
+    } else {
+        primaryLink.href = '/forms';
+        primaryLink.textContent = 'Открыть заявки';
+        secondaryLink.style.display = 'none';
+        roleCopy.textContent = 'Для корреспондента доступна панель заявок ТТК, ФИГАРО и продюсерам.';
+    }
 }
 
 async function handleLogin() {
@@ -238,7 +505,7 @@ async function handleLogin() {
     const password = document.getElementById('user-password').value;
     
     if (!email || !password) {
-        alert('Заполните все поля');
+        showAuthMessage('Заполните все поля', 'error');
         return;
     }
     
@@ -252,35 +519,35 @@ async function handleLogin() {
         const data = await response.json();
         
         if (data.success) {
-            document.getElementById('user-email-display').textContent = data.user.email;
-            document.getElementById('user-info').classList.add('active');
-            document.getElementById('auth-section').classList.remove('active');
-            document.getElementById('register-section').classList.remove('active');
+            showLoggedInPanel(data.user.email, data.user.role, data.user.fullName);
         } else {
-            alert(data.message || 'Ошибка входа');
+            showAuthMessage(data.message || 'Ошибка входа', 'error');
         }
     } catch (error) {
-        alert('Ошибка: ' + error.message);
+        showAuthMessage('Ошибка: ' + error.message, 'error');
     }
 }
 
 async function handleRegister() {
+    const firstName = document.getElementById('reg-first-name').value.trim();
+    const lastName = document.getElementById('reg-last-name').value.trim();
+    const fullName = `${firstName} ${lastName}`.trim();
     const email = document.getElementById('reg-email').value.trim();
     const password = document.getElementById('reg-password').value;
     const passwordConfirm = document.getElementById('reg-password-confirm').value;
     
-    if (!email || !password) {
-        alert('Заполните все поля');
+    if (!firstName || !lastName || !email || !password) {
+        showAuthMessage('Заполните все поля', 'error');
         return;
     }
     
     if (password.length < 4) {
-        alert('Пароль должен быть не менее 4 символов');
+        showAuthMessage('Пароль должен быть не менее 4 символов', 'error');
         return;
     }
     
     if (password !== passwordConfirm) {
-        alert('Пароли не совпадают');
+        showAuthMessage('Пароли не совпадают', 'error');
         return;
     }
     
@@ -288,57 +555,50 @@ async function handleRegister() {
         const response = await fetch('/register', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({email, password, password_confirm: passwordConfirm})
+            body: JSON.stringify({
+                full_name: fullName,
+                email,
+                password,
+                password_confirm: passwordConfirm
+            })
         });
         
         const data = await response.json();
         
         if (data.success) {
-            alert('Регистрация успешна! Теперь войдите в систему.');
-            showLogin();
             document.getElementById('user-email').value = email;
+            document.getElementById('user-password').value = '';
+            document.getElementById('reg-password').value = '';
+            document.getElementById('reg-password-confirm').value = '';
+            showLogin();
+            showAuthMessage(data.message || 'Заявка на доступ отправлена.', 'success');
         } else {
-            alert(data.message || 'Ошибка регистрации');
+            showAuthMessage(data.message || 'Ошибка регистрации', 'error');
         }
     } catch (error) {
-        alert('Ошибка: ' + error.message);
+        showAuthMessage('Ошибка: ' + error.message, 'error');
     }
 }
 
 async function handleLogout() {
     try {
         await fetch('/logout', {method: 'POST'});
-        document.getElementById('user-info').classList.remove('active');
         document.getElementById('auth-section').classList.add('active');
+        document.getElementById('register-section').classList.remove('active');
+        document.getElementById('logged-in-panel').classList.remove('active');
         document.getElementById('user-email').value = '';
         document.getElementById('user-password').value = '';
+        clearAuthMessage();
     } catch (error) {
         alert('Ошибка: ' + error.message);
     }
 }
 
-function selectRole(role) {
-    // Проверка авторизации
-    const userInfo = document.getElementById('user-info');
-    if (!userInfo.classList.contains('active')) {
-        alert('Пожалуйста, войдите в систему перед выбором роли');
-        return;
-    }
-    
-    if (role === 'correspondent') {
-        window.location.href = '/forms';
-    } else if (role === 'admin') {
-        window.location.href = '/admin';
-    }
-}
-
-// Проверка авторизации при загрузке
 document.addEventListener('DOMContentLoaded', function() {
     {% if user %}
-    document.getElementById('user-email-display').textContent = '{{ user }}';
-    document.getElementById('user-info').classList.add('active');
-    document.getElementById('auth-section').classList.remove('active');
+    showLoggedInPanel({{ (user or "") | tojson }}, {{ (user_role or "correspondent") | tojson }}, {{ (user_name or "") | tojson }});
     {% endif %}
 });
+
 </script>
 {% endblock %}
