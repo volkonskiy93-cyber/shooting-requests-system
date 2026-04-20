@@ -1,4 +1,5 @@
 let currentApplications = [];
+let currentUsers = [];
 let currentFilter = {
     sort_by: 'created_at',
     sort_dir: 'desc',
@@ -35,10 +36,11 @@ function setupFilters() {
     document.getElementById('sort-by').addEventListener('change', applyFilters);
     document.getElementById('sort-dir').addEventListener('change', applyFilters);
     document.getElementById('reset-filters-btn').addEventListener('click', resetFilters);
+    document.getElementById('users-search-input').addEventListener('input', renderUsers);
 }
 
 async function refreshAdminData() {
-    await Promise.all([loadApplications(), loadStatistics(), loadPendingUsers()]);
+    await Promise.all([loadApplications(), loadStatistics(), loadPendingUsers(), loadUsers()]);
 }
 
 async function loadApplications() {
@@ -133,6 +135,29 @@ async function loadPendingUsers() {
     }
 }
 
+async function loadUsers() {
+    const tbody = document.getElementById('users-tbody');
+    const summary = document.getElementById('users-summary');
+    if (!tbody) return;
+
+    try {
+        const response = await fetch('/api/admin/users');
+        const data = await readJsonResponse(response);
+        if (!data.success) {
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align: center;">Не удалось загрузить пользователей.</td></tr>';
+            if (summary) summary.textContent = 'Ошибка загрузки пользователей';
+            return;
+        }
+
+        currentUsers = data.users || [];
+        renderUsers();
+    } catch (error) {
+        console.error('Ошибка загрузки пользователей:', error);
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align: center;">Ошибка загрузки пользователей.</td></tr>';
+        if (summary) summary.textContent = 'Ошибка загрузки пользователей';
+    }
+}
+
 function applyFilters() {
     currentFilter = {
         status: document.getElementById('status-filter').value,
@@ -219,6 +244,63 @@ function renderApplications() {
     }).join('');
 }
 
+function renderUsers() {
+    const tbody = document.getElementById('users-tbody');
+    const summary = document.getElementById('users-summary');
+    const searchInput = document.getElementById('users-search-input');
+    if (!tbody) return;
+
+    const query = String(searchInput?.value || '').trim().toLowerCase();
+    const filteredUsers = currentUsers.filter((user) => {
+        if (!query) return true;
+        return [user.fullName, user.email, user.role]
+            .map((value) => String(value || '').toLowerCase())
+            .some((value) => value.includes(query));
+    });
+
+    if (summary) {
+        summary.textContent = `Пользователей: ${filteredUsers.length} из ${currentUsers.length}`;
+    }
+
+    if (!filteredUsers.length) {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align: center;">Пользователи не найдены</td></tr>';
+        return;
+    }
+
+    tbody.innerHTML = filteredUsers.map((user) => {
+        const createdAt = formatDateTime(user.created_at);
+        const approvedAt = user.approvedAt ? formatDateTime(user.approvedAt) : '—';
+        const accessStatus = user.approvalStatus || 'pending';
+        const accessLabel = {
+            approved: 'Доступ открыт',
+            pending: 'Ожидает',
+            rejected: 'Доступ закрыт',
+        }[accessStatus] || accessStatus;
+        const roleLabel = user.role === 'admin' ? 'Администратор' : 'Корреспондент';
+        const isAdmin = user.role === 'admin';
+
+        return `
+            <tr>
+                <td>${escapeHtml(user.fullName || 'Без имени')}</td>
+                <td>${escapeHtml(user.email || '—')}</td>
+                <td><span class="user-role-badge">${roleLabel}</span></td>
+                <td><span class="user-access-badge ${accessStatus}">${accessLabel}</span></td>
+                <td class="table-meta">${createdAt}</td>
+                <td class="table-meta">${approvedAt}</td>
+                <td>
+                    ${accessStatus !== 'approved'
+                        ? `<button class="btn btn-approve" onclick="approveUser(${user.id})">Открыть доступ</button>`
+                        : ''}
+                    ${!isAdmin && accessStatus !== 'rejected'
+                        ? `<button class="btn btn-reject" onclick="rejectUser(${user.id})">Ограничить доступ</button>`
+                        : ''}
+                    ${isAdmin ? '<span class="table-meta">Администратор</span>' : ''}
+                </td>
+            </tr>
+        `;
+    }).join('');
+}
+
 function viewApplication(id) {
     const app = currentApplications.find((item) => item.id === id);
     if (!app) return;
@@ -278,4 +360,11 @@ function escapeHtml(value) {
         .replaceAll('>', '&gt;')
         .replaceAll('"', '&quot;')
         .replaceAll("'", '&#39;');
+}
+
+function formatDateTime(value) {
+    if (!value) return '—';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '—';
+    return date.toLocaleString('ru-RU');
 }

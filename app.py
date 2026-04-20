@@ -625,6 +625,22 @@ def get_pending_users():
     })
 
 
+@app.route('/api/admin/users', methods=['GET'])
+def get_all_users():
+    """Получить список всех зарегистрированных пользователей"""
+    admin_user = _get_active_user()
+    if not admin_user:
+        return jsonify({'error': 'Unauthorized'}), 401
+    if not _is_admin(admin_user):
+        return jsonify({'error': 'Forbidden'}), 403
+
+    users = User.query.order_by(User.created_at.desc(), User.email.asc()).all()
+    return jsonify({
+        'success': True,
+        'users': [listed_user.to_dict() for listed_user in users]
+    })
+
+
 @app.route('/api/admin/users/<int:user_id>/approve', methods=['POST'])
 def approve_user(user_id):
     """Одобрить доступ пользователя"""
@@ -655,6 +671,11 @@ def reject_user(user_id):
         return jsonify({'error': 'Forbidden'}), 403
 
     user = User.query.get_or_404(user_id)
+    if user.id == admin_user.id:
+        return jsonify({'error': 'Нельзя ограничить доступ текущему администратору'}), 400
+    if user.role == 'admin':
+        return jsonify({'error': 'Нельзя ограничить доступ другому администратору'}), 400
+
     user.approval_status = APPROVAL_REJECTED
     user.approved_at = None
     user.approved_by_email = None
