@@ -667,6 +667,16 @@ async function _postApplication(payload) {
   return data;
 }
 
+function _submissionSuccessMessage(result, defaultSuccessMessage) {
+  if (result?.emailSent) {
+    return defaultSuccessMessage;
+  }
+  if (result?.emailError) {
+    return `Заявка сохранена, но письмо не отправлено: ${result.emailError}`;
+  }
+  return 'Заявка сохранена, но письмо не отправлено.';
+}
+
 function _validateRequired(formSelector) {
   const requiredFields = document.querySelectorAll(`${formSelector} [required]`);
   let isValid = true;
@@ -861,10 +871,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
       try {
         showSendingSplash();
-        await _postApplication(payload);
+        const result = await _postApplication(payload);
         figaroForm.reset();
         goBack();
-        showSuccessModal('Файл сформирован, заявка сохранена и отправлена адресату.');
+        showSuccessModal(_submissionSuccessMessage(result, 'Файл сформирован, заявка сохранена и отправлена адресату.'));
       } catch (err) {
         hideSendingSplash();
         alert(`Ошибка отправки: ${err.message}`);
@@ -916,11 +926,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
       try {
         showSendingSplash();
-        await _postApplication(payload);
+        const result = await _postApplication(payload);
         ttkForm.reset();
         _resetTtkMainKitMode();
         goBack();
-        showSuccessModal('Файл сформирован, заявка сохранена и отправлена адресату.');
+        showSuccessModal(_submissionSuccessMessage(result, 'Файл сформирован, заявка сохранена и отправлена адресату.'));
       } catch (err) {
         hideSendingSplash();
         alert(`Ошибка отправки: ${err.message}`);
@@ -958,10 +968,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
       try {
         showSendingSplash();
-        await _postApplication(payload);
+        const result = await _postApplication(payload);
         producerForm.reset();
         goBack();
-        showSuccessModal('Заявка сохранена и успешно отправлена.');
+        showSuccessModal(_submissionSuccessMessage(result, 'Заявка сохранена и успешно отправлена.'));
       } catch (err) {
         hideSendingSplash();
         alert(`Ошибка отправки: ${err.message}`);

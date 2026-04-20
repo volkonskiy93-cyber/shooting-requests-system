@@ -498,13 +498,18 @@ def create_application():
     db.session.commit()
     
     # Генерация и отправка документов
+    email_status = {
+        'sent': False,
+        'error': None,
+        'providerId': None,
+    }
     try:
         if data.get('contractor') in ['figaro', 'ttk']:
             # Генерация Excel файла
             excel_file = create_excel_document(data, application.id)
             if excel_file:
                 excel_filename = _build_excel_filename(data)
-                send_email_with_attachment(
+                email_result = send_email_with_attachment(
                     _email_recipient_for_contractor(data.get('contractor')),
                     f"Заявка {'ФИГАРО' if data.get('contractor') == 'figaro' else 'ТТК'}: {data.get('storyTitle', '')}",
                     excel_file,
@@ -512,11 +517,18 @@ def create_application():
                     sender_display_email=user.email,
                     sender_display_name=user.full_name
                 )
+                email_status = {
+                    'sent': bool(email_result.get('success')),
+                    'error': email_result.get('error'),
+                    'providerId': email_result.get('provider_id'),
+                }
+            else:
+                email_status['error'] = 'Не удалось сформировать Excel-файл для отправки'
         elif data.get('contractor') == 'producer':
             # Генерация Word файла
             word_file = create_word_document(data, application.id)
             if word_file:
-                send_email_with_attachment(
+                email_result = send_email_with_attachment(
                     _email_recipient_for_contractor(data.get('contractor')),
                     f"Заявка продюсерам: {data.get('storyTitle', '')}",
                     word_file,
@@ -524,13 +536,23 @@ def create_application():
                     sender_display_email=user.email,
                     sender_display_name=user.full_name
                 )
+                email_status = {
+                    'sent': bool(email_result.get('success')),
+                    'error': email_result.get('error'),
+                    'providerId': email_result.get('provider_id'),
+                }
+            else:
+                email_status['error'] = 'Не удалось сформировать Word-файл для отправки'
     except Exception as e:
         print(f"Ошибка при отправке email: {e}")
-        # Не прерываем создание заявки, если email не отправился
+        email_status['error'] = str(e)
     
     return jsonify({
         'success': True,
-        'application': application.to_dict()
+        'application': application.to_dict(),
+        'emailSent': email_status['sent'],
+        'emailError': email_status['error'],
+        'emailProviderId': email_status['providerId'],
     }), 201
 
 

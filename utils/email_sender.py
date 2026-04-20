@@ -26,14 +26,18 @@ def send_email_with_attachment(
         sender_display_name: имя корреспондента для отображения
     
     Returns:
-        True если успешно, False если ошибка
+        dict с полями success, error, provider_id
     """
     api_key = os.environ.get('RESEND_API_KEY')
     
     if not api_key:
         print("⚠️ RESEND_API_KEY не настроен. Email не будет отправлен.")
         print(f"Заявка сохранена в базе, но не отправлена на {to_email}")
-        return False
+        return {
+            "success": False,
+            "error": "RESEND_API_KEY не настроен в окружении сервера",
+            "provider_id": None,
+        }
 
     resend.api_key = api_key
 
@@ -90,9 +94,18 @@ def send_email_with_attachment(
 
         # Отправка через SDK
         r = resend.Emails.send(params)
-        print(f"✅ Email успешно отправлен через Resend! ID: {r['id']}")
-        return True
+        provider_id = r.get('id') if isinstance(r, dict) else None
+        print(f"✅ Email успешно отправлен через Resend! ID: {provider_id}")
+        return {
+            "success": True,
+            "error": None,
+            "provider_id": provider_id,
+        }
 
     except Exception as e:
         print(f"❌ Ошибка отправки через Resend API: {e}")
-        return False
+        return {
+            "success": False,
+            "error": str(e),
+            "provider_id": None,
+        }
