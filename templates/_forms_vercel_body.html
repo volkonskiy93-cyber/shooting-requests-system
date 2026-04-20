@@ -551,26 +551,9 @@
                     </tbody>
                 </table>
                 
-                <table class="form-table inline-form-table">
-                    <tr>
-                        <td class="label">Дата и время сдачи материала в инжест:</td>
-                        <td>
-                            <input type="datetime-local" id="ttk-submission-date" name="submission-date">
-                        </td>
-                    </tr>
-                    <tr>
-                        <td class="label">Инженер инжеста ФИО:</td>
-                        <td>
-                            <input type="text" id="ttk-engineer-name" name="engineer-name" placeholder="Введите ФИО инженера">
-                        </td>
-                    </tr>
-                    <tr>
-                        <td class="label">Подпись:</td>
-                        <td>
-                            <input type="text" id="ttk-signature" name="signature" placeholder="Подпись">
-                        </td>
-                    </tr>
-                </table>
+                <input type="hidden" id="ttk-submission-date" name="submission-date" value="">
+                <input type="hidden" id="ttk-engineer-name" name="engineer-name" value="">
+                <input type="hidden" id="ttk-signature" name="signature" value="">
                 
                 <div class="form-actions">
                     <button type="submit" class="submit-btn">Отправить заявку</button>

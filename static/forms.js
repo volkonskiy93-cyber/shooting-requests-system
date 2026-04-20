@@ -770,6 +770,8 @@ async function exportToExcel(contractorType) {
       extension: document.getElementById('ttk-extension')?.value || '',
       broadcastDate: document.getElementById('ttk-broadcast-date')?.value || null,
       submissionDate: document.getElementById('ttk-submission-date')?.value || null,
+      engineerName: document.getElementById('ttk-engineer-name')?.value || '',
+      signature: document.getElementById('ttk-signature')?.value || '',
       withoutMainKit: document.getElementById('ttk-without-main-kit')?.checked || false,
       equipment: collectEquipment('shooting-request-form-ttk'),
     };
@@ -906,6 +908,8 @@ document.addEventListener('DOMContentLoaded', () => {
         extension: document.getElementById('ttk-extension')?.value || '',
         broadcastDate: document.getElementById('ttk-broadcast-date')?.value || null,
         submissionDate: document.getElementById('ttk-submission-date')?.value || null,
+        engineerName: document.getElementById('ttk-engineer-name')?.value || '',
+        signature: document.getElementById('ttk-signature')?.value || '',
         withoutMainKit: document.getElementById('ttk-without-main-kit')?.checked || false,
         equipment: collectEquipment('shooting-request-form-ttk'),
       };
