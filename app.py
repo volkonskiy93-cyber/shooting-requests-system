@@ -28,9 +28,24 @@ load_dotenv()
 # Никаких жестко зашитых ключей в коде.
 
 app = Flask(__name__)
-database_url = os.environ.get('DATABASE_URL', 'sqlite:///shooting_requests.db')
-if database_url.startswith('postgres://'):
-    database_url = database_url.replace('postgres://', 'postgresql://', 1)
+
+
+def _resolve_database_url() -> str:
+    database_url = (os.environ.get('DATABASE_URL') or '').strip()
+    if database_url:
+        if database_url.startswith('postgres://'):
+            return database_url.replace('postgres://', 'postgresql://', 1)
+        return database_url
+
+    # Railway не использует render.yaml, поэтому при отсутствии DATABASE_URL
+    # сохраняем SQLite в постоянный том, если он примонтирован.
+    if any(os.environ.get(marker) for marker in ('RAILWAY_ENVIRONMENT', 'RAILWAY_PROJECT_ID', 'RAILWAY_SERVICE_ID')) or os.path.isdir('/data'):
+        return 'sqlite:////data/shooting_requests.db'
+
+    return 'sqlite:///shooting_requests.db'
+
+
+database_url = _resolve_database_url()
 
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
 app.config['SQLALCHEMY_DATABASE_URI'] = database_url
@@ -48,39 +63,6 @@ EMAIL_RECIPIENT_PRODUCER = os.environ.get('EMAIL_RECIPIENT_PRODUCER', DEFAULT_EM
 APPROVAL_PENDING = 'pending'
 APPROVAL_APPROVED = 'approved'
 APPROVAL_REJECTED = 'rejected'
-
-
-# Создание таблиц базы данных при первом запуске
-with app.app_context():
-    db.create_all()
-    inspector = inspect(db.engine)
-    approved_at_column_type = 'TIMESTAMP' if db.engine.dialect.name == 'postgresql' else 'DATETIME'
-    user_columns = {column['name'] for column in inspector.get_columns('users')}
-    if 'role' not in user_columns:
-        db.session.execute(text("ALTER TABLE users ADD COLUMN role VARCHAR(50) DEFAULT 'correspondent'"))
-        db.session.commit()
-    if 'full_name' not in user_columns:
-        db.session.execute(text("ALTER TABLE users ADD COLUMN full_name VARCHAR(255)"))
-        db.session.commit()
-    if 'approval_status' not in user_columns:
-        db.session.execute(text("ALTER TABLE users ADD COLUMN approval_status VARCHAR(20) DEFAULT 'approved'"))
-        db.session.commit()
-    if 'approved_at' not in user_columns:
-        db.session.execute(text(f"ALTER TABLE users ADD COLUMN approved_at {approved_at_column_type}"))
-        db.session.commit()
-    if 'approved_by_email' not in user_columns:
-        db.session.execute(text("ALTER TABLE users ADD COLUMN approved_by_email VARCHAR(255)"))
-        db.session.commit()
-    db.session.execute(text("UPDATE users SET role = 'correspondent' WHERE role IS NULL OR role = ''"))
-    db.session.execute(text(
-        "UPDATE users SET approval_status = 'approved' "
-        "WHERE approval_status IS NULL OR approval_status = ''"
-    ))
-    db.session.execute(text(
-        "UPDATE users SET approved_at = created_at "
-        "WHERE approval_status = 'approved' AND approved_at IS NULL"
-    ))
-    db.session.commit()
 
 
 def _role_redirect_url(role: str) -> str:
@@ -105,6 +87,68 @@ def _get_current_user() -> Optional[User]:
     if not user_id:
         return None
     return db.session.get(User, user_id)
+
+
+def _verify_and_upgrade_password(user: Optional[User], password: str) -> bool:
+    if not user or not password:
+        return False
+
+    stored_hash = (user.password_hash or '').strip()
+    if not stored_hash:
+        return False
+
+    try:
+        if bcrypt.check_password_hash(stored_hash, password):
+            return True
+    except ValueError:
+        pass
+
+    # Совместимость со старыми аккаунтами, где пароль мог храниться без хэша.
+    if stored_hash == password:
+        user.password_hash = bcrypt.generate_password_hash(password).decode('utf-8')
+        db.session.commit()
+        return True
+
+    return False
+
+
+def _ensure_admin_user():
+    admin_email = (os.environ.get('ADMIN_EMAIL') or 'admin@dobroeyutro.ru').strip().lower()
+    admin_password = os.environ.get('ADMIN_PASSWORD') or 'admin123'
+    admin_full_name = (os.environ.get('ADMIN_FULL_NAME') or 'Администратор').strip()
+
+    if not admin_email or not admin_password:
+        return
+
+    admin_user = User.query.filter_by(email=admin_email).first()
+    if admin_user:
+        updated = False
+        if admin_user.role != 'admin':
+            admin_user.role = 'admin'
+            updated = True
+        if admin_user.approval_status != APPROVAL_APPROVED:
+            admin_user.approval_status = APPROVAL_APPROVED
+            updated = True
+        if not admin_user.approved_at:
+            admin_user.approved_at = datetime.now()
+            updated = True
+        if not admin_user.full_name:
+            admin_user.full_name = admin_full_name
+            updated = True
+        if updated:
+            db.session.commit()
+        return
+
+    admin_user = User(
+        email=admin_email,
+        full_name=admin_full_name,
+        password_hash=bcrypt.generate_password_hash(admin_password).decode('utf-8'),
+        role='admin',
+        approval_status=APPROVAL_APPROVED,
+        approved_at=datetime.now()
+    )
+    db.session.add(admin_user)
+    db.session.commit()
 
 
 def _get_active_user() -> Optional[User]:
@@ -136,6 +180,40 @@ def _get_session_user_role() -> str:
     return user.role or 'correspondent'
 
 
+# Создание таблиц базы данных и недостающих колонок при запуске
+with app.app_context():
+    db.create_all()
+    inspector = inspect(db.engine)
+    approved_at_column_type = 'TIMESTAMP' if db.engine.dialect.name == 'postgresql' else 'DATETIME'
+    user_columns = {column['name'] for column in inspector.get_columns('users')}
+    if 'role' not in user_columns:
+        db.session.execute(text("ALTER TABLE users ADD COLUMN role VARCHAR(50) DEFAULT 'correspondent'"))
+        db.session.commit()
+    if 'full_name' not in user_columns:
+        db.session.execute(text("ALTER TABLE users ADD COLUMN full_name VARCHAR(255)"))
+        db.session.commit()
+    if 'approval_status' not in user_columns:
+        db.session.execute(text("ALTER TABLE users ADD COLUMN approval_status VARCHAR(20) DEFAULT 'approved'"))
+        db.session.commit()
+    if 'approved_at' not in user_columns:
+        db.session.execute(text(f"ALTER TABLE users ADD COLUMN approved_at {approved_at_column_type}"))
+        db.session.commit()
+    if 'approved_by_email' not in user_columns:
+        db.session.execute(text("ALTER TABLE users ADD COLUMN approved_by_email VARCHAR(255)"))
+        db.session.commit()
+    db.session.execute(text("UPDATE users SET role = 'correspondent' WHERE role IS NULL OR role = ''"))
+    db.session.execute(text(
+        "UPDATE users SET approval_status = 'approved' "
+        "WHERE approval_status IS NULL OR approval_status = ''"
+    ))
+    db.session.execute(text(
+        "UPDATE users SET approved_at = created_at "
+        "WHERE approval_status = 'approved' AND approved_at IS NULL"
+    ))
+    db.session.commit()
+    _ensure_admin_user()
+
+
 # ==================== РОУТЫ ====================
 
 @app.route('/')
@@ -165,7 +243,7 @@ def login():
     
     user = User.query.filter_by(email=email).first()
     
-    if user and bcrypt.check_password_hash(user.password_hash, password):
+    if _verify_and_upgrade_password(user, password):
         if user.approval_status == APPROVAL_PENDING:
             return jsonify({
                 'success': False,
