@@ -477,6 +477,7 @@ function _syncTtkMainKitMode() {
   const toggle = document.getElementById('ttk-without-main-kit');
   const table = document.querySelector('#shooting-request-form-ttk .equipment-table');
   const mainInputs = document.querySelectorAll('#shooting-request-form-ttk input[name^="main-qty-"]');
+  const addInputs = document.querySelectorAll('#shooting-request-form-ttk select[name^="add-qty-"]');
   const mainHeader = document.querySelector('#shooting-request-form-ttk .ttk-main-header');
   const mainTexts = document.querySelectorAll('#shooting-request-form-ttk .eq-main-text');
   const addTexts = document.querySelectorAll('#shooting-request-form-ttk .eq-add-text');
@@ -536,6 +537,22 @@ function _syncTtkMainKitMode() {
     }
   });
 
+  addInputs.forEach((input) => {
+    const cell = input.closest('td');
+    const addTextCell = cell?.previousElementSibling;
+    const addText = addTextCell ? addTextCell.textContent.trim().replace(/\s+/g, ' ') : '';
+    const shouldShow = Boolean(addText);
+
+    input.disabled = !shouldShow;
+    if (cell) {
+      cell.style.display = shouldShow ? '' : 'none';
+    }
+
+    if (!shouldShow) {
+      input.value = '0';
+    }
+  });
+
   table.classList.toggle('without-main-kit', withoutMainKit);
 }
 
@@ -543,6 +560,7 @@ function _resetTtkMainKitMode() {
   const toggle = document.getElementById('ttk-without-main-kit');
   const table = document.querySelector('#shooting-request-form-ttk .equipment-table');
   const mainInputs = document.querySelectorAll('#shooting-request-form-ttk input[name^="main-qty-"]');
+  const addInputs = document.querySelectorAll('#shooting-request-form-ttk select[name^="add-qty-"]');
 
   if (toggle) toggle.checked = false;
 
@@ -551,6 +569,19 @@ function _resetTtkMainKitMode() {
     delete input.dataset.savedValue;
     input.value = input.defaultValue || '0';
     input.style.display = '';
+  });
+
+  addInputs.forEach((input) => {
+    const cell = input.closest('td');
+    const addTextCell = cell?.previousElementSibling;
+    const addText = addTextCell ? addTextCell.textContent.trim().replace(/\s+/g, ' ') : '';
+    const shouldShow = Boolean(addText);
+
+    input.disabled = !shouldShow;
+    input.value = shouldShow ? (input.defaultValue || '0') : '0';
+    if (cell) {
+      cell.style.display = shouldShow ? '' : 'none';
+    }
   });
 
   if (table) table.classList.remove('without-main-kit');

@@ -98,6 +98,11 @@ def _set_cell_date(ws, coord_or_cell, value, number_format="dd.mm.yy"):
     if target_cell is not None:
         target_cell.number_format = number_format
 
+
+def _format_extension_value(value):
+    normalized = str(value or "").strip()
+    return normalized or "нет"
+
 def _replace_qty_in_text(text: str, qty: int) -> str:
     if not isinstance(text, str):
         return text
@@ -134,6 +139,25 @@ def _apply_equipment(ws, equipment, contractor=None, without_main_kit=False):
         return
 
     start_row = header_row + 1
+
+    if contractor == 'ttk' and without_main_kit:
+        for row_idx in range(start_row, ws.max_row + 1):
+            cell_main = ws.cell(row=row_idx, column=1)
+            cell_add = ws.cell(row=row_idx, column=2)
+            cell_choice = ws.cell(row=row_idx, column=3)
+            cell_qty = ws.cell(row=row_idx, column=4)
+
+            main_text = cell_main.value if isinstance(cell_main.value, str) else ''
+            add_text = cell_add.value if isinstance(cell_add.value, str) else ''
+
+            if not main_text and not add_text:
+                break
+
+            if main_text and not add_text:
+                _set_cell_value(ws, cell_add, "—", force_black=False)
+                _clear_cell_value(ws, cell_choice)
+                _clear_cell_value(ws, cell_qty)
+
     for idx, eq in enumerate(equipment):
         # Если есть rowIndex (из UI), используем его, иначе используем порядковый номер
         ui_row_index = eq.get("rowIndex")
@@ -233,7 +257,7 @@ def create_excel_document(form_data, application_id):
             _set_cell_date(ws, "B14", form_data.get("shootingDate"))
             _set_cell_value(ws, "C14", f"{form_data.get('startTime')} - {form_data.get('endTime')}")
             _set_cell_value(ws, "D14", _parse_date_yyyy_mm_dd(form_data.get("broadcastDate")))
-            _set_cell_value(ws, "D15", form_data.get("extension", ""))
+            _set_cell_value(ws, "D15", _format_extension_value(form_data.get("extension", "")))
             
             # Доп поля ТТК
             # В ТТК "Уточнения" обычно в C5 (значение в D5 или B5?)
