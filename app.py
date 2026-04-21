@@ -37,7 +37,9 @@ def _resolve_database_url() -> str:
     database_url = (os.environ.get('DATABASE_URL') or '').strip()
     if database_url:
         if database_url.startswith('postgres://'):
-            return database_url.replace('postgres://', 'postgresql://', 1)
+            database_url = database_url.replace('postgres://', 'postgresql://', 1)
+        if database_url.startswith('postgresql://') and '+pg8000://' not in database_url:
+            return database_url.replace('postgresql://', 'postgresql+pg8000://', 1)
         return database_url
 
     # Используем постоянный том только если путь существует реально
