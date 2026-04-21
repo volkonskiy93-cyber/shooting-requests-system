@@ -82,11 +82,18 @@ limiter = Limiter(
 )
 
 # Email настройки (получатели заявок)
-# Временно отправляем все тестовые заявки только на один адрес.
-FORCED_TEST_EMAIL_RECIPIENT = 'volkonskiyser@yandex.com'
-DEFAULT_EMAIL_RECIPIENT = FORCED_TEST_EMAIL_RECIPIENT
-EMAIL_RECIPIENT_SHOOTING = FORCED_TEST_EMAIL_RECIPIENT
-EMAIL_RECIPIENT_PRODUCER = FORCED_TEST_EMAIL_RECIPIENT
+DEFAULT_EMAIL_RECIPIENT = (
+    os.environ.get('EMAIL_RECIPIENT')
+    or 's_volkonskiy@utro.1tv.ru'
+).strip()
+EMAIL_RECIPIENT_SHOOTING = (
+    os.environ.get('EMAIL_RECIPIENT_SHOOTING')
+    or DEFAULT_EMAIL_RECIPIENT
+).strip()
+EMAIL_RECIPIENT_PRODUCER = (
+    os.environ.get('EMAIL_RECIPIENT_PRODUCER')
+    or DEFAULT_EMAIL_RECIPIENT
+).strip()
 
 APPROVAL_PENDING = 'pending'
 APPROVAL_APPROVED = 'approved'
