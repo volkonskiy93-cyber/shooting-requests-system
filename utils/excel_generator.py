@@ -88,6 +88,22 @@ def _clear_cell_value(ws, coord_or_cell):
         target_cell.value = None
 
 
+def _set_next_to_label(ws, label, val):
+    """
+    Ищет ячейку с указанной меткой (label) и записывает значение (val)
+    в ячейку справа (следующая колонка).
+    Возвращает True если удалось найти и записать, иначе False.
+    """
+    for row in ws.iter_rows():
+        for cell in row:
+            if isinstance(cell.value, str) and label.lower() in cell.value.lower():
+                # Записываем в соседнюю ячейку справа
+                target_cell = ws.cell(row=cell.row, column=cell.column + 1)
+                _set_cell_value(ws, target_cell, val, force_black=False)
+                return True
+    return False
+
+
 def _set_cell_date(ws, coord_or_cell, value, number_format="dd.mm.yy"):
     parsed_date = _parse_date_yyyy_mm_dd(value)
     if not parsed_date:
@@ -225,9 +241,17 @@ def create_excel_document(form_data, application_id):
             _set_cell_value(ws, "B8", form_data.get("correspondent", ""))
             _set_cell_value(ws, "B9", form_data.get("producer", ""))
             
+            # Оператор и видео инженер - ищем метки и записываем в соседние ячейки
             op = form_data.get("operator", "")
             ve = form_data.get("videoEngineer", "")
-            _set_cell_value(ws, "B10", f"{op}, {ve}".strip(", "))
+            # Записываем оператора напротив метки "Оператор"
+            if not _set_next_to_label(ws, "оператор", op):
+                # Fallback: если метка не найдена, пишем в B10
+                _set_cell_value(ws, "B10", op)
+            # Записываем видео инженера напротив метки "Видео инженер" или "Видеоинженер"
+            if not _set_next_to_label(ws, "видео инженер", ve) and not _set_next_to_label(ws, "видеоинженер", ve):
+                # Fallback: если метка не найдена, пишем в B11
+                _set_cell_value(ws, "B11", ve)
             
             _set_cell_date(ws, "A13", form_data.get("applicationDate"))
             _set_cell_date(ws, "B13", form_data.get("shootingDate"))
@@ -248,9 +272,17 @@ def create_excel_document(form_data, application_id):
             _set_cell_value(ws, "B8", form_data.get("correspondent", ""))
             _set_cell_value(ws, "B9", form_data.get("producer", ""))
             
+            # Оператор и видео инженер - ищем метки и записываем в соседние ячейки
             op = form_data.get("operator", "")
             ve = form_data.get("videoEngineer", "")
-            _set_cell_value(ws, "B10", f"{op}, {ve}".strip(", "))
+            # Записываем оператора напротив метки "Оператор"
+            if not _set_next_to_label(ws, "оператор", op):
+                # Fallback: если метка не найдена, пишем в B10
+                _set_cell_value(ws, "B10", op)
+            # Записываем видео инженера напротив метки "Видео инженер" или "Видеоинженер"
+            if not _set_next_to_label(ws, "видео инженер", ve) and not _set_next_to_label(ws, "видеоинженер", ve):
+                # Fallback: если метка не найдена, пишем в B11
+                _set_cell_value(ws, "B11", ve)
             
             # Даты и время (строка 14 для значений)
             _set_cell_date(ws, "A14", form_data.get("applicationDate"))
