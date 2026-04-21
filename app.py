@@ -230,6 +230,7 @@ def _ensure_admin_user():
         return
 
     admin_user = User.query.filter_by(email=admin_email).first()
+    admin_password_hash = bcrypt.generate_password_hash(admin_password).decode('utf-8')
     if admin_user:
         updated = False
         if admin_user.role != 'admin':
@@ -244,6 +245,13 @@ def _ensure_admin_user():
         if not admin_user.full_name:
             admin_user.full_name = admin_full_name
             updated = True
+        try:
+            password_matches = bcrypt.check_password_hash((admin_user.password_hash or '').strip(), admin_password)
+        except ValueError:
+            password_matches = False
+        if not password_matches:
+            admin_user.password_hash = admin_password_hash
+            updated = True
         if updated:
             db.session.commit()
         return
@@ -251,7 +259,7 @@ def _ensure_admin_user():
     admin_user = User(
         email=admin_email,
         full_name=admin_full_name,
-        password_hash=bcrypt.generate_password_hash(admin_password).decode('utf-8'),
+        password_hash=admin_password_hash,
         role='admin',
         approval_status=APPROVAL_APPROVED,
         approved_at=datetime.now()
