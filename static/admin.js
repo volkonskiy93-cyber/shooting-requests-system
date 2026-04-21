@@ -359,8 +359,42 @@ function exportDoc(id) {
     window.open(`/api/applications/${id}/export/doc`, '_blank');
 }
 
-function exportExcel(id) {
-    window.open(`/api/applications/${id}/export/excel`, '_blank');
+async function exportExcel(id) {
+    try {
+        const applicationResponse = await fetch(`/api/applications/${id}`);
+        const applicationData = await readJsonResponse(applicationResponse);
+        if (!applicationData.success || !applicationData.application) {
+            throw new Error(applicationData.error || applicationData.message || 'Не удалось загрузить данные заявки');
+        }
+
+        const response = await window.fetchWithCsrfRetry('/api/export/excel', {
+            method: 'POST',
+            headers: csrfHeaders({ 'Content-Type': 'application/json' }),
+            body: JSON.stringify(applicationData.application),
+        });
+
+        if (!response.ok) {
+            const errorData = await readJsonResponse(response);
+            throw new Error(errorData.error || errorData.message || 'Не удалось выгрузить Excel');
+        }
+
+        const blob = await response.blob();
+        const explicitName = response.headers.get('X-Download-Filename');
+        const contentDisposition = response.headers.get('Content-Disposition') || '';
+        const match = contentDisposition.match(/filename\*=UTF-8''([^;]+)|filename=\"?([^\";]+)\"?/i);
+        const fileName = explicitName || decodeURIComponent(match?.[1] || match?.[2] || 'Заявка.xlsx');
+
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = fileName;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+    } catch (error) {
+        alert(`Ошибка выгрузки Excel: ${error.message}`);
+    }
 }
 
 function escapeHtml(value) {

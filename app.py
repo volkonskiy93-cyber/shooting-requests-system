@@ -721,7 +721,7 @@ def get_application(app_id):
         return jsonify({'error': 'Forbidden'}), 403
     return jsonify({
         'success': True,
-        'application': application.to_dict()
+        'application': _application_form_payload(application)
     })
 
 
