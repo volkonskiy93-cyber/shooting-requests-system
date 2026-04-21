@@ -299,6 +299,22 @@ def _get_session_user_role() -> str:
     return user.role or 'correspondent'
 
 
+def _application_form_payload(application: Application) -> dict:
+    payload = application.to_dict()
+    raw_form_data = (application.form_data or '').strip()
+    if not raw_form_data:
+        return payload
+
+    try:
+        parsed = json.loads(raw_form_data)
+        if isinstance(parsed, dict):
+            payload.update(parsed)
+    except (TypeError, ValueError, json.JSONDecodeError):
+        print(f"⚠️ Не удалось разобрать form_data для заявки {application.id}, используем данные из базы.")
+
+    return payload
+
+
 # Создание таблиц базы данных и недостающих колонок при запуске
 with app.app_context():
     db.create_all()
@@ -816,7 +832,7 @@ def export_application_doc(app_id):
     application = Application.query.get_or_404(app_id)
     if not _user_can_access_application(user, application):
         return jsonify({'error': 'Forbidden'}), 403
-    form_data = json.loads(application.form_data)
+    form_data = _application_form_payload(application)
     
     word_file = create_word_document(form_data, application.id)
     if word_file:
@@ -850,7 +866,7 @@ def export_application_excel(app_id):
     if not _user_can_access_application(user, application):
         return jsonify({'error': 'Forbidden'}), 403
 
-    form_data = json.loads(application.form_data)
+    form_data = _application_form_payload(application)
     
     tmp_path = create_excel_document(form_data, application.id)
     if not tmp_path:
