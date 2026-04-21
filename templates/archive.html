@@ -233,6 +233,15 @@
 {% block scripts %}
 <script>
 document.addEventListener('DOMContentLoaded', async () => {
+    function escapeHtml(value) {
+        return String(value || '')
+            .replaceAll('&', '&amp;')
+            .replaceAll('<', '&lt;')
+            .replaceAll('>', '&gt;')
+            .replaceAll('"', '&quot;')
+            .replaceAll("'", '&#39;');
+    }
+
     try {
         const response = await fetch('/api/my-applications');
         const data = await response.json();
@@ -258,6 +267,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                     'approved': 'Одобрена',
                     'rejected': 'Отклонена'
                 };
+                const safeContractorKey = contractorNames[app.contractor] ? app.contractor : 'unknown';
+                const contractorLabel = contractorNames[app.contractor] || 'Неизвестно';
+                const statusLabel = statusNames[app.status] || 'Неизвестно';
                 
                 const date = new Date(app.createdAt).toLocaleDateString('ru-RU', {
                     day: '2-digit',
@@ -281,11 +293,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                 
                 item.innerHTML = `
                     <div class="app-info">
-                        <span class="badge badge-${app.contractor}">${contractorNames[app.contractor]}</span>
-                        <span class="status-badge">Статус: ${statusNames[app.status]}</span>
-                        <h3>${app.storyTitle || 'Без названия'}</h3>
+                        <span class="badge badge-${safeContractorKey}">${escapeHtml(contractorLabel)}</span>
+                        <span class="status-badge">Статус: ${escapeHtml(statusLabel)}</span>
+                        <h3>${escapeHtml(app.storyTitle || 'Без названия')}</h3>
                         <div class="app-meta">
-                            Отправлена: ${date} | Съемка: ${shootDate}
+                            Отправлена: ${escapeHtml(date)} | Съемка: ${escapeHtml(shootDate)}
                         </div>
                     </div>
                     <div class="app-actions">

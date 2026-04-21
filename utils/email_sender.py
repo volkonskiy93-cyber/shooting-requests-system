@@ -5,6 +5,7 @@
 import os
 import resend
 import base64
+from html import escape
 
 def send_email_with_attachment(
     to_email,
@@ -53,6 +54,10 @@ def send_email_with_attachment(
         # но в имени указывать кого угодно.
         sender_display_name = (sender_display_name or "").strip()
         sender_display_email = (sender_display_email or "").strip()
+        safe_sender_name = escape(sender_display_name or 'Не указан')
+        safe_sender_email = escape(sender_display_email or 'Не указана')
+        safe_to_email = escape(to_email or '')
+        safe_filename = escape(filename or '')
 
         from_name = "Система Заявок"
         if sender_display_name and sender_display_email:
@@ -74,10 +79,10 @@ def send_email_with_attachment(
             "reply_to": sender_display_email if sender_display_email else to_email,
             "html": f"""
                 <h3>Новая заявка на видеосъемку</h3>
-                <p><b>Отправитель:</b> {sender_display_name or 'Не указан'}</p>
-                <p><b>Личная почта автора:</b> {sender_display_email or 'Не указана'}</p>
-                <p><b>Служебный адрес получателя:</b> {to_email}</p>
-                <p>К письму прикреплен файл: {filename}</p>
+                <p><b>Отправитель:</b> {safe_sender_name}</p>
+                <p><b>Личная почта автора:</b> {safe_sender_email}</p>
+                <p><b>Служебный адрес получателя:</b> {safe_to_email}</p>
+                <p>К письму прикреплен файл: {safe_filename}</p>
                 <br>
                 <hr>
                 <p><small>Это автоматическое уведомление системы DaVinci</small></p>

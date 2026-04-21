@@ -27,6 +27,13 @@ async function readJsonResponse(response) {
     throw new Error(compactText || `Неожиданный ответ сервера (HTTP ${response.status})`);
 }
 
+function csrfHeaders(extraHeaders = {}) {
+    return {
+        ...extraHeaders,
+        'X-CSRF-Token': window.getCsrfToken ? window.getCsrfToken() : '',
+    };
+}
+
 function setupFilters() {
     document.getElementById('status-filter').addEventListener('change', applyFilters);
     document.getElementById('contractor-filter').addEventListener('change', applyFilters);
@@ -227,7 +234,7 @@ function renderApplications() {
                 <td class="table-meta">${createdAt}</td>
                 <td>${escapeHtml(app.storyTitle || '-')}</td>
                 <td>${escapeHtml(app.correspondent || '-')}</td>
-                <td>${contractorName}</td>
+                <td>${escapeHtml(contractorName)}</td>
                 <td>${shootingDate}</td>
                 <td><span class="table-status">${statusName}</span></td>
                 <td>
@@ -334,7 +341,10 @@ async function rejectUser(userId) {
 
 async function postAdminAction(url) {
     try {
-        const response = await fetch(url, { method: 'POST' });
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: csrfHeaders(),
+        });
         const data = await readJsonResponse(response);
         if (!data.success) {
             throw new Error(data.error || data.message || 'Не удалось выполнить действие');

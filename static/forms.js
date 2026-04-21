@@ -129,6 +129,13 @@ function _currentUserProfile() {
   return window.currentUserProfile || {};
 }
 
+function _csrfHeaders(extraHeaders = {}) {
+  return {
+    ...extraHeaders,
+    'X-CSRF-Token': window.getCsrfToken ? window.getCsrfToken() : '',
+  };
+}
+
 function _preferredCorrespondentName() {
   const profileName = (_currentUserProfile().fullName || '').trim();
   return profileName || _storageGet(_correspondentStorageKey);
@@ -328,12 +335,13 @@ function _renderAutocompleteOptions(input) {
     return;
   }
 
-  panel.innerHTML = filtered
-    .slice(0, 12)
-    .map((item) => `<button type="button" class="brand-autocomplete-option">${item}</button>`)
-    .join('');
+  panel.innerHTML = '';
 
-  panel.querySelectorAll('.brand-autocomplete-option').forEach((button) => {
+  filtered.slice(0, 12).forEach((item) => {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'brand-autocomplete-option';
+    button.textContent = item;
     button.addEventListener('pointerdown', (event) => {
       event.preventDefault();
       input.value = button.textContent || '';
@@ -342,6 +350,7 @@ function _renderAutocompleteOptions(input) {
       _hideAutocompletePanel();
       input.focus();
     });
+    panel.appendChild(button);
   });
 
   _positionAutocompletePanel(input);
@@ -688,7 +697,7 @@ function _selectedText(selectEl) {
 async function _postApplication(payload) {
   const resp = await fetch('/api/applications', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: _csrfHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify(payload),
   });
   const data = await resp.json().catch(() => ({}));
@@ -824,7 +833,7 @@ async function exportToExcel(contractorType) {
   try {
     const resp = await fetch('/api/export/excel', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: _csrfHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify(payload),
     });
 

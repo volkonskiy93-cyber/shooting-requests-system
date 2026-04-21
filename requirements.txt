@@ -7,3 +7,4 @@ python-dotenv==1.0.0
 resend==2.4.0
 gunicorn==22.0.0
 psycopg2-binary==2.9.9
+Flask-Limiter==4.1.1

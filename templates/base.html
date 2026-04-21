@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token }}">
     <title>{% block title %}Система заявок на видеосъемку{% endblock %}</title>
     <style>
         :root {
@@ -99,6 +100,11 @@
 </head>
 <body class="{% if request.endpoint == 'admin' %}admin-site{% else %}public-site{% endif %}">
     {% block content %}{% endblock %}
+    <script>
+        window.getCsrfToken = function () {
+            return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+        };
+    </script>
     {% block scripts %}{% endblock %}
 </body>
 </html>

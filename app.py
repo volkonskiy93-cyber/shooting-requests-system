@@ -5,9 +5,12 @@ Flask приложение для системы заявок на видеос�
 
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for, send_file
 from flask_bcrypt import Bcrypt
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 from datetime import datetime, timedelta
 import os
 import json
+import secrets
 from typing import Optional
 from urllib.parse import quote
 from dotenv import load_dotenv
@@ -48,14 +51,35 @@ def _resolve_database_url() -> str:
 
 
 database_url = _resolve_database_url()
+secret_key = (os.environ.get('SECRET_KEY') or '').strip()
+if not secret_key:
+    secret_key = secrets.token_hex(32)
+    print("⚠️ SECRET_KEY не задан. Используется временный ключ только для текущего запуска.")
 
-app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
+app.config['SECRET_KEY'] = secret_key
 app.config['SQLALCHEMY_DATABASE_URI'] = database_url
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['SESSION_COOKIE_HTTPONLY'] = True
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+app.config['SESSION_COOKIE_SECURE'] = os.environ.get('SESSION_COOKIE_SECURE', '0') == '1'
+app.config['RATELIMIT_STORAGE_URI'] = os.environ.get('RATELIMIT_STORAGE_URI', 'memory://')
+app.config['RATELIMIT_HEADERS_ENABLED'] = True
 
 # Инициализация расширений
 db.init_app(app)
 bcrypt = Bcrypt(app)
+
+
+def _rate_limit_key() -> str:
+    forwarded_for = (request.headers.get('X-Forwarded-For') or '').split(',')[0].strip()
+    return forwarded_for or get_remote_address()
+
+
+limiter = Limiter(
+    key_func=_rate_limit_key,
+    app=app,
+    default_limits=[],
+)
 
 # Email настройки (получатели заявок)
 # Временно отправляем все тестовые заявки только на один адрес.
@@ -67,10 +91,74 @@ EMAIL_RECIPIENT_PRODUCER = FORCED_TEST_EMAIL_RECIPIENT
 APPROVAL_PENDING = 'pending'
 APPROVAL_APPROVED = 'approved'
 APPROVAL_REJECTED = 'rejected'
+ALLOWED_CONTRACTORS = {'figaro', 'ttk', 'producer'}
+MIN_PASSWORD_LENGTH = 8
 
 
 def _role_redirect_url(role: str) -> str:
     return url_for('dashboard') if role == 'admin' else url_for('forms')
+
+
+def _is_local_development() -> bool:
+    return (
+        os.environ.get('FLASK_ENV') == 'development'
+        or os.environ.get('FLASK_DEBUG') == '1'
+    )
+
+
+def _ensure_csrf_token() -> str:
+    token = session.get('csrf_token')
+    if not token:
+        token = secrets.token_urlsafe(32)
+        session['csrf_token'] = token
+    return token
+
+
+def _csrf_token_from_request() -> str:
+    header_token = (request.headers.get('X-CSRF-Token') or '').strip()
+    if header_token:
+        return header_token
+
+    form_token = (request.form.get('csrf_token') or '').strip()
+    if form_token:
+        return form_token
+
+    if request.is_json:
+        payload = request.get_json(silent=True) or {}
+        return str(payload.get('csrf_token') or '').strip()
+
+    return ''
+
+
+@app.context_processor
+def inject_security_context():
+    return {'csrf_token': _ensure_csrf_token()}
+
+
+@app.before_request
+def protect_against_csrf():
+    if request.method in ('GET', 'HEAD', 'OPTIONS'):
+        return None
+
+    if request.endpoint == 'static':
+        return None
+
+    session_token = session.get('csrf_token')
+    request_token = _csrf_token_from_request()
+    if not session_token or not request_token or not secrets.compare_digest(session_token, request_token):
+        message = {'success': False, 'message': 'Сессия устарела. Обновите страницу и повторите действие.'}
+        return jsonify(message), 400
+
+    return None
+
+
+@app.errorhandler(429)
+def handle_rate_limit_error(error):
+    response = {
+        'success': False,
+        'message': 'Слишком много попыток. Подождите немного и повторите действие.',
+    }
+    return jsonify(response), 429
 
 
 def _sync_session_user(user: Optional[User]):
@@ -83,7 +171,10 @@ def _sync_session_user(user: Optional[User]):
 
 
 def _clear_session():
+    csrf_token = session.get('csrf_token')
     session.clear()
+    if csrf_token:
+        session['csrf_token'] = csrf_token
 
 
 def _get_current_user() -> Optional[User]:
@@ -107,8 +198,8 @@ def _verify_and_upgrade_password(user: Optional[User], password: str) -> bool:
     except ValueError:
         pass
 
-    # Совместимость со старыми аккаунтами, где пароль мог храниться без хэша.
-    if stored_hash == password:
+    allow_legacy_plaintext = os.environ.get('ALLOW_LEGACY_PLAINTEXT_PASSWORDS') == '1'
+    if allow_legacy_plaintext and stored_hash == password:
         user.password_hash = bcrypt.generate_password_hash(password).decode('utf-8')
         db.session.commit()
         return True
@@ -118,10 +209,17 @@ def _verify_and_upgrade_password(user: Optional[User], password: str) -> bool:
 
 def _ensure_admin_user():
     admin_email = (os.environ.get('ADMIN_EMAIL') or 'admin@dobroeyutro.ru').strip().lower()
-    admin_password = os.environ.get('ADMIN_PASSWORD') or 'admin123'
+    admin_password = (os.environ.get('ADMIN_PASSWORD') or '').strip()
     admin_full_name = (os.environ.get('ADMIN_FULL_NAME') or 'Администратор').strip()
 
-    if not admin_email or not admin_password:
+    if not admin_email:
+        return
+
+    if not admin_password and _is_local_development():
+        admin_password = 'admin123'
+
+    if not admin_password:
+        print("⚠️ ADMIN_PASSWORD не задан. Автоматическое создание администратора пропущено.")
         return
 
     admin_user = User.query.filter_by(email=admin_email).first()
@@ -236,6 +334,7 @@ def index():
 
 
 @app.route('/login', methods=['POST'])
+@limiter.limit("5 per 10 minutes")
 def login():
     """Авторизация пользователя"""
     data = request.get_json() or {}
@@ -270,6 +369,7 @@ def login():
 
 
 @app.route('/register', methods=['POST'])
+@limiter.limit("3 per 30 minutes")
 def register():
     """Регистрация нового пользователя"""
     data = request.get_json() or {}
@@ -283,8 +383,8 @@ def register():
     if not email or not password or not full_name:
         return jsonify({'success': False, 'message': 'Заполните все поля'}), 400
     
-    if len(password) < 4:
-        return jsonify({'success': False, 'message': 'Пароль должен быть не менее 4 символов'}), 400
+    if len(password) < MIN_PASSWORD_LENGTH:
+        return jsonify({'success': False, 'message': f'Пароль должен быть не менее {MIN_PASSWORD_LENGTH} символов'}), 400
     
     if password != password_confirm:
         return jsonify({'success': False, 'message': 'Пароли не совпадают'}), 400
@@ -454,6 +554,10 @@ def create_application():
         return jsonify({'error': 'Unauthorized'}), 401
     
     data = request.get_json() or {}
+    contractor = str(data.get('contractor') or '').strip().lower()
+    if contractor not in ALLOWED_CONTRACTORS:
+        return jsonify({'success': False, 'message': 'Некорректный тип заявки'}), 400
+    data['contractor'] = contractor
     
     # Создание заявки
     application_date = _parse_date_yyyy_mm_dd(data.get('applicationDate'))
@@ -462,7 +566,7 @@ def create_application():
 
     application = Application(
         user_id=user.id,
-        contractor=data.get('contractor'),
+        contractor=contractor,
         story_title=data.get('storyTitle', ''),
         annotation=data.get('annotation', ''),
         notes=data.get('notes', ''),
@@ -482,14 +586,14 @@ def create_application():
     )
     
     # Дополнительные поля для TTK
-    if data.get('contractor') == 'ttk':
+    if contractor == 'ttk':
         application.clarifications = data.get('clarifications', '')
         application.extension = data.get('extension', '')
         application.car_number = data.get('carNumber', '')
         application.submission_date = _parse_datetime_local_to_date(data.get('submissionDate'))
     
     # Дополнительные поля для Producer
-    if data.get('contractor') == 'producer':
+    if contractor == 'producer':
         application.summary = data.get('summary', '')
         application.heroes = data.get('heroes', '')
         application.correspondent_contacts = data.get('correspondentContacts', '')
@@ -888,9 +992,10 @@ def export_excel_from_form():
         return jsonify({'error': 'Unauthorized'}), 401
 
     data = request.get_json() or {}
-    contractor = data.get('contractor')
-    if contractor not in ['figaro', 'ttk']:
+    contractor = str(data.get('contractor') or '').strip().lower()
+    if contractor not in {'figaro', 'ttk'}:
         return jsonify({'error': 'Invalid contractor'}), 400
+    data['contractor'] = contractor
 
     # Генерируем XLSX во временный файл
     tmp_path = create_excel_document(data, application_id=0)
@@ -917,4 +1022,8 @@ def export_excel_from_form():
 
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    app.run(
+        debug=_is_local_development(),
+        host=os.environ.get('FLASK_HOST', '127.0.0.1'),
+        port=int(os.environ.get('PORT', '5000'))
+    )

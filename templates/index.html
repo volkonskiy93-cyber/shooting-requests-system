@@ -664,7 +664,10 @@ async function handleLogin() {
     try {
         const response = await fetch('/login', {
             method: 'POST',
-            headers: {'Content-Type': 'application/json'},
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-Token': window.getCsrfToken(),
+            },
             body: JSON.stringify({email, password})
         });
         
@@ -693,8 +696,8 @@ async function handleRegister() {
         return;
     }
     
-    if (password.length < 4) {
-        showAuthMessage('Пароль должен быть не менее 4 символов', 'error');
+    if (password.length < 8) {
+        showAuthMessage('Пароль должен быть не менее 8 символов', 'error');
         return;
     }
     
@@ -706,7 +709,10 @@ async function handleRegister() {
     try {
         const response = await fetch('/register', {
             method: 'POST',
-            headers: {'Content-Type': 'application/json'},
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-Token': window.getCsrfToken(),
+            },
             body: JSON.stringify({
                 full_name: fullName,
                 email,
@@ -734,7 +740,12 @@ async function handleRegister() {
 
 async function handleLogout() {
     try {
-        await fetch('/logout', {method: 'POST'});
+        await fetch('/logout', {
+            method: 'POST',
+            headers: {
+                'X-CSRF-Token': window.getCsrfToken(),
+            },
+        });
         document.getElementById('auth-section').classList.add('active');
         document.getElementById('register-section').classList.remove('active');
         document.getElementById('logged-in-panel').classList.remove('active');
