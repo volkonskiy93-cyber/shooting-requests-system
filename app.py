@@ -973,7 +973,7 @@ def _set_download_headers(response, filename: str):
     response.headers['Content-Disposition'] = (
         f'attachment; filename="{ascii_fallback}"; filename*=UTF-8\'\'{quote(filename)}'
     )
-    response.headers['X-Download-Filename'] = filename
+    response.headers['X-Download-Filename'] = quote(filename)
     return response
 
 

@@ -846,7 +846,7 @@ async function exportToExcel(contractorType) {
     const explicitName = resp.headers.get('X-Download-Filename');
     const cd = resp.headers.get('Content-Disposition') || '';
     const m = cd.match(/filename\\*=UTF-8''([^;]+)|filename=\"?([^\";]+)\"?/i);
-    const fileName = explicitName || decodeURIComponent(m?.[1] || m?.[2] || 'Заявка.xlsx');
+    const fileName = decodeURIComponent(explicitName || m?.[1] || m?.[2] || 'Заявка.xlsx');
 
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');

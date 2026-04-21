@@ -382,7 +382,7 @@ async function exportExcel(id) {
         const explicitName = response.headers.get('X-Download-Filename');
         const contentDisposition = response.headers.get('Content-Disposition') || '';
         const match = contentDisposition.match(/filename\*=UTF-8''([^;]+)|filename=\"?([^\";]+)\"?/i);
-        const fileName = explicitName || decodeURIComponent(match?.[1] || match?.[2] || 'Заявка.xlsx');
+        const fileName = decodeURIComponent(explicitName || match?.[1] || match?.[2] || 'Заявка.xlsx');
 
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
