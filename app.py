@@ -64,6 +64,10 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SESSION_COOKIE_HTTPONLY'] = True
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 app.config['SESSION_COOKIE_SECURE'] = os.environ.get('SESSION_COOKIE_SECURE', '0') == '1'
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(
+    days=int(os.environ.get('SESSION_LIFETIME_DAYS', '30'))
+)
+app.config['SESSION_REFRESH_EACH_REQUEST'] = True
 app.config['RATELIMIT_STORAGE_URI'] = os.environ.get('RATELIMIT_STORAGE_URI', 'memory://')
 app.config['RATELIMIT_HEADERS_ENABLED'] = True
 
@@ -173,10 +177,12 @@ def handle_rate_limit_error(error):
 def _sync_session_user(user: Optional[User]):
     if not user:
         return
+    session.permanent = True
     session['user_id'] = user.id
     session['user_email'] = user.email
     session['user_role'] = user.role or 'correspondent'
     session['user_full_name'] = user.full_name or ''
+    _ensure_csrf_token()
 
 
 def _clear_session():
@@ -463,6 +469,16 @@ def logout():
     """Выход из системы"""
     session.clear()
     return jsonify({'success': True})
+
+
+@app.route('/api/session/csrf', methods=['GET'])
+def session_csrf():
+    """Выдать актуальный CSRF-токен для открытой страницы."""
+    return jsonify({
+        'success': True,
+        'csrfToken': _ensure_csrf_token(),
+        'authenticated': bool(_get_active_user()),
+    })
 
 
 @app.route('/forms')

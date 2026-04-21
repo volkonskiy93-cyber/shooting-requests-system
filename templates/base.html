@@ -101,8 +101,61 @@
 <body class="{% if request.endpoint == 'admin' %}admin-site{% else %}public-site{% endif %}">
     {% block content %}{% endblock %}
     <script>
+        window.setCsrfToken = function (token) {
+            const meta = document.querySelector('meta[name="csrf-token"]');
+            if (meta && token) {
+                meta.setAttribute('content', token);
+            }
+        };
+
         window.getCsrfToken = function () {
             return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+        };
+
+        window.refreshCsrfToken = async function () {
+            const response = await fetch('/api/session/csrf', {
+                method: 'GET',
+                cache: 'no-store',
+                credentials: 'same-origin',
+            });
+            const data = await response.json();
+            if (data?.csrfToken) {
+                window.setCsrfToken(data.csrfToken);
+            }
+            return data;
+        };
+
+        window.fetchWithCsrfRetry = async function (input, init = {}, retry = true) {
+            const response = await fetch(input, init);
+            if (!retry) {
+                return response;
+            }
+
+            if (response.status !== 400) {
+                return response;
+            }
+
+            const cloned = response.clone();
+            let payload = {};
+            try {
+                payload = await cloned.json();
+            } catch (error) {
+                return response;
+            }
+
+            if (payload?.message !== 'Сессия устарела. Обновите страницу и повторите действие.') {
+                return response;
+            }
+
+            await window.refreshCsrfToken();
+            const nextInit = {
+                ...init,
+                headers: {
+                    ...(init.headers || {}),
+                    'X-CSRF-Token': window.getCsrfToken(),
+                },
+            };
+            return fetch(input, nextInit);
         };
     </script>
     {% block scripts %}{% endblock %}

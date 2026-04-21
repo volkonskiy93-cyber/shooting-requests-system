@@ -662,7 +662,7 @@ async function handleLogin() {
     }
     
     try {
-        const response = await fetch('/login', {
+        const response = await window.fetchWithCsrfRetry('/login', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -707,7 +707,7 @@ async function handleRegister() {
     }
     
     try {
-        const response = await fetch('/register', {
+        const response = await window.fetchWithCsrfRetry('/register', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -740,7 +740,7 @@ async function handleRegister() {
 
 async function handleLogout() {
     try {
-        await fetch('/logout', {
+        await window.fetchWithCsrfRetry('/logout', {
             method: 'POST',
             headers: {
                 'X-CSRF-Token': window.getCsrfToken(),

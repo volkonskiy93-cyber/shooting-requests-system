@@ -187,7 +187,12 @@
 {% block scripts %}
 <script>
 async function handleDashboardLogout() {
-    await fetch('/logout', { method: 'POST' });
+    await window.fetchWithCsrfRetry('/logout', {
+        method: 'POST',
+        headers: {
+            'X-CSRF-Token': window.getCsrfToken(),
+        },
+    });
     window.location.href = '/';
 }
 </script>

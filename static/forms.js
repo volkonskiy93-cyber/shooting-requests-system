@@ -695,7 +695,7 @@ function _selectedText(selectEl) {
 }
 
 async function _postApplication(payload) {
-  const resp = await fetch('/api/applications', {
+  const resp = await window.fetchWithCsrfRetry('/api/applications', {
     method: 'POST',
     headers: _csrfHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify(payload),
@@ -831,7 +831,7 @@ async function exportToExcel(contractorType) {
   }
 
   try {
-    const resp = await fetch('/api/export/excel', {
+    const resp = await window.fetchWithCsrfRetry('/api/export/excel', {
       method: 'POST',
       headers: _csrfHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify(payload),

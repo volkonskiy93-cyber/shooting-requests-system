@@ -341,7 +341,7 @@ async function rejectUser(userId) {
 
 async function postAdminAction(url) {
     try {
-        const response = await fetch(url, {
+        const response = await window.fetchWithCsrfRetry(url, {
             method: 'POST',
             headers: csrfHeaders(),
         });
