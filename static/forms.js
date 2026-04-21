@@ -291,14 +291,63 @@ function _ensureAutocompletePanel() {
   _autocompletePanel.className = 'brand-autocomplete-panel';
   document.body.appendChild(_autocompletePanel);
 
+  // Mobile: add swipe-to-dismiss
+  _addSwipeToDismiss(_autocompletePanel);
+
   return _autocompletePanel;
+}
+
+function _addSwipeToDismiss(element) {
+  let startY = 0;
+  let currentY = 0;
+  let isDragging = false;
+
+  element.addEventListener('touchstart', (e) => {
+    if (!_isMobileViewport()) return;
+    startY = e.touches[0].clientY;
+    isDragging = true;
+    element.style.transition = 'none';
+  }, { passive: true });
+
+  element.addEventListener('touchmove', (e) => {
+    if (!isDragging || !_isMobileViewport()) return;
+    currentY = e.touches[0].clientY;
+    const deltaY = currentY - startY;
+    if (deltaY > 0) {
+      element.style.transform = `translateY(${deltaY}px)`;
+    }
+  }, { passive: true });
+
+  element.addEventListener('touchend', () => {
+    if (!isDragging || !_isMobileViewport()) return;
+    isDragging = false;
+    element.style.transition = '';
+    const deltaY = currentY - startY;
+    if (deltaY > 80) {
+      _hideAutocompletePanel();
+    } else {
+      element.style.transform = '';
+    }
+  });
 }
 
 function _hideAutocompletePanel() {
   if (!_autocompletePanel) return;
   _autocompletePanel.classList.remove('is-visible');
-  _autocompletePanel.innerHTML = '';
+  // Re-enable body scroll on mobile
+  document.body.style.overflow = '';
+  document.body.style.touchAction = '';
+  // Clear after animation
+  setTimeout(() => {
+    if (!_autocompletePanel.classList.contains('is-visible')) {
+      _autocompletePanel.innerHTML = '';
+    }
+  }, 250);
   _activeAutocompleteInput = null;
+}
+
+function _isMobileViewport() {
+  return window.innerWidth <= 600;
 }
 
 function _getDatalistOptions(input) {
@@ -315,6 +364,18 @@ function _getDatalistOptions(input) {
 
 function _positionAutocompletePanel(input) {
   const panel = _ensureAutocompletePanel();
+
+  // Mobile: use fixed bottom sheet style (handled by CSS media query)
+  if (_isMobileViewport()) {
+    // Reset inline positioning to let CSS media query handle it
+    panel.style.left = '';
+    panel.style.top = '';
+    panel.style.width = '';
+    panel.style.bottom = '';
+    return;
+  }
+
+  // Desktop: position near input
   const rect = input.getBoundingClientRect();
   panel.style.left = `${rect.left + window.scrollX}px`;
   panel.style.top = `${rect.bottom + window.scrollY + 8}px`;
@@ -356,6 +417,12 @@ function _renderAutocompleteOptions(input) {
   _positionAutocompletePanel(input);
   panel.classList.add('is-visible');
   _activeAutocompleteInput = input;
+
+  // Prevent body scroll on mobile when panel is open
+  if (_isMobileViewport()) {
+    document.body.style.overflow = 'hidden';
+    document.body.style.touchAction = 'none';
+  }
 }
 
 function _initCustomDatalists() {
@@ -380,6 +447,13 @@ function _initCustomDatalists() {
         }
       }, 120);
     });
+  });
+
+  // Mobile: close panel when clicking on backdrop (panel itself, not options)
+  _autocompletePanel.addEventListener('click', (event) => {
+    if (event.target === _autocompletePanel && _isMobileViewport()) {
+      _hideAutocompletePanel();
+    }
   });
 
   document.addEventListener('click', (event) => {
