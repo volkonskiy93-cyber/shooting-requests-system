@@ -87,6 +87,17 @@ def _clear_cell_value(ws, coord_or_cell):
     if target_cell is not None:
         target_cell.value = None
 
+
+def _set_cell_date(ws, coord_or_cell, value, number_format="dd.mm.yy"):
+    parsed_date = _parse_date_yyyy_mm_dd(value)
+    if not parsed_date:
+        return
+
+    _set_cell_value(ws, coord_or_cell, parsed_date, force_black=False)
+    target_cell = _resolve_target_cell(ws, coord_or_cell)
+    if target_cell is not None:
+        target_cell.number_format = number_format
+
 def _replace_qty_in_text(text: str, qty: int) -> str:
     if not isinstance(text, str):
         return text
@@ -151,8 +162,7 @@ def _apply_equipment(ws, equipment, contractor=None, without_main_kit=False):
         has_additional = int(add_qty or 0) > 0
         if contractor == 'ttk':
             if without_main_kit:
-                if has_additional:
-                    _set_cell_value(ws, cell_choice, "ДА", force_black=False)
+                _set_cell_value(ws, cell_choice, "ДА" if has_additional else "НЕТ", force_black=False)
             else:
                 _set_cell_value(ws, cell_choice, "ДА" if has_additional else "НЕТ", force_black=False)
         elif cell_choice.value is not None:
@@ -195,8 +205,8 @@ def create_excel_document(form_data, application_id):
             ve = form_data.get("videoEngineer", "")
             _set_cell_value(ws, "B10", f"{op}, {ve}".strip(", "))
             
-            _set_cell_value(ws, "A13", _parse_date_yyyy_mm_dd(form_data.get("applicationDate")))
-            _set_cell_value(ws, "B13", _parse_date_yyyy_mm_dd(form_data.get("shootingDate")))
+            _set_cell_date(ws, "A13", form_data.get("applicationDate"))
+            _set_cell_date(ws, "B13", form_data.get("shootingDate"))
             _set_cell_value(ws, "C13", f"{form_data.get('startTime')} - {form_data.get('endTime')}")
             _set_cell_value(ws, "D13", _parse_date_yyyy_mm_dd(form_data.get("broadcastDate")))
             
@@ -219,8 +229,8 @@ def create_excel_document(form_data, application_id):
             _set_cell_value(ws, "B10", f"{op}, {ve}".strip(", "))
             
             # Даты и время (строка 14 для значений)
-            _set_cell_value(ws, "A14", _parse_date_yyyy_mm_dd(form_data.get("applicationDate")))
-            _set_cell_value(ws, "B14", _parse_date_yyyy_mm_dd(form_data.get("shootingDate")))
+            _set_cell_date(ws, "A14", form_data.get("applicationDate"))
+            _set_cell_date(ws, "B14", form_data.get("shootingDate"))
             _set_cell_value(ws, "C14", f"{form_data.get('startTime')} - {form_data.get('endTime')}")
             _set_cell_value(ws, "D14", _parse_date_yyyy_mm_dd(form_data.get("broadcastDate")))
             _set_cell_value(ws, "D15", form_data.get("extension", ""))
