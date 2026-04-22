@@ -607,6 +607,7 @@ def create_application():
     if contractor not in ALLOWED_CONTRACTORS:
         return jsonify({'success': False, 'message': 'Некорректный тип заявки'}), 400
     data['contractor'] = contractor
+    data['senderFullName'] = user.full_name or ''
     
     # Создание заявки
     application_date = _parse_date_yyyy_mm_dd(data.get('applicationDate'))
@@ -1021,6 +1022,17 @@ def _extract_correspondent_surname(value: str) -> str:
     return _safe_filename(first_part) or "Без_корреспондента"
 
 
+def _extract_sender_surname(value: str) -> str:
+    value = (value or "").strip()
+    if not value:
+        return ""
+
+    parts = [part.strip(".,;:()[]{}") for part in value.split() if part.strip(".,;:()[]{}")]
+    if not parts:
+        return ""
+    return _safe_filename(parts[-1]) or ""
+
+
 def _filename_date_part(value) -> str:
     parsed = _parse_date_yyyy_mm_dd(value)
     if parsed:
@@ -1031,7 +1043,8 @@ def _filename_date_part(value) -> str:
 def _build_excel_filename(form_data: dict) -> str:
     contractor = form_data.get('contractor')
     contractor_part = 'ТТК' if contractor == 'ttk' else 'ТМК'
-    surname_part = _extract_correspondent_surname(form_data.get('correspondent', ''))
+    sender_surname = _extract_sender_surname(form_data.get('senderFullName', ''))
+    surname_part = sender_surname or _extract_correspondent_surname(form_data.get('correspondent', ''))
     date_part = _filename_date_part(form_data.get('shootingDate') or form_data.get('applicationDate'))
 
     filename_parts = [contractor_part, surname_part, date_part]

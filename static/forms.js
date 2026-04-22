@@ -834,6 +834,7 @@ async function exportToExcel(contractorType) {
     _setDateInput('figaro-application-date', today);
     payload = {
       contractor: 'figaro',
+      senderFullName: (_currentUserProfile().fullName || '').trim(),
       storyTitle: document.getElementById('figaro-story-title')?.value || '',
       annotation: document.getElementById('figaro-annotation')?.value || '',
       notes: document.getElementById('figaro-notes')?.value || '',
@@ -859,6 +860,7 @@ async function exportToExcel(contractorType) {
     _setDateInput('ttk-application-date', today);
     payload = {
       contractor: 'ttk',
+      senderFullName: (_currentUserProfile().fullName || '').trim(),
       storyTitle: document.getElementById('ttk-story-title')?.value || '',
       annotation: document.getElementById('ttk-annotation')?.value || '',
       notes: document.getElementById('ttk-notes')?.value || '',
