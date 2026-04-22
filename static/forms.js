@@ -732,6 +732,11 @@ function _validateRequired(formSelector) {
 }
 
 function exportToDOC(contractorType) {
+  if (contractorType === 'producer') {
+    exportProducerToDOC();
+    return;
+  }
+
   // Minimal DOC export (no embedded <script> to avoid artifacts)
   const now = new Date().toLocaleString('ru-RU');
   const titleMap = {
@@ -762,6 +767,57 @@ function exportToDOC(contractorType) {
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
+}
+
+async function exportProducerToDOC() {
+  if (!_validateRequired('#shooting-request-form-producer')) {
+    alert('Пожалуйста, заполните все обязательные поля (отмечены *).');
+    return;
+  }
+
+  const payload = {
+    contractor: 'producer',
+    storyTitle: document.getElementById('producer-story-title')?.value || '',
+    summary: document.getElementById('producer-summary')?.value || '',
+    heroes: document.getElementById('producer-heroes')?.value || '',
+    shootingDate: document.getElementById('producer-shooting-date')?.value || '',
+    startTime: document.getElementById('producer-start-time')?.value || '',
+    endTime: document.getElementById('producer-end-time')?.value || '',
+    correspondent: _selectedText(document.getElementById('producer-correspondent')),
+    correspondentContacts: document.getElementById('producer-correspondent-contacts')?.value || '',
+    director: _selectedText(document.getElementById('producer-director')),
+    applicationDate: _getTodayIso(),
+  };
+
+  try {
+    const resp = await window.fetchWithCsrfRetry('/api/export/doc', {
+      method: 'POST',
+      headers: _csrfHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify(payload),
+    });
+
+    if (!resp.ok) {
+      const err = await resp.json().catch(() => ({}));
+      throw new Error(err.message || err.error || `HTTP ${resp.status}`);
+    }
+
+    const blob = await resp.blob();
+    const explicitName = resp.headers.get('X-Download-Filename');
+    const cd = resp.headers.get('Content-Disposition') || '';
+    const m = cd.match(/filename\\*=UTF-8''([^;]+)|filename=\"?([^\";]+)\"?/i);
+    const fileName = decodeURIComponent(explicitName || m?.[1] || m?.[2] || 'Заявка_продюсерам.docx');
+
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  } catch (err) {
+    alert(`Ошибка выгрузки Word: ${err.message}`);
+  }
 }
 
 async function exportToExcel(contractorType) {

@@ -685,7 +685,7 @@ def create_application():
                     _email_recipient_for_contractor(data.get('contractor')),
                     f"Заявка продюсерам: {data.get('storyTitle', '')}",
                     word_file,
-                    f"Заявка_продюсерам_{application.id}.doc",
+                    f"Заявка_продюсерам_{application.id}.docx",
                     sender_display_email=user.email,
                     sender_display_name=user.full_name
                 )
@@ -840,7 +840,7 @@ def reject_user(user_id):
 
 @app.route('/api/applications/<int:app_id>/export/doc', methods=['GET'])
 def export_application_doc(app_id):
-    """Экспорт заявки в формате DOC"""
+    """Экспорт заявки в формате DOCX"""
     user = _get_active_user()
     if not user:
         return jsonify({'error': 'Unauthorized'}), 401
@@ -862,13 +862,48 @@ def export_application_doc(app_id):
 
         response = send_file(
             word_file,
-            mimetype='application/msword',
+            mimetype='application/vnd.openxmlformats-officedocument.wordprocessingml.document',
             as_attachment=True,
-            download_name=f"Заявка_{application.id}.doc"
+            download_name=f"Заявка_{application.id}.docx"
         )
-        return _set_download_headers(response, f"Заявка_{application.id}.doc")
+        return _set_download_headers(response, f"Заявка_{application.id}.docx")
     
     return jsonify({'error': 'Failed to generate document'}), 500
+
+
+@app.route('/api/export/doc', methods=['POST'])
+def export_doc_from_form():
+    """Экспорт DOCX по данным формы продюсерской заявки без сохранения в БД."""
+    user = _get_active_user()
+    if not user:
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    data = request.get_json() or {}
+    contractor = str(data.get('contractor') or '').strip().lower()
+    if contractor != 'producer':
+        return jsonify({'error': 'Invalid contractor'}), 400
+
+    data['contractor'] = contractor
+    word_file = create_word_document(data, application_id=0)
+    if not word_file:
+        return jsonify({'error': 'Failed to generate document'}), 500
+
+    @after_this_request
+    def _cleanup_doc(resp):
+        try:
+            os.remove(word_file)
+        except Exception:
+            pass
+        return resp
+
+    filename = f"Заявка_продюсерам_{_filename_date_part(data.get('shootingDate'))}.docx"
+    response = send_file(
+        word_file,
+        mimetype='application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        as_attachment=True,
+        download_name=filename
+    )
+    return _set_download_headers(response, filename)
 
 
 @app.route('/api/applications/<int:app_id>/export/excel', methods=['GET'])
