@@ -210,7 +210,7 @@ function renderApplications() {
 
     tbody.innerHTML = currentApplications.map((app) => {
         const contractorName = {
-            figaro: 'ФИГАРО',
+            figaro: 'ТМК',
             ttk: 'ТТК',
             producer: 'Продюсерам',
         }[app.contractor] || app.contractor;
@@ -313,7 +313,7 @@ function viewApplication(id) {
     if (!app) return;
 
     const contractorName = {
-        figaro: 'ФИГАРО',
+        figaro: 'ТМК',
         ttk: 'ТТК',
         producer: 'Продюсерам',
     }[app.contractor] || app.contractor;
