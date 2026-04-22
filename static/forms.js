@@ -434,7 +434,7 @@ function _initPickers() {
   // Apply
   ['figaro-application-date', 'figaro-shooting-date', 'figaro-broadcast-date',
    'ttk-application-date', 'ttk-shooting-date', 'ttk-broadcast-date',
-   'producer-shooting-date'
+   'producer-shooting-date', 'producer-broadcast-date'
   ].forEach((id) => {
     const el = document.getElementById(id);
     if (el) flatpickr(el, dateCfg);
@@ -778,6 +778,7 @@ async function exportProducerToDOC() {
   const payload = {
     contractor: 'producer',
     storyTitle: document.getElementById('producer-story-title')?.value || '',
+    broadcastDate: document.getElementById('producer-broadcast-date')?.value || null,
     summary: document.getElementById('producer-summary')?.value || '',
     heroes: document.getElementById('producer-heroes')?.value || '',
     shootingDate: document.getElementById('producer-shooting-date')?.value || '',
@@ -1052,6 +1053,8 @@ document.addEventListener('DOMContentLoaded', () => {
       const payload = {
         contractor: 'producer',
         storyTitle: document.getElementById('producer-story-title')?.value || '',
+        applicationDate: _getTodayIso(),
+        broadcastDate: document.getElementById('producer-broadcast-date')?.value || null,
         summary: document.getElementById('producer-summary')?.value || '',
         heroes: document.getElementById('producer-heroes')?.value || '',
         shootingDate: document.getElementById('producer-shooting-date')?.value || '',

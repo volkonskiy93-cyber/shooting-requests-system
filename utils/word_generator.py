@@ -20,6 +20,11 @@ def format_date(date_string):
         return date_string
 
 
+def format_broadcast_date(date_string):
+    """Дата эфира или значение по умолчанию."""
+    return format_date(date_string) or 'по гот.'
+
+
 def create_word_document(form_data, application_id):
     """
     Создание Word документа для заявки продюсерам
@@ -58,6 +63,7 @@ def create_word_document(form_data, application_id):
     # Основная информация
     fields = [
         ('Название сюжета', form_data.get('storyTitle', '')),
+        ('Дата эфира', format_broadcast_date(form_data.get('broadcastDate'))),
         ('Краткое содержание сюжета', form_data.get('summary', '')),
         ('Герои', form_data.get('heroes', '')),
         ('Дата съемки', format_date(form_data.get('shootingDate'))),
