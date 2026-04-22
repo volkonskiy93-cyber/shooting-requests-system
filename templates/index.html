@@ -398,6 +398,38 @@ input:focus {
     box-shadow: 0 0 0 4px rgba(17, 17, 17, 0.06);
 }
 
+.password-field {
+    position: relative;
+    margin-bottom: 12px;
+}
+
+.password-field input {
+    margin-bottom: 0;
+    padding-right: 110px;
+}
+
+.password-toggle {
+    position: absolute;
+    top: 50%;
+    right: 10px;
+    width: auto;
+    min-height: 38px;
+    margin: 0;
+    padding: 0 14px;
+    transform: translateY(-50%);
+    border: 1px solid rgba(17, 17, 17, 0.1);
+    border-radius: 12px;
+    background: rgba(17, 17, 17, 0.04);
+    color: var(--text-primary);
+    box-shadow: none;
+    font-size: 0.85rem;
+}
+
+.password-toggle:hover {
+    transform: translateY(-50%);
+    background: rgba(17, 17, 17, 0.08);
+}
+
 button {
     width: 100%;
     min-height: 56px;
@@ -560,7 +592,10 @@ button:hover {
             <div id="auth-section" class="form-section active">
                 <h3 class="section-title">Вход</h3>
                 <input type="email" id="user-email" placeholder="Введите email">
-                <input type="password" id="user-password" placeholder="Введите пароль">
+                <div class="password-field">
+                    <input type="password" id="user-password" placeholder="Введите пароль">
+                    <button type="button" class="password-toggle" onclick="togglePasswordVisibility('user-password', this)">Показать</button>
+                </div>
                 <button class="btn-primary" onclick="handleLogin()">Войти</button>
                 <div class="auth-switch">
                     Нет аккаунта? <a href="#" onclick="showRegister(); return false;">Зарегистрироваться</a>
@@ -572,8 +607,14 @@ button:hover {
                 <input type="text" id="reg-first-name" placeholder="Введите имя" required>
                 <input type="text" id="reg-last-name" placeholder="Введите фамилию" required>
                 <input type="email" id="reg-email" placeholder="Введите email">
-                <input type="password" id="reg-password" placeholder="Придумайте пароль (мин. 4 символа)">
-                <input type="password" id="reg-password-confirm" placeholder="Повторите пароль">
+                <div class="password-field">
+                    <input type="password" id="reg-password" placeholder="Придумайте пароль (мин. 4 символа)">
+                    <button type="button" class="password-toggle" onclick="togglePasswordVisibility('reg-password', this)">Показать</button>
+                </div>
+                <div class="password-field">
+                    <input type="password" id="reg-password-confirm" placeholder="Повторите пароль">
+                    <button type="button" class="password-toggle" onclick="togglePasswordVisibility('reg-password-confirm', this)">Показать</button>
+                </div>
                 <button class="btn-success" onclick="handleRegister()">Создать аккаунт</button>
                 <div class="auth-switch">
                     Уже есть аккаунт? <a href="#" onclick="showLogin(); return false;">Войти</a>
@@ -612,6 +653,15 @@ function clearAuthMessage() {
     if (!banner) return;
     banner.textContent = '';
     banner.className = 'status-banner info';
+}
+
+function togglePasswordVisibility(inputId, buttonEl) {
+    const input = document.getElementById(inputId);
+    if (!input || !buttonEl) return;
+
+    const shouldShow = input.type === 'password';
+    input.type = shouldShow ? 'text' : 'password';
+    buttonEl.textContent = shouldShow ? 'Скрыть' : 'Показать';
 }
 
 function showLogin() {
