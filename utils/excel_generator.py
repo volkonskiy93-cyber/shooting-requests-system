@@ -4,6 +4,7 @@
 """
 
 import openpyxl
+from copy import copy
 from openpyxl.cell.cell import MergedCell
 from openpyxl.styles import Font, Color
 from datetime import datetime, date
@@ -86,6 +87,21 @@ def _clear_cell_value(ws, coord_or_cell):
     target_cell = _resolve_target_cell(ws, coord_or_cell)
     if target_cell is not None:
         target_cell.value = None
+
+
+def _copy_row_style(ws, source_row, target_row, columns=(1, 2, 3, 4)):
+    if source_row < 1 or target_row < 1 or source_row == target_row:
+        return
+
+    source_dimensions = ws.row_dimensions[source_row]
+    if source_dimensions.height is not None:
+        ws.row_dimensions[target_row].height = source_dimensions.height
+
+    for column in columns:
+        source_cell = ws.cell(row=source_row, column=column)
+        target_cell = ws.cell(row=target_row, column=column)
+        if source_cell.has_style:
+            target_cell._style = copy(source_cell._style)
 
 
 def _set_next_to_label(ws, label, val):
@@ -187,6 +203,7 @@ def _apply_equipment(ws, equipment, contractor=None, without_main_kit=False):
 
         main_qty = eq.get("mainQuantity", 0)
         add_qty = eq.get("additionalQuantity", 0)
+        additional_text = str(eq.get("additional", "") or "").strip()
 
         # Колонка A: Обновляем текст основного комплекта.
         # Для ТТК в режиме "без основного комплекта" не затираем шаблон:
@@ -197,6 +214,11 @@ def _apply_equipment(ws, equipment, contractor=None, without_main_kit=False):
                 new_val = _replace_qty_in_text(cell_main.value, main_qty)
                 _set_cell_value(ws, cell_main, new_val, force_black=False) # Сохраняем стиль шаблона
 
+        cell_add = ws.cell(row=row_idx, column=2)
+        if additional_text and not str(cell_add.value or "").strip():
+            _copy_row_style(ws, row_idx - 1, row_idx)
+            _set_cell_value(ws, cell_add, additional_text, force_black=False)
+
         # Колонка C: да/нет
         cell_choice = ws.cell(row=row_idx, column=3)
         has_additional = int(add_qty or 0) > 0
@@ -205,7 +227,7 @@ def _apply_equipment(ws, equipment, contractor=None, without_main_kit=False):
                 _set_cell_value(ws, cell_choice, "ДА" if has_additional else "НЕТ", force_black=False)
             else:
                 _set_cell_value(ws, cell_choice, "ДА" if has_additional else "НЕТ", force_black=False)
-        elif cell_choice.value is not None:
+        elif cell_choice.value is not None or additional_text:
             _set_cell_value(ws, cell_choice, "да" if has_additional else "нет", force_black=False)
 
         # Колонка D: количество

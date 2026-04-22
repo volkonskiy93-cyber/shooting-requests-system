@@ -735,7 +735,7 @@ function exportToDOC(contractorType) {
   // Minimal DOC export (no embedded <script> to avoid artifacts)
   const now = new Date().toLocaleString('ru-RU');
   const titleMap = {
-    figaro: 'ВЕК XXL (ФИГАРО)',
+    figaro: 'ВЕК XXL (ТМК)',
     ttk: 'Технологический центр ТВ (ТТК)',
     producer: 'Заявка продюсерам',
   };
@@ -826,7 +826,7 @@ async function exportToExcel(contractorType) {
       equipment: collectEquipment('shooting-request-form-ttk'),
     };
   } else {
-    alert('Excel доступен только для ФИГАРО и ТТК');
+    alert('Excel доступен только для ТМК и ТТК');
     return;
   }
 

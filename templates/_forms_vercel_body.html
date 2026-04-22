@@ -12,9 +12,9 @@
             
             <div class="contractor-select">
                 <div class="contractor-card figaro" onclick="selectContractor('figaro')">
-                    <h2>ВЕК XXL (ФИГАРО)</h2>
+                    <h2>ВЕК XXL (ТМК)</h2>
                     <p>Заказ-наряд на видеосъемку для подрядчика "ВЕК XXL. TMC"</p>
-                    <button class="select-btn btn-figaro">Выбрать ФИГАРО</button>
+                    <button class="select-btn btn-figaro">Выбрать ТМК</button>
                 </div>
                 
                 <div class="contractor-card ttk" onclick="selectContractor('ttk')">
@@ -31,10 +31,10 @@
             </div>
         </div>
         
-        <!-- Форма ФИГАРО -->
+        <!-- Форма ТМК -->
         <div id="formFigaro" class="form-container figaro">
             <div class="form-header figaro">
-                <h1>Заявка на видеосъемку - ВЕК XXL (ФИГАРО)</h1>
+                <h1>Заявка на видеосъемку - ВЕК XXL (ТМК)</h1>
                 <button class="back-btn" onclick="goBack()">← Назад к выбору</button>
             </div>
             
@@ -305,6 +305,17 @@
                                     <option value="3">3</option>
                                     <option value="4">4</option>
                                     <option value="5">5</option>
+                                </select>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td></td>
+                            <td>Фотоаппарат.</td>
+                            <td>
+                                <select class="small-input">
+                                    <option value="0">0</option>
+                                    <option value="1">1</option>
+                                    <option value="2">2</option>
                                 </select>
                             </td>
                         </tr>

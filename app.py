@@ -664,7 +664,7 @@ def create_application():
                 excel_filename = _build_excel_filename(data)
                 email_result = send_email_with_attachment(
                     _email_recipient_for_contractor(data.get('contractor')),
-                    f"Заявка {'ФИГАРО' if data.get('contractor') == 'figaro' else 'ТТК'}: {data.get('storyTitle', '')}",
+                    f"Заявка {'ТМК' if data.get('contractor') == 'figaro' else 'ТТК'}: {data.get('storyTitle', '')}",
                     excel_file,
                     excel_filename,
                     sender_display_email=user.email,
@@ -995,7 +995,7 @@ def _filename_date_part(value) -> str:
 
 def _build_excel_filename(form_data: dict) -> str:
     contractor = form_data.get('contractor')
-    contractor_part = 'ТТК' if contractor == 'ttk' else 'Фигаро'
+    contractor_part = 'ТТК' if contractor == 'ttk' else 'ТМК'
     surname_part = _extract_correspondent_surname(form_data.get('correspondent', ''))
     date_part = _filename_date_part(form_data.get('shootingDate') or form_data.get('applicationDate'))
 
