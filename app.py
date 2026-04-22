@@ -90,7 +90,7 @@ limiter = Limiter(
 # Email настройки (получатели заявок)
 DEFAULT_EMAIL_RECIPIENT = (
     os.environ.get('EMAIL_RECIPIENT')
-    or 's_volkonskiy@utro.1tv.ru'
+    or 'volkonskiyser@yandex.com'
 ).strip()
 EMAIL_RECIPIENT_SHOOTING = (
     os.environ.get('EMAIL_RECIPIENT_SHOOTING')

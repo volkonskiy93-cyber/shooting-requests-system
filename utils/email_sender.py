@@ -82,7 +82,6 @@ def send_email_with_attachment(
 
     def _send_once(actual_to_email, intended_to_email):
         safe_to_email = escape(actual_to_email or '')
-        safe_intended_email = escape(intended_to_email or '')
         params = {
             "from": f"{from_name} <{from_email}>",
             "to": [actual_to_email],
@@ -92,8 +91,7 @@ def send_email_with_attachment(
                 <h3>Новая заявка на видеосъемку</h3>
                 <p><b>Отправитель:</b> {safe_sender_name}</p>
                 <p><b>Личная почта автора:</b> {safe_sender_email}</p>
-                <p><b>Фактический адрес доставки:</b> {safe_to_email}</p>
-                <p><b>Исходный адрес получателя:</b> {safe_intended_email}</p>
+                <p><b>Адрес доставки:</b> {safe_to_email}</p>
                 <p>К письму прикреплен файл: {safe_filename}</p>
                 <br>
                 <hr>
