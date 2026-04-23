@@ -195,20 +195,26 @@ def _is_local_development() -> bool:
     )
 
 
-def _refresh_registration_captcha() -> str:
+def _refresh_registration_captcha(exclude_prompt: Optional[str] = None) -> str:
     """
     Генерирует новый простой пример и сохраняет ответ в сессии.
     """
-    left = secrets.randbelow(8) + 2
-    right = secrets.randbelow(8) + 1
-    if secrets.randbelow(2) == 0:
-        prompt = f'{left} + {right}'
-        answer = left + right
-    else:
-        if right > left:
-            left, right = right, left
-        prompt = f'{left} - {right}'
-        answer = left - right
+    prompt = ''
+    answer = 0
+
+    for _ in range(12):
+        left = secrets.randbelow(8) + 2
+        right = secrets.randbelow(8) + 1
+        if secrets.randbelow(2) == 0:
+            prompt = f'{left} + {right}'
+            answer = left + right
+        else:
+            if right > left:
+                left, right = right, left
+            prompt = f'{left} - {right}'
+            answer = left - right
+        if not exclude_prompt or prompt != exclude_prompt:
+            break
 
     session['registration_captcha_prompt'] = prompt
     session['registration_captcha_answer'] = str(answer)
@@ -224,10 +230,11 @@ def _current_registration_captcha() -> str:
 
 
 def _check_registration_captcha(user_answer: str) -> bool:
+    current_prompt = (session.get('registration_captcha_prompt') or '').strip()
     expected = (session.get('registration_captcha_answer') or '').strip()
     provided = (user_answer or '').strip()
     is_valid = bool(expected and provided and secrets.compare_digest(expected, provided))
-    _refresh_registration_captcha()
+    _refresh_registration_captcha(current_prompt)
     return is_valid
 
 
@@ -520,9 +527,10 @@ def index():
 
 @app.route('/api/register/captcha', methods=['GET'])
 def register_captcha():
+    current_prompt = (session.get('registration_captcha_prompt') or '').strip()
     return jsonify({
         'success': True,
-        'question': _refresh_registration_captcha(),
+        'question': _refresh_registration_captcha(current_prompt),
     })
 
 

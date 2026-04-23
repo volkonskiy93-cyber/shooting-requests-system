@@ -404,6 +404,76 @@
     margin-bottom: 0;
 }
 
+.login-splash {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    background: rgba(16, 12, 8, 0.52);
+    backdrop-filter: blur(18px);
+    z-index: 50;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.24s ease;
+}
+
+.login-splash.active {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.login-splash-card {
+    width: min(100%, 420px);
+    padding: 28px 24px;
+    border-radius: 28px;
+    background: rgba(255, 255, 255, 0.96);
+    border: 1px solid rgba(255, 255, 255, 0.65);
+    box-shadow: 0 30px 80px rgba(34, 22, 15, 0.16);
+    text-align: center;
+}
+
+.login-splash-eyebrow {
+    display: inline-block;
+    margin-bottom: 10px;
+    font-size: 0.82rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #8f5a39;
+}
+
+.login-splash-title {
+    margin: 0 0 8px 0;
+    font-size: 1.6rem;
+    letter-spacing: -0.04em;
+}
+
+.login-splash-text {
+    margin: 0;
+    color: var(--text-secondary);
+}
+
+.login-splash-loader {
+    width: 46px;
+    height: 46px;
+    margin: 18px auto 0;
+    border-radius: 50%;
+    border: 4px solid rgba(143, 90, 57, 0.16);
+    border-top-color: #8f5a39;
+    animation: splashSpin 0.85s linear infinite;
+}
+
+.auth-panel.loading {
+    pointer-events: none;
+}
+
+.auth-panel.loading .form-section,
+.auth-panel.loading .logged-in-panel {
+    opacity: 0.7;
+}
+
 .form-section.active {
     display: block;
 }
@@ -596,10 +666,24 @@ button:hover {
         width: 100%;
     }
 }
+
+@keyframes splashSpin {
+    to {
+        transform: rotate(360deg);
+    }
+}
 {% endblock %}
 
 {% block content %}
 <div class="container">
+    <div id="login-splash" class="login-splash" aria-hidden="true">
+        <div class="login-splash-card">
+            <span class="login-splash-eyebrow">Dobroe Utro</span>
+            <h3 class="login-splash-title">Вход выполнен</h3>
+            <p id="login-splash-text" class="login-splash-text">Открываем рабочую панель...</p>
+            <div class="login-splash-loader" aria-hidden="true"></div>
+        </div>
+    </div>
     <div class="login-container">
         <div class="clouds-layer" aria-hidden="true">
             <div class="cloud cloud-one"></div>
@@ -694,6 +778,7 @@ button:hover {
 {% block scripts %}
 <script>
 const API_BASE = '{{ url_for("index") }}';
+let loginSplashTimer = null;
 
 async function refreshRegisterCaptcha(questionFromServer = '') {
     const questionEl = document.getElementById('reg-captcha-question');
@@ -721,6 +806,49 @@ async function refreshRegisterCaptcha(questionFromServer = '') {
         if (answerEl) {
             answerEl.value = '';
         }
+    }
+}
+
+function showLoginSplash(userName = '', redirectUrl = '') {
+    const splash = document.getElementById('login-splash');
+    const splashText = document.getElementById('login-splash-text');
+    const authPanel = document.querySelector('.auth-panel');
+    if (!splash || !splashText) return;
+
+    const safeName = String(userName || '').trim();
+    splashText.textContent = safeName
+        ? `Здравствуйте, ${safeName}. Открываем рабочую панель...`
+        : 'Открываем рабочую панель...';
+    splash.classList.add('active');
+    splash.setAttribute('aria-hidden', 'false');
+    if (authPanel) {
+        authPanel.classList.add('loading');
+    }
+    if (loginSplashTimer) {
+        clearTimeout(loginSplashTimer);
+    }
+    loginSplashTimer = setTimeout(() => {
+        if (redirectUrl) {
+            window.location.href = redirectUrl;
+            return;
+        }
+        hideLoginSplash();
+    }, 950);
+}
+
+function hideLoginSplash() {
+    const splash = document.getElementById('login-splash');
+    const authPanel = document.querySelector('.auth-panel');
+    if (loginSplashTimer) {
+        clearTimeout(loginSplashTimer);
+        loginSplashTimer = null;
+    }
+    if (splash) {
+        splash.classList.remove('active');
+        splash.setAttribute('aria-hidden', 'true');
+    }
+    if (authPanel) {
+        authPanel.classList.remove('loading');
     }
 }
 
@@ -808,11 +936,13 @@ async function handleLogin() {
         const data = await response.json();
         
         if (data.success) {
-            showLoggedInPanel(data.user.email, data.user.role, data.user.fullName);
+            showLoginSplash(data.user.fullName, data.redirectUrl || '/forms');
         } else {
+            hideLoginSplash();
             showAuthMessage(data.message || 'Ошибка входа', 'error');
         }
     } catch (error) {
+        hideLoginSplash();
         showAuthMessage('Ошибка: ' + error.message, 'error');
     }
 }
@@ -908,6 +1038,7 @@ async function handleLogout() {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
+    hideLoginSplash();
     {% if user %}
     showLoggedInPanel({{ (user or "") | tojson }}, {{ (user_role or "correspondent") | tojson }}, {{ (user_name or "") | tojson }});
     {% endif %}
