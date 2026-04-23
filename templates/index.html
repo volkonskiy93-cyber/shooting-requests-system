@@ -373,6 +373,11 @@
     overflow: hidden;
 }
 
+.turnstile-wrap {
+    margin: 14px 0 8px 0;
+    min-height: 65px;
+}
+
 .form-section.active {
     display: block;
 }
@@ -630,6 +635,9 @@ button:hover {
                     <input type="password" id="reg-password-confirm" placeholder="Повторите пароль">
                     <button type="button" class="password-toggle" onclick="togglePasswordVisibility('reg-password-confirm', this)">Показать</button>
                 </div>
+                {% if turnstile_site_key %}
+                <div class="turnstile-wrap" id="turnstile-reg" aria-label="Проверка: я не робот"></div>
+                {% endif %}
                 <button class="btn-success" onclick="handleRegister()">Создать аккаунт</button>
                 <div class="auth-switch">
                     Уже есть аккаунт? <a href="#" onclick="showLogin(); return false;">Войти</a>
@@ -653,8 +661,44 @@ button:hover {
 {% endblock %}
 
 {% block scripts %}
+{% if turnstile_site_key %}
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+{% endif %}
 <script>
 const API_BASE = '{{ url_for("index") }}';
+window.TURNSTILE_SITE_KEY = {{ (turnstile_site_key or '')|tojson }};
+let regTurnstileWidgetId = null;
+let regTurnstileRendered = false;
+let _turnstileLoadRetries = 0;
+
+function resetRegTurnstile() {
+    if (regTurnstileWidgetId != null && window.turnstile) {
+        try { window.turnstile.reset(regTurnstileWidgetId); } catch (e) { /* ignore */ }
+    }
+}
+
+function ensureTurnstileOnRegister() {
+    if (!window.TURNSTILE_SITE_KEY) return;
+    if (!window.turnstile) {
+        _turnstileLoadRetries += 1;
+        if (_turnstileLoadRetries < 50) {
+            setTimeout(ensureTurnstileOnRegister, 120);
+        }
+        return;
+    }
+    _turnstileLoadRetries = 0;
+    if (regTurnstileRendered) {
+        resetRegTurnstile();
+        return;
+    }
+    const el = document.getElementById('turnstile-reg');
+    if (!el) return;
+    regTurnstileWidgetId = window.turnstile.render('#turnstile-reg', {
+        sitekey: window.TURNSTILE_SITE_KEY,
+        theme: 'light',
+    });
+    regTurnstileRendered = true;
+}
 
 function showAuthMessage(message, kind = 'info') {
     const banner = document.getElementById('auth-status');
@@ -690,6 +734,9 @@ function showRegister() {
     document.getElementById('register-section').classList.add('active');
     document.getElementById('logged-in-panel').classList.remove('active');
     clearAuthMessage();
+    if (window.TURNSTILE_SITE_KEY) {
+        ensureTurnstileOnRegister();
+    }
 }
 
 function showLoggedInPanel(email, role, fullName) {
@@ -770,6 +817,18 @@ async function handleRegister() {
         showAuthMessage('Пароли не совпадают', 'error');
         return;
     }
+
+    let turnstileToken = '';
+    if (window.TURNSTILE_SITE_KEY) {
+        ensureTurnstileOnRegister();
+        if (window.turnstile && regTurnstileWidgetId != null) {
+            turnstileToken = window.turnstile.getResponse(regTurnstileWidgetId) || '';
+        }
+        if (!turnstileToken) {
+            showAuthMessage('Поставьте галочку в блоке проверки «Я не робот».', 'error');
+            return;
+        }
+    }
     
     try {
         const response = await window.fetchWithCsrfRetry('/register', {
@@ -786,6 +845,7 @@ async function handleRegister() {
                 password,
                 password_confirm: passwordConfirm,
                 hp_website: (document.getElementById('reg-hp-website') || {}).value || '',
+                turnstile_token: turnstileToken,
             })
         });
         
@@ -796,13 +856,19 @@ async function handleRegister() {
             document.getElementById('user-password').value = '';
             document.getElementById('reg-password').value = '';
             document.getElementById('reg-password-confirm').value = '';
+            regTurnstileRendered = false;
+            regTurnstileWidgetId = null;
+            const tsBox = document.getElementById('turnstile-reg');
+            if (tsBox) tsBox.innerHTML = '';
             showLogin();
             showAuthMessage(data.message || 'Заявка на доступ отправлена.', 'success');
         } else {
             showAuthMessage(data.message || 'Ошибка регистрации', 'error');
+            resetRegTurnstile();
         }
     } catch (error) {
         showAuthMessage('Ошибка: ' + error.message, 'error');
+        resetRegTurnstile();
     }
 }
 
