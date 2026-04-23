@@ -847,12 +847,75 @@ body.modal-open {
     }
 
     .equipment-table {
+        display: block;
+        overflow-x: visible;
+        border: none;
+        border-radius: 0;
+        background: transparent;
+    }
+
+    .equipment-table thead {
+        display: none;
+    }
+
+    .equipment-table tbody {
+        display: block;
+        width: 100%;
+    }
+
+    .equipment-table tr {
+        display: block;
+        margin-bottom: 14px;
+        border: 1px solid rgba(17, 17, 17, 0.08);
         border-radius: 20px;
+        background: rgba(255, 255, 255, 0.9);
+        overflow: hidden;
     }
 
     .equipment-table th,
     .equipment-table td {
-        min-width: 220px;
-        padding: 14px 16px;
+        display: block;
+        width: 100%;
+        min-width: 0;
+        padding: 12px 14px;
+    }
+
+    .equipment-table td {
+        border-bottom: 1px solid rgba(17, 17, 17, 0.08);
+    }
+
+    .equipment-table td:last-child {
+        border-bottom: none;
+    }
+
+    .equipment-table td::before {
+        display: block;
+        margin-bottom: 8px;
+        font-size: 0.74rem;
+        font-weight: 700;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        color: var(--text-muted);
+    }
+
+    .equipment-table td:nth-child(1)::before {
+        content: "Основной комплект";
+    }
+
+    .equipment-table td:nth-child(2)::before {
+        content: "Дополнительное оборудование";
+    }
+
+    .equipment-table td:nth-child(3)::before {
+        content: "Количество";
+    }
+
+    .equipment-table td:empty {
+        display: none;
+    }
+
+    .equipment-table .small-input {
+        width: 92px;
+        max-width: 100%;
     }
 }
