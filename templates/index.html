@@ -373,9 +373,35 @@
     overflow: hidden;
 }
 
-.turnstile-wrap {
+.captcha-wrap {
     margin: 14px 0 8px 0;
-    min-height: 65px;
+    padding: 14px 16px;
+    border-radius: 16px;
+    background: rgba(17, 17, 17, 0.03);
+    border: 1px solid rgba(17, 17, 17, 0.08);
+}
+
+.captcha-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.captcha-question {
+    font-weight: 700;
+    letter-spacing: -0.02em;
+}
+
+.captcha-refresh {
+    flex: 0 0 auto;
+    min-height: 38px;
+    padding: 0 12px;
+}
+
+.captcha-wrap input {
+    margin-bottom: 0;
 }
 
 .form-section.active {
@@ -635,9 +661,14 @@ button:hover {
                     <input type="password" id="reg-password-confirm" placeholder="Повторите пароль">
                     <button type="button" class="password-toggle" onclick="togglePasswordVisibility('reg-password-confirm', this)">Показать</button>
                 </div>
-                {% if turnstile_site_key %}
-                <div class="turnstile-wrap" id="turnstile-reg" aria-label="Проверка: я не робот"></div>
-                {% endif %}
+                <div class="captcha-wrap" aria-label="Проверочный вопрос">
+                    <div class="captcha-row">
+                        <span>Проверка: решите пример</span>
+                        <button type="button" class="btn btn-secondary captcha-refresh" onclick="refreshRegisterCaptcha()" title="Обновить пример">Обновить</button>
+                    </div>
+                    <div class="captcha-question" id="reg-captcha-question">{{ registration_captcha_prompt }}</div>
+                    <input type="text" id="reg-captcha-answer" placeholder="Введите ответ" autocomplete="off" inputmode="numeric" maxlength="3">
+                </div>
                 <button class="btn-success" onclick="handleRegister()">Создать аккаунт</button>
                 <div class="auth-switch">
                     Уже есть аккаунт? <a href="#" onclick="showLogin(); return false;">Войти</a>
@@ -661,43 +692,36 @@ button:hover {
 {% endblock %}
 
 {% block scripts %}
-{% if turnstile_site_key %}
-<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
-{% endif %}
 <script>
 const API_BASE = '{{ url_for("index") }}';
-window.TURNSTILE_SITE_KEY = {{ (turnstile_site_key or '')|tojson }};
-let regTurnstileWidgetId = null;
-let regTurnstileRendered = false;
-let _turnstileLoadRetries = 0;
 
-function resetRegTurnstile() {
-    if (regTurnstileWidgetId != null && window.turnstile) {
-        try { window.turnstile.reset(regTurnstileWidgetId); } catch (e) { /* ignore */ }
-    }
-}
+async function refreshRegisterCaptcha(questionFromServer = '') {
+    const questionEl = document.getElementById('reg-captcha-question');
+    const answerEl = document.getElementById('reg-captcha-answer');
+    if (!questionEl) return;
 
-function ensureTurnstileOnRegister() {
-    if (!window.TURNSTILE_SITE_KEY) return;
-    if (!window.turnstile) {
-        _turnstileLoadRetries += 1;
-        if (_turnstileLoadRetries < 50) {
-            setTimeout(ensureTurnstileOnRegister, 120);
+    try {
+        let question = questionFromServer;
+        if (!question) {
+            const response = await fetch('/api/register/captcha', {
+                method: 'GET',
+                cache: 'no-store',
+                credentials: 'same-origin',
+            });
+            const data = await response.json();
+            question = data.question || '';
         }
-        return;
+        if (question) {
+            questionEl.textContent = question;
+        }
+        if (answerEl) {
+            answerEl.value = '';
+        }
+    } catch (error) {
+        if (answerEl) {
+            answerEl.value = '';
+        }
     }
-    _turnstileLoadRetries = 0;
-    if (regTurnstileRendered) {
-        resetRegTurnstile();
-        return;
-    }
-    const el = document.getElementById('turnstile-reg');
-    if (!el) return;
-    regTurnstileWidgetId = window.turnstile.render('#turnstile-reg', {
-        sitekey: window.TURNSTILE_SITE_KEY,
-        theme: 'light',
-    });
-    regTurnstileRendered = true;
 }
 
 function showAuthMessage(message, kind = 'info') {
@@ -734,9 +758,7 @@ function showRegister() {
     document.getElementById('register-section').classList.add('active');
     document.getElementById('logged-in-panel').classList.remove('active');
     clearAuthMessage();
-    if (window.TURNSTILE_SITE_KEY) {
-        ensureTurnstileOnRegister();
-    }
+    refreshRegisterCaptcha();
 }
 
 function showLoggedInPanel(email, role, fullName) {
@@ -802,6 +824,7 @@ async function handleRegister() {
     const email = document.getElementById('reg-email').value.trim();
     const password = document.getElementById('reg-password').value;
     const passwordConfirm = document.getElementById('reg-password-confirm').value;
+    const captchaAnswer = document.getElementById('reg-captcha-answer').value.trim();
     
     if (!firstName || !lastName || !email || !password) {
         showAuthMessage('Заполните все поля', 'error');
@@ -818,16 +841,9 @@ async function handleRegister() {
         return;
     }
 
-    let turnstileToken = '';
-    if (window.TURNSTILE_SITE_KEY) {
-        ensureTurnstileOnRegister();
-        if (window.turnstile && regTurnstileWidgetId != null) {
-            turnstileToken = window.turnstile.getResponse(regTurnstileWidgetId) || '';
-        }
-        if (!turnstileToken) {
-            showAuthMessage('Поставьте галочку в блоке проверки «Я не робот».', 'error');
-            return;
-        }
+    if (!captchaAnswer) {
+        showAuthMessage('Введите ответ на проверочный вопрос.', 'error');
+        return;
     }
     
     try {
@@ -845,7 +861,7 @@ async function handleRegister() {
                 password,
                 password_confirm: passwordConfirm,
                 hp_website: (document.getElementById('reg-hp-website') || {}).value || '',
-                turnstile_token: turnstileToken,
+                captcha_answer: captchaAnswer,
             })
         });
         
@@ -856,19 +872,19 @@ async function handleRegister() {
             document.getElementById('user-password').value = '';
             document.getElementById('reg-password').value = '';
             document.getElementById('reg-password-confirm').value = '';
-            regTurnstileRendered = false;
-            regTurnstileWidgetId = null;
-            const tsBox = document.getElementById('turnstile-reg');
-            if (tsBox) tsBox.innerHTML = '';
+            document.getElementById('reg-captcha-answer').value = '';
+            refreshRegisterCaptcha();
             showLogin();
             showAuthMessage(data.message || 'Заявка на доступ отправлена.', 'success');
         } else {
             showAuthMessage(data.message || 'Ошибка регистрации', 'error');
-            resetRegTurnstile();
+            if (data.captchaQuestion) {
+                refreshRegisterCaptcha(data.captchaQuestion);
+            }
         }
     } catch (error) {
         showAuthMessage('Ошибка: ' + error.message, 'error');
-        resetRegTurnstile();
+        refreshRegisterCaptcha();
     }
 }
 
@@ -895,6 +911,7 @@ document.addEventListener('DOMContentLoaded', function() {
     {% if user %}
     showLoggedInPanel({{ (user or "") | tojson }}, {{ (user_role or "correspondent") | tojson }}, {{ (user_name or "") | tojson }});
     {% endif %}
+    refreshRegisterCaptcha({{ (registration_captcha_prompt or '') | tojson }});
 });
 
 </script>

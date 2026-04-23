@@ -13,9 +13,7 @@ import os
 import json
 import secrets
 from typing import Optional
-from urllib.parse import quote, urlencode
-from urllib.request import Request, urlopen
-import urllib.error
+from urllib.parse import quote
 from dotenv import load_dotenv
 from models import db, User, Application
 from utils.excel_generator import create_excel_document
@@ -197,76 +195,40 @@ def _is_local_development() -> bool:
     )
 
 
-def _turnstile_site_key_public() -> str:
-    return (os.environ.get('TURNSTILE_SITE_KEY') or '').strip()
-
-
-def _turnstile_secret_key() -> str:
-    return (os.environ.get('TURNSTILE_SECRET_KEY') or '').strip()
-
-
-def _client_ip_best() -> str:
-    """Первый IP клиента (учёт прокси / Cloudflare)."""
-    for header in ('CF-Connecting-IP', 'True-Client-IP', 'X-Real-IP'):
-        v = (request.headers.get(header) or '').strip()
-        if v:
-            return v.split(',')[0].strip()
-    xff = (request.headers.get('X-Forwarded-For') or '').strip()
-    if xff:
-        return xff.split(',')[0].strip()
-    return (request.remote_addr or '').strip()
-
-
-def _verify_turnstile_token(response_token: str) -> bool:
+def _refresh_registration_captcha() -> str:
     """
-    Проверка токена Cloudflare Turnstile (siteverify API).
+    Генерирует новый простой пример и сохраняет ответ в сессии.
     """
-    secret = _turnstile_secret_key()
-    if not secret or not (response_token or '').strip():
-        return False
-    base = {
-        'secret': secret,
-        'response': response_token.strip(),
-    }
-    ip = _client_ip_best()
-    if ip:
-        base['remoteip'] = ip
-    form = urlencode(base).encode('utf-8')
-    req = Request(
-        'https://challenges.cloudflare.com/turnstile/v0/siteverify',
-        data=form,
-        method='POST',
-        headers={'Content-Type': 'application/x-www-form-urlencoded'},
-    )
-    try:
-        with urlopen(req, timeout=12) as resp:
-            body = json.loads(resp.read().decode('utf-8'))
-    except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError, json.JSONDecodeError, ValueError):
-        return False
-    return bool(body.get('success'))
+    left = secrets.randbelow(8) + 2
+    right = secrets.randbelow(8) + 1
+    if secrets.randbelow(2) == 0:
+        prompt = f'{left} + {right}'
+        answer = left + right
+    else:
+        if right > left:
+            left, right = right, left
+        prompt = f'{left} - {right}'
+        answer = left - right
+
+    session['registration_captcha_prompt'] = prompt
+    session['registration_captcha_answer'] = str(answer)
+    return prompt
 
 
-def _registration_turnstile_error_message(response_token: str) -> Optional[str]:
-    """
-    None — капча пройдена или в dev отключена.
-    Иначе текст ошибки для пользователя.
-    """
-    secret = _turnstile_secret_key()
-    site = _turnstile_site_key_public()
-    if not secret and not site:
-        if _is_local_development():
-            return None
-        return (
-            'Регистрация временно недоступна: не настроена капча (администратору: '
-            'TURNSTILE_SITE_KEY и TURNSTILE_SECRET_KEY).'
-        )
-    if not secret or not site:
-        return 'Регистрация временно недоступна: настройте и ключ сайта, и секретный ключ капчи.'
-    if not (response_token or '').strip():
-        return 'Подтвердите, что вы не робот (блок проверки выше).'
-    if not _verify_turnstile_token(response_token):
-        return 'Проверка безопасности не пройдена. Обновите страницу и попробуйте снова.'
-    return None
+def _current_registration_captcha() -> str:
+    prompt = (session.get('registration_captcha_prompt') or '').strip()
+    answer = (session.get('registration_captcha_answer') or '').strip()
+    if prompt and answer:
+        return prompt
+    return _refresh_registration_captcha()
+
+
+def _check_registration_captcha(user_answer: str) -> bool:
+    expected = (session.get('registration_captcha_answer') or '').strip()
+    provided = (user_answer or '').strip()
+    is_valid = bool(expected and provided and secrets.compare_digest(expected, provided))
+    _refresh_registration_captcha()
+    return is_valid
 
 
 def _ensure_csrf_token() -> str:
@@ -536,7 +498,7 @@ with app.app_context():
 def index():
     """Главная страница - авторизация и выбор роли"""
     user = _get_active_user()
-    ts = _turnstile_site_key_public()
+    captcha_prompt = _current_registration_captcha()
     if user:
         return render_template(
             'index.html',
@@ -544,7 +506,7 @@ def index():
             user_role=user.role,
             user_name=user.full_name,
             approval_status=user.approval_status,
-            turnstile_site_key=ts,
+            registration_captcha_prompt=captcha_prompt,
         )
     return render_template(
         'index.html',
@@ -552,8 +514,16 @@ def index():
         user_role=None,
         user_name=None,
         approval_status=None,
-        turnstile_site_key=ts,
+        registration_captcha_prompt=captcha_prompt,
     )
+
+
+@app.route('/api/register/captcha', methods=['GET'])
+def register_captcha():
+    return jsonify({
+        'success': True,
+        'question': _refresh_registration_captcha(),
+    })
 
 
 @app.route('/login', methods=['POST'])
@@ -605,6 +575,7 @@ def register():
     full_name = data.get('full_name', '').strip() or f"{first_name} {last_name}".strip()
     password = data.get('password', '')
     password_confirm = data.get('password_confirm', '')
+    captcha_answer = str(data.get('captcha_answer') or '').strip()
 
     if not first_name or not last_name:
         full_name = (full_name or '').strip()
@@ -635,10 +606,12 @@ def register():
     if password != password_confirm:
         return jsonify({'success': False, 'message': 'Пароли не совпадают'}), 400
 
-    turnstile_token = (data.get('turnstile_token') or data.get('cf-turnstile-response') or '').strip()
-    cap_err = _registration_turnstile_error_message(turnstile_token)
-    if cap_err:
-        return jsonify({'success': False, 'message': cap_err}), 400
+    if not _check_registration_captcha(captcha_answer):
+        return jsonify({
+            'success': False,
+            'message': 'Неверный ответ на проверочный вопрос.',
+            'captchaQuestion': _current_registration_captcha(),
+        }), 400
 
     existing_user = User.query.filter_by(email=email).first()
     if existing_user:
