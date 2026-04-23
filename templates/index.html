@@ -361,6 +361,16 @@
     background: var(--bg-secondary);
     border-radius: 28px;
     border: 1px solid var(--border-soft);
+    position: relative;
+}
+
+/* Honeypot: скрыто от людей, часто заполняют боты */
+.reg-hp-field {
+    position: absolute;
+    left: -10000px;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
 }
 
 .form-section.active {
@@ -604,11 +614,16 @@ button:hover {
 
             <div id="register-section" class="form-section">
                 <h3 class="section-title">Регистрация</h3>
-                <input type="text" id="reg-first-name" placeholder="Введите имя" required>
-                <input type="text" id="reg-last-name" placeholder="Введите фамилию" required>
-                <input type="email" id="reg-email" placeholder="Введите email">
+                <p class="field-hint" style="font-size:13px;opacity:0.85;margin:0 0 6px 0;">Имя и фамилия — кириллицей (например, Иванов Иван) или латиницей полными словами.</p>
+                <div class="reg-hp-field" aria-hidden="true">
+                    <label for="reg-hp-website">Название компании (не заполняйте)</label>
+                    <input type="text" id="reg-hp-website" name="company_url" autocomplete="off" tabindex="-1">
+                </div>
+                <input type="text" id="reg-first-name" placeholder="Введите имя" required autocomplete="given-name" maxlength="100">
+                <input type="text" id="reg-last-name" placeholder="Введите фамилию" required autocomplete="family-name" maxlength="100">
+                <input type="email" id="reg-email" placeholder="name@пример.ru" required autocomplete="email" inputmode="email" maxlength="254">
                 <div class="password-field">
-                    <input type="password" id="reg-password" placeholder="Придумайте пароль (мин. 4 символа)">
+                    <input type="password" id="reg-password" placeholder="Пароль (мин. 8 символов)">
                     <button type="button" class="password-toggle" onclick="togglePasswordVisibility('reg-password', this)">Показать</button>
                 </div>
                 <div class="password-field">
@@ -764,10 +779,13 @@ async function handleRegister() {
                 'X-CSRF-Token': window.getCsrfToken(),
             },
             body: JSON.stringify({
+                first_name: firstName,
+                last_name: lastName,
                 full_name: fullName,
                 email,
                 password,
-                password_confirm: passwordConfirm
+                password_confirm: passwordConfirm,
+                hp_website: (document.getElementById('reg-hp-website') || {}).value || '',
             })
         });
         

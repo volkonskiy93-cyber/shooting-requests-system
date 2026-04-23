@@ -7,6 +7,7 @@ from flask import Flask, render_template, request, jsonify, session, redirect, u
 from flask_bcrypt import Bcrypt
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
+from werkzeug.middleware.proxy_fix import ProxyFix
 from datetime import datetime, timedelta
 import os
 import json
@@ -70,6 +71,10 @@ app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(
 app.config['SESSION_REFRESH_EACH_REQUEST'] = True
 app.config['RATELIMIT_STORAGE_URI'] = os.environ.get('RATELIMIT_STORAGE_URI', 'memory://')
 app.config['RATELIMIT_HEADERS_ENABLED'] = True
+# Защита от перегрузки большим JSON (заявки — текст, не вложения)
+app.config['MAX_CONTENT_LENGTH'] = int(
+    os.environ.get('MAX_CONTENT_LENGTH', str(5 * 1024 * 1024))
+)
 
 # Инициализация расширений
 db.init_app(app)
@@ -81,11 +86,28 @@ def _rate_limit_key() -> str:
     return forwarded_for or get_remote_address()
 
 
+def _rate_limit_key_user() -> str:
+    """
+    Для маршрутов, где важен лимит с пользователем (создание заявок, выгрузки).
+    """
+    user_id = session.get('user_id')
+    if user_id is not None:
+        return f"u:{user_id}"
+    return f"ip:{_rate_limit_key()}"
+
+
 limiter = Limiter(
     key_func=_rate_limit_key,
     app=app,
     default_limits=[],
 )
+
+# За балансировщиком (Railway, Render и т.д.): корректные схема/клиент для rate limit и куков Secure.
+# Включайте в окружении: TRUST_PROXY=1
+if str(os.environ.get('TRUST_PROXY', '')).strip().lower() in ('1', 'true', 'yes', 'on'):
+    app.wsgi_app = ProxyFix(
+        app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_port=0, x_prefix=1
+    )
 
 # Email настройки (получатели заявок)
 DEFAULT_EMAIL_RECIPIENT = (
@@ -106,6 +128,60 @@ APPROVAL_APPROVED = 'approved'
 APPROVAL_REJECTED = 'rejected'
 ALLOWED_CONTRACTORS = {'figaro', 'ttk', 'producer'}
 MIN_PASSWORD_LENGTH = 8
+MAX_NAME_LEN = 80
+# Адреса вроде user@, без полноценного домена
+_EMAIL_OK = re.compile(
+    r'^[a-z0-9._%+\-]{1,64}@'
+    r'[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?'
+    r'(?:\.[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?)+$',
+    re.IGNORECASE,
+)
+_LATIN_VOWELS = set('aeiouyAEIOUYаеёиоуыэюяАЕЁИОУЫЭЮЯ')
+
+
+def _is_valid_registration_email(email: str) -> bool:
+    e = (email or '').strip()
+    if not e or len(e) > 254 or e.count('@') != 1:
+        return False
+    local, _, domain = e.rpartition('@')
+    if '..' in local or local.startswith(('.', '-')) or local.endswith(('.', '-')):
+        return False
+    if '..' in domain or domain.startswith('-') or domain.endswith('-'):
+        return False
+    return bool(_EMAIL_OK.match(e))
+
+
+def _registration_name_ok(first: str, last: str) -> tuple[bool, str]:
+    """
+    Снижение спама: осмысленные ФИО. Кириллица, либо латиница (полное имя с гласной в каждой части), без цифр.
+    """
+    a = (first or '').strip()
+    b = (last or '').strip()
+    if len(a) < 2 or len(b) < 2:
+        return False, 'Укажите имя и фамилию (не менее 2 символов в каждом поле).'
+    if len(a) > MAX_NAME_LEN or len(b) > MAX_NAME_LEN:
+        return False, 'Слишком длинные имя или фамилия.'
+
+    combined = f'{a} {b}'
+    if re.search(r'\d', combined):
+        return False, 'В имени и фамилии нельзя использовать цифры.'
+
+    if re.search(r'[—–/\\@#$%^&*()[\]{}|<>+~=]', combined):
+        return False, 'Используйте только буквы, дефис и пробел в имени и фамилии.'
+
+    if re.search(r'[А-Яа-яЁё]', combined):
+        if re.fullmatch(r'[А-Яа-яЁё\- ]+', combined):
+            return True, ''
+        return False, 'В имени и фамилии используйте только кириллицу (или латиницу по шаблону John Smith).'
+
+    latin_block = re.compile(r"^[A-Za-z' \-]{2,100}$")
+    if latin_block.match(a) and latin_block.match(b):
+        if any(c in _LATIN_VOWELS for c in a) and any(c in _LATIN_VOWELS for c in b):
+            return True, ''
+    return (
+        False,
+        'Укажите фамилию и имя кириллицей, либо латиницей полными словами (например, Иванов Иван или John Smith).',
+    )
 
 
 def _role_redirect_url(role: str) -> str:
@@ -172,6 +248,31 @@ def handle_rate_limit_error(error):
         'message': 'Слишком много попыток. Подождите немного и повторите действие.',
     }
     return jsonify(response), 429
+
+
+@app.errorhandler(413)
+def _handle_request_too_large(_error):
+    return jsonify({
+        'success': False,
+        'message': 'Слишком большой запрос. Уменьшите данные и повторите.',
+    }), 413
+
+
+def _is_https_request() -> bool:
+    if getattr(request, 'is_secure', False):
+        return True
+    return (request.headers.get('X-Forwarded-Proto') or '').lower() == 'https'
+
+
+@app.after_request
+def _apply_security_headers(response):
+    response.headers['X-Content-Type-Options'] = 'nosniff'
+    response.headers['X-Frame-Options'] = 'SAMEORIGIN'
+    response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
+    response.headers['Permissions-Policy'] = 'camera=(), microphone=(), geolocation=()'
+    if str(os.environ.get('HSTS', '0')).strip() == '1' and _is_https_request():
+        response.headers['Strict-Transport-Security'] = 'max-age=15552000; includeSubDomains'
+    return response
 
 
 def _sync_session_user(user: Optional[User]):
@@ -412,15 +513,38 @@ def login():
 def register():
     """Регистрация нового пользователя"""
     data = request.get_json() or {}
+    # Honeypot: заполняют боты; для людей поле пустое и не отправляется
+    if (str(data.get('hp_website') or data.get('company_url') or '')).strip():
+        return jsonify({'success': False, 'message': 'Проверьте корректность данных и повторите попытку.'}), 400
     email = data.get('email', '').strip().lower()
     first_name = data.get('first_name', '').strip()
     last_name = data.get('last_name', '').strip()
     full_name = data.get('full_name', '').strip() or f"{first_name} {last_name}".strip()
     password = data.get('password', '')
     password_confirm = data.get('password_confirm', '')
-    
-    if not email or not password or not full_name:
+
+    if not first_name or not last_name:
+        full_name = (full_name or '').strip()
+        if full_name and ' ' in full_name:
+            part_a, part_b = full_name.split(None, 1)
+            if part_a and part_b:
+                first_name, last_name = part_a.strip(), part_b.strip()
+
+    if not email or not password:
         return jsonify({'success': False, 'message': 'Заполните все поля'}), 400
+    if not first_name or not last_name:
+        return jsonify({'success': False, 'message': 'Укажите имя и фамилию.'}), 400
+    full_name = f"{first_name} {last_name}".strip()
+
+    if not _is_valid_registration_email(email):
+        return jsonify({
+            'success': False,
+            'message': 'Введите корректный email-адрес (например, name@yandex.ru).',
+        }), 400
+
+    ok, name_error = _registration_name_ok(first_name, last_name)
+    if not ok:
+        return jsonify({'success': False, 'message': name_error}), 400
     
     if len(password) < MIN_PASSWORD_LENGTH:
         return jsonify({'success': False, 'message': f'Пароль должен быть не менее {MIN_PASSWORD_LENGTH} символов'}), 400
@@ -596,6 +720,7 @@ def get_applications():
 
 
 @app.route('/api/applications', methods=['POST'])
+@limiter.limit('40 per hour', key_func=_rate_limit_key_user)
 def create_application():
     """Создать новую заявку"""
     user = _get_active_user()
@@ -727,6 +852,7 @@ def get_application(app_id):
 
 
 @app.route('/api/applications/<int:app_id>/status', methods=['PUT'])
+@limiter.limit('200 per hour', key_func=_rate_limit_key_user)
 def update_application_status(app_id):
     """Изменить статус заявки"""
     user = _get_active_user()
@@ -796,6 +922,7 @@ def get_all_users():
 
 
 @app.route('/api/admin/users/<int:user_id>/approve', methods=['POST'])
+@limiter.limit('120 per hour', key_func=_rate_limit_key_user)
 def approve_user(user_id):
     """Одобрить доступ пользователя"""
     admin_user = _get_active_user()
@@ -816,6 +943,7 @@ def approve_user(user_id):
 
 
 @app.route('/api/admin/users/<int:user_id>/reject', methods=['POST'])
+@limiter.limit('120 per hour', key_func=_rate_limit_key_user)
 def reject_user(user_id):
     """Отклонить доступ пользователя"""
     admin_user = _get_active_user()
@@ -840,6 +968,7 @@ def reject_user(user_id):
 
 
 @app.route('/api/applications/<int:app_id>/export/doc', methods=['GET'])
+@limiter.limit('80 per hour', key_func=_rate_limit_key_user)
 def export_application_doc(app_id):
     """Экспорт заявки в формате DOCX"""
     user = _get_active_user()
@@ -873,6 +1002,7 @@ def export_application_doc(app_id):
 
 
 @app.route('/api/export/doc', methods=['POST'])
+@limiter.limit('80 per hour', key_func=_rate_limit_key_user)
 def export_doc_from_form():
     """Экспорт DOCX по данным формы продюсерской заявки без сохранения в БД."""
     user = _get_active_user()
@@ -908,6 +1038,7 @@ def export_doc_from_form():
 
 
 @app.route('/api/applications/<int:app_id>/export/excel', methods=['GET'])
+@limiter.limit('80 per hour', key_func=_rate_limit_key_user)
 def export_application_excel(app_id):
     """Экспорт существующей заявки в формате XLSX"""
     user = _get_active_user()
@@ -1079,6 +1210,7 @@ def _parse_datetime_local_to_date(value):
 
 
 @app.route('/api/export/excel', methods=['POST'])
+@limiter.limit('80 per hour', key_func=_rate_limit_key_user)
 def export_excel_from_form():
     """
     Экспорт Excel (XLSX) по шаблону из данных формы, без обязательного сохранения в БД.
