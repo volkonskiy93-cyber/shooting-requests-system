@@ -633,7 +633,7 @@ def admin():
         return redirect(url_for('index'))
     if not _is_admin(user):
         return redirect(url_for('forms'))
-    return render_template('admin.html')
+    return render_template('admin.html', current_admin_id=user.id)
 
 
 @app.route('/archive')
@@ -965,6 +965,33 @@ def reject_user(user_id):
     db.session.commit()
 
     return jsonify({'success': True, 'user': user.to_dict()})
+
+
+@app.route('/api/admin/users/<int:user_id>/delete', methods=['POST'])
+@limiter.limit('60 per hour', key_func=_rate_limit_key_user)
+def delete_user(user_id: int):
+    """Удалить учётную запись (кроме администраторов и самого себя). Заявки остаются в системе без привязки к пользователю."""
+    admin_user = _get_active_user()
+    if not admin_user:
+        return jsonify({'success': False, 'message': 'Требуется вход'}), 401
+    if not _is_admin(admin_user):
+        return jsonify({'success': False, 'message': 'Недостаточно прав'}), 403
+
+    user = User.query.get(user_id)
+    if user is None:
+        return jsonify({'success': False, 'message': 'Пользователь не найден'}), 404
+
+    if user.id == admin_user.id:
+        return jsonify({'success': False, 'message': 'Нельзя удалить собственный аккаунт'}), 400
+    if user.role == 'admin':
+        return jsonify({'success': False, 'message': 'Нельзя удалить учётную запись администратора'}), 400
+
+    for app_row in Application.query.filter_by(user_id=user.id).all():
+        app_row.user_id = None
+    db.session.delete(user)
+    db.session.commit()
+
+    return jsonify({'success': True})
 
 
 @app.route('/api/applications/<int:app_id>/export/doc', methods=['GET'])

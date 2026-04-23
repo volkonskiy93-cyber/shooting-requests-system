@@ -192,6 +192,15 @@
     color: #fff;
 }
 
+.btn-delete {
+    background: #7a1f1f;
+    color: #fff;
+}
+
+.btn-delete:hover {
+    filter: brightness(1.06);
+}
+
 .empty-state {
     color: rgba(17, 17, 17, 0.58);
 }
@@ -284,7 +293,7 @@ th {
         <div class="users-section-header">
             <div>
                 <h3>Все пользователи</h3>
-                <p class="empty-state">Здесь можно просмотреть все зарегистрированные аккаунты и ограничить им доступ.</p>
+                <p class="empty-state">Просмотр аккаунтов, ограничение доступа и удаление пользователей (кроме администраторов).</p>
             </div>
             <div class="users-tools">
                 <input type="text" id="users-search-input" placeholder="Поиск по имени или почте">
@@ -374,5 +383,6 @@ th {
 {% endblock %}
 
 {% block scripts %}
+<script>window.CURRENT_ADMIN_USER_ID = {{ current_admin_id }};</script>
 <script src="{{ url_for('static', filename='admin.js') }}"></script>
 {% endblock %}

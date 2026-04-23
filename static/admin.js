@@ -132,6 +132,7 @@ async function loadPendingUsers() {
                     <div class="pending-user-actions">
                         <button class="btn btn-approve" onclick="approveUser(${user.id})">Одобрить</button>
                         <button class="btn btn-reject" onclick="rejectUser(${user.id})">Отклонить</button>
+                        <button class="btn btn-delete" type="button" onclick="deleteUser(${user.id})">Удалить</button>
                     </div>
                 </div>
             `;
@@ -285,6 +286,8 @@ function renderUsers() {
         }[accessStatus] || accessStatus;
         const roleLabel = user.role === 'admin' ? 'Администратор' : 'Корреспондент';
         const isAdmin = user.role === 'admin';
+        const me = window.CURRENT_ADMIN_USER_ID;
+        const canDelete = !isAdmin && typeof me === 'number' && user.id !== me;
 
         return `
             <tr>
@@ -302,6 +305,9 @@ function renderUsers() {
                         ? `<button class="btn btn-reject" onclick="rejectUser(${user.id})">Ограничить доступ</button>`
                         : ''}
                     ${isAdmin ? '<span class="table-meta">Администратор</span>' : ''}
+                    ${canDelete
+                        ? `<button class="btn btn-delete" type="button" onclick="deleteUser(${user.id})" title="Удалить учётную запись">Удалить</button>`
+                        : ''}
                 </td>
             </tr>
         `;
@@ -337,6 +343,18 @@ async function approveUser(userId) {
 async function rejectUser(userId) {
     if (!confirm('Отклонить доступ этому пользователю?')) return;
     await postAdminAction(`/api/admin/users/${userId}/reject`);
+}
+
+async function deleteUser(userId) {
+    if (
+        !confirm(
+            'Удалить этого пользователя безвозвратно?\n\n' +
+                'Ранее отправленные заявки останутся в системе, но не будут привязаны к этому аккаунту.',
+        )
+    ) {
+        return;
+    }
+    await postAdminAction(`/api/admin/users/${userId}/delete`);
 }
 
 async function postAdminAction(url) {
