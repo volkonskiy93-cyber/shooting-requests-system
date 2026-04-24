@@ -807,23 +807,6 @@ button:hover {
                 </div>
             </div>
 
-            <div id="admin-2fa-section" class="form-section">
-                <h3 id="admin-2fa-title" class="section-title">Подтверждение входа</h3>
-                <p id="admin-2fa-note" class="two-factor-note">Введите 6-значный код из приложения-аутентификатора.</p>
-                <div id="admin-2fa-setup" class="two-factor-setup hidden">
-                    <p>Для первого входа администратора добавьте аккаунт в приложении-аутентификаторе вручную, затем введите одноразовый код.</p>
-                    <div class="setup-secret-label">Секретный ключ</div>
-                    <div id="admin-2fa-secret" class="setup-secret-box"></div>
-                    <div class="setup-secret-label">Ссылка для добавления</div>
-                    <div id="admin-2fa-uri" class="setup-uri-box"></div>
-                </div>
-                <input type="text" id="admin-2fa-code" class="two-factor-code" placeholder="123456" inputmode="numeric" autocomplete="one-time-code" maxlength="6">
-                <div class="two-factor-actions">
-                    <button type="button" class="btn-primary" onclick="handleAdminTwoFactor()">Подтвердить</button>
-                    <button type="button" class="btn-secondary" onclick="cancelAdminTwoFactor()">Назад</button>
-                </div>
-            </div>
-
             <div id="register-section" class="form-section">
                 <h3 class="section-title">Регистрация</h3>
                 <p class="field-hint" style="font-size:13px;opacity:0.85;margin:0 0 6px 0;">Имя и фамилия — кириллицей (например, Иванов Иван) или латиницей полными словами.</p>
@@ -876,7 +859,6 @@ button:hover {
 <script>
 const API_BASE = '{{ url_for("index") }}';
 let loginSplashTimer = null;
-let pendingAdminTwoFactor = null;
 
 async function refreshRegisterCaptcha(questionFromServer = '') {
     const questionEl = document.getElementById('reg-captcha-question');
@@ -975,34 +957,24 @@ function togglePasswordVisibility(inputId, buttonEl) {
 
 function showLogin() {
     document.getElementById('auth-section').classList.add('active');
-    document.getElementById('admin-2fa-section').classList.remove('active');
     document.getElementById('register-section').classList.remove('active');
     document.getElementById('logged-in-panel').classList.remove('active');
-    pendingAdminTwoFactor = null;
-    const codeInput = document.getElementById('admin-2fa-code');
-    if (codeInput) {
-        codeInput.value = '';
-    }
 }
 
 function showRegister() {
     document.getElementById('auth-section').classList.remove('active');
-    document.getElementById('admin-2fa-section').classList.remove('active');
     document.getElementById('register-section').classList.add('active');
     document.getElementById('logged-in-panel').classList.remove('active');
-    pendingAdminTwoFactor = null;
     clearAuthMessage();
     refreshRegisterCaptcha();
 }
 
 function showLoggedInPanel(email, role, fullName) {
     document.getElementById('auth-section').classList.remove('active');
-    document.getElementById('admin-2fa-section').classList.remove('active');
     document.getElementById('register-section').classList.remove('active');
     document.getElementById('logged-in-panel').classList.add('active');
     document.getElementById('user-email-display').textContent = email || '';
     document.getElementById('user-name-display').textContent = fullName || 'Без имени';
-    pendingAdminTwoFactor = null;
     clearAuthMessage();
 
     const primaryLink = document.getElementById('primary-work-link');
@@ -1022,50 +994,7 @@ function showLoggedInPanel(email, role, fullName) {
     }
 }
 
-function showAdminTwoFactorStep(data = {}) {
-    pendingAdminTwoFactor = data || {};
-    document.getElementById('auth-section').classList.remove('active');
-    document.getElementById('register-section').classList.remove('active');
-    document.getElementById('logged-in-panel').classList.remove('active');
-    document.getElementById('admin-2fa-section').classList.add('active');
 
-    const titleEl = document.getElementById('admin-2fa-title');
-    const noteEl = document.getElementById('admin-2fa-note');
-    const setupWrap = document.getElementById('admin-2fa-setup');
-    const secretEl = document.getElementById('admin-2fa-secret');
-    const uriEl = document.getElementById('admin-2fa-uri');
-    const codeInput = document.getElementById('admin-2fa-code');
-    const setupData = data.twoFactorSetup || null;
-    const setupRequired = Boolean(data.setupRequired && setupData);
-
-    titleEl.textContent = setupRequired ? 'Настройка 2FA администратора' : 'Подтверждение входа';
-    noteEl.textContent = setupRequired
-        ? 'Сначала добавьте секрет в приложение-аутентификатор, затем введите 6-значный код.'
-        : 'Введите 6-значный код из приложения-аутентификатора.';
-
-    if (setupRequired) {
-        setupWrap.classList.remove('hidden');
-        secretEl.textContent = setupData.sharedSecret || '';
-        uriEl.textContent = setupData.provisioningUri || '';
-    } else {
-        setupWrap.classList.add('hidden');
-        secretEl.textContent = '';
-        uriEl.textContent = '';
-    }
-
-    if (codeInput) {
-        codeInput.value = '';
-        codeInput.focus();
-    }
-
-    showAuthMessage(data.message || 'Требуется дополнительное подтверждение входа.', 'info');
-}
-
-function cancelAdminTwoFactor() {
-    pendingAdminTwoFactor = null;
-    showLogin();
-    showAuthMessage('Введите email и пароль заново, чтобы начать вход.', 'info');
-}
 
 async function handleLogin() {
     const email = document.getElementById('user-email').value.trim();
@@ -1089,11 +1018,6 @@ async function handleLogin() {
         const data = await response.json();
         
         if (data.success) {
-            if (data.requiresTwoFactor) {
-                hideLoginSplash();
-                showAdminTwoFactorStep(data);
-                return;
-            }
             showLoginSplash(data.user.fullName, data.redirectUrl || '/forms');
         } else {
             hideLoginSplash();
@@ -1105,50 +1029,6 @@ async function handleLogin() {
     }
 }
 
-async function handleAdminTwoFactor() {
-    const code = (document.getElementById('admin-2fa-code').value || '').trim();
-    if (!pendingAdminTwoFactor) {
-        showAuthMessage('Сессия подтверждения истекла. Войдите снова.', 'error');
-        showLogin();
-        return;
-    }
-    if (!/^\d{6}$/.test(code)) {
-        showAuthMessage('Введите 6-значный код.', 'error');
-        return;
-    }
-
-    try {
-        const response = await window.fetchWithCsrfRetry('/api/admin/2fa/verify', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-Token': window.getCsrfToken(),
-            },
-            body: JSON.stringify({ code })
-        });
-        const data = await response.json();
-        if (data.success) {
-            showLoginSplash((data.user || {}).fullName, data.redirectUrl || '/dashboard');
-            return;
-        }
-
-        if (data.setupRequired && data.twoFactorSetup) {
-            pendingAdminTwoFactor = {
-                ...pendingAdminTwoFactor,
-                setupRequired: true,
-                twoFactorSetup: data.twoFactorSetup,
-                message: data.message,
-            };
-            showAdminTwoFactorStep(pendingAdminTwoFactor);
-            showAuthMessage(data.message || 'Не удалось подтвердить код.', 'error');
-            return;
-        }
-
-        showAuthMessage(data.message || 'Не удалось подтвердить код.', 'error');
-    } catch (error) {
-        showAuthMessage('Ошибка: ' + error.message, 'error');
-    }
-}
 
 async function handleRegister() {
     const firstName = document.getElementById('reg-first-name').value.trim();

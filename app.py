@@ -429,10 +429,6 @@ def _sync_session_user(user: Optional[User]):
     session['user_email'] = user.email
     session['user_role'] = user.role or 'correspondent'
     session['user_full_name'] = user.full_name or ''
-    if user.role != 'admin':
-        session.pop('admin_2fa_verified', None)
-        session.pop('admin_2fa_verified_at', None)
-    _clear_pending_admin_2fa()
     _ensure_csrf_token()
 
 
@@ -561,9 +557,6 @@ def _get_active_user() -> Optional[User]:
     if not user or user.approval_status != APPROVAL_APPROVED:
         if user is None or 'user_id' in session:
             _clear_session()
-        return None
-    if user.role == 'admin' and not _admin_2fa_verified():
-        _clear_session()
         return None
     _sync_session_user(user)
     return user
@@ -737,31 +730,6 @@ def login():
                 'success': False,
                 'message': 'Доступ для этого аккаунта отклонен. Зарегистрируйтесь повторно или обратитесь к администратору.'
             }), 403
-
-        if _is_admin(user):
-            setup_secret = ''
-            setup_payload = None
-            if user.totp_enabled and user.totp_secret:
-                _begin_pending_admin_2fa(user)
-            else:
-                setup_secret = pyotp.random_base32()
-                _begin_pending_admin_2fa(user, setup_secret=setup_secret)
-                setup_payload = _build_admin_totp_setup_payload(user, setup_secret)
-
-            _security_event(
-                'admin_2fa_required',
-                user_id=user.id,
-                user_email=_mask_email(user.email),
-                setup_required=not bool(user.totp_enabled and user.totp_secret),
-            )
-            return jsonify({
-                'success': True,
-                'requiresTwoFactor': True,
-                'setupRequired': bool(setup_payload),
-                'message': 'Введите код из приложения-аутентификатора.',
-                'user': {'email': user.email, 'role': user.role, 'fullName': user.full_name},
-                'twoFactorSetup': setup_payload,
-            })
 
         _sync_session_user(user)
         _security_event('login_success', user_id=user.id, user_email=_mask_email(user.email), role=user.role)
