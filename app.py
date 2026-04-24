@@ -3,12 +3,24 @@ Flask приложение для системы заявок на видеос�
 Программа "Доброе утро"
 """
 
-from flask import Flask, render_template, request, jsonify, session, redirect, url_for, send_file
+from flask import (
+    Flask,
+    render_template,
+    request,
+    jsonify,
+    session,
+    redirect,
+    url_for,
+    send_file,
+    has_request_context,
+    Response,
+)
 from flask_bcrypt import Bcrypt
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from werkzeug.middleware.proxy_fix import ProxyFix
 from datetime import datetime, timedelta
+import logging
 import os
 import json
 import secrets
@@ -24,6 +36,7 @@ import tempfile
 from flask import after_this_request
 from datetime import date, datetime
 from sqlalchemy import inspect, text
+import pyotp
 
 # Загрузка переменных окружения из .env
 load_dotenv()
@@ -32,6 +45,28 @@ load_dotenv()
 # Никаких жестко зашитых ключей в коде.
 
 app = Flask(__name__)
+
+
+def _env_flag(name: str, default: bool = False) -> bool:
+    raw = os.environ.get(name)
+    if raw is None:
+        return default
+    return str(raw).strip().lower() in ('1', 'true', 'yes', 'on')
+
+
+def _is_railway_environment() -> bool:
+    return bool(
+        (os.environ.get('RAILWAY_ENVIRONMENT') or '').strip()
+        or (os.environ.get('RAILWAY_PUBLIC_DOMAIN') or '').strip()
+        or (os.environ.get('RAILWAY_PROJECT_ID') or '').strip()
+    )
+
+
+def _is_local_development() -> bool:
+    return (
+        os.environ.get('FLASK_ENV') == 'development'
+        or os.environ.get('FLASK_DEBUG') == '1'
+    )
 
 
 def _resolve_database_url() -> str:
@@ -64,13 +99,17 @@ app.config['SQLALCHEMY_DATABASE_URI'] = database_url
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SESSION_COOKIE_HTTPONLY'] = True
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
-app.config['SESSION_COOKIE_SECURE'] = os.environ.get('SESSION_COOKIE_SECURE', '0') == '1'
+app.config['SESSION_COOKIE_SECURE'] = _env_flag(
+    'SESSION_COOKIE_SECURE',
+    default=_is_railway_environment() and not _is_local_development(),
+)
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(
     days=int(os.environ.get('SESSION_LIFETIME_DAYS', '30'))
 )
 app.config['SESSION_REFRESH_EACH_REQUEST'] = True
 app.config['RATELIMIT_STORAGE_URI'] = os.environ.get('RATELIMIT_STORAGE_URI', 'memory://')
 app.config['RATELIMIT_HEADERS_ENABLED'] = True
+app.config['PREFERRED_URL_SCHEME'] = 'https'
 # Защита от перегрузки большим JSON (заявки — текст, не вложения)
 app.config['MAX_CONTENT_LENGTH'] = int(
     os.environ.get('MAX_CONTENT_LENGTH', str(5 * 1024 * 1024))
@@ -102,9 +141,54 @@ limiter = Limiter(
     default_limits=[],
 )
 
+security_logger = logging.getLogger('shooting_requests.security')
+security_logger.setLevel(logging.INFO)
+
+
+def _client_ip_best() -> str:
+    if not has_request_context():
+        return ''
+    forwarded_for = (request.headers.get('X-Forwarded-For') or '').split(',')[0].strip()
+    real_ip = (request.headers.get('X-Real-IP') or '').strip()
+    cf_ip = (request.headers.get('CF-Connecting-IP') or '').strip()
+    return cf_ip or real_ip or forwarded_for or get_remote_address() or ''
+
+
+def _mask_email(email: str) -> str:
+    value = (email or '').strip().lower()
+    if not value or '@' not in value:
+        return value
+    local, _, domain = value.partition('@')
+    if len(local) <= 2:
+        return f'{local[:1]}***@{domain}'
+    return f'{local[:2]}***@{domain}'
+
+
+def _security_event(event_type: str, level: str = 'info', **extra):
+    payload = {
+        'ts': datetime.utcnow().isoformat(timespec='seconds') + 'Z',
+        'event': event_type,
+    }
+    if has_request_context():
+        payload.update({
+            'ip': _client_ip_best(),
+            'method': request.method,
+            'path': request.path,
+        })
+    for key, value in extra.items():
+        if value is not None and value != '':
+            payload[key] = value
+    getattr(security_logger, level, security_logger.info)(
+        json.dumps(payload, ensure_ascii=False, default=str)
+    )
+
+TRUST_PROXY_ENABLED = _env_flag('TRUST_PROXY', default=_is_railway_environment())
+ENABLE_HSTS = _env_flag('HSTS', default=_is_railway_environment() and not _is_local_development())
+# Закрыть сайт от индексации поисковиками (robots.txt + meta + заголовок). ALLOW_SEARCH_INDEXING=1 — отключить блок.
+BLOCK_SEARCH_INDEXING = not _env_flag('ALLOW_SEARCH_INDEXING', default=False)
+
 # За балансировщиком (Railway, Render и т.д.): корректные схема/клиент для rate limit и куков Secure.
-# Включайте в окружении: TRUST_PROXY=1
-if str(os.environ.get('TRUST_PROXY', '')).strip().lower() in ('1', 'true', 'yes', 'on'):
+if TRUST_PROXY_ENABLED:
     app.wsgi_app = ProxyFix(
         app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_port=0, x_prefix=1
     )
@@ -122,6 +206,14 @@ EMAIL_RECIPIENT_PRODUCER = (
     os.environ.get('EMAIL_RECIPIENT_PRODUCER')
     or DEFAULT_EMAIL_RECIPIENT
 ).strip()
+
+if _is_railway_environment():
+    if not app.config['SESSION_COOKIE_SECURE']:
+        _security_event('startup_warning', level='warning', warning='SESSION_COOKIE_SECURE disabled on Railway')
+    if not TRUST_PROXY_ENABLED:
+        _security_event('startup_warning', level='warning', warning='TRUST_PROXY disabled on Railway')
+    if not ENABLE_HSTS:
+        _security_event('startup_warning', level='warning', warning='HSTS disabled on Railway')
 
 APPROVAL_PENDING = 'pending'
 APPROVAL_APPROVED = 'approved'
@@ -186,13 +278,6 @@ def _registration_name_ok(first: str, last: str) -> tuple[bool, str]:
 
 def _role_redirect_url(role: str) -> str:
     return url_for('dashboard') if role == 'admin' else url_for('forms')
-
-
-def _is_local_development() -> bool:
-    return (
-        os.environ.get('FLASK_ENV') == 'development'
-        or os.environ.get('FLASK_DEBUG') == '1'
-    )
 
 
 def _refresh_registration_captcha(exclude_prompt: Optional[str] = None) -> str:
@@ -264,7 +349,10 @@ def _csrf_token_from_request() -> str:
 
 @app.context_processor
 def inject_security_context():
-    return {'csrf_token': _ensure_csrf_token()}
+    return {
+        'csrf_token': _ensure_csrf_token(),
+        'block_search_indexing': BLOCK_SEARCH_INDEXING,
+    }
 
 
 @app.before_request
@@ -278,6 +366,12 @@ def protect_against_csrf():
     session_token = session.get('csrf_token')
     request_token = _csrf_token_from_request()
     if not session_token or not request_token or not secrets.compare_digest(session_token, request_token):
+        _security_event(
+            'csrf_failed',
+            level='warning',
+            user_id=session.get('user_id'),
+            user_email=_mask_email(session.get('user_email', '')),
+        )
         message = {'success': False, 'message': 'Сессия устарела. Обновите страницу и повторите действие.'}
         return jsonify(message), 400
 
@@ -286,6 +380,13 @@ def protect_against_csrf():
 
 @app.errorhandler(429)
 def handle_rate_limit_error(error):
+    _security_event(
+        'rate_limit_hit',
+        level='warning',
+        limit=str(getattr(error, 'description', '') or ''),
+        user_id=session.get('user_id'),
+        user_email=_mask_email(session.get('user_email', '')),
+    )
     response = {
         'success': False,
         'message': 'Слишком много попыток. Подождите немного и повторите действие.',
@@ -313,8 +414,10 @@ def _apply_security_headers(response):
     response.headers['X-Frame-Options'] = 'SAMEORIGIN'
     response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
     response.headers['Permissions-Policy'] = 'camera=(), microphone=(), geolocation=()'
-    if str(os.environ.get('HSTS', '0')).strip() == '1' and _is_https_request():
-        response.headers['Strict-Transport-Security'] = 'max-age=15552000; includeSubDomains'
+    if BLOCK_SEARCH_INDEXING:
+        response.headers['X-Robots-Tag'] = 'noindex, nofollow, noarchive'
+    if ENABLE_HSTS and _is_https_request():
+        response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
     return response
 
 
@@ -326,7 +429,40 @@ def _sync_session_user(user: Optional[User]):
     session['user_email'] = user.email
     session['user_role'] = user.role or 'correspondent'
     session['user_full_name'] = user.full_name or ''
+    if user.role != 'admin':
+        session.pop('admin_2fa_verified', None)
+        session.pop('admin_2fa_verified_at', None)
+    _clear_pending_admin_2fa()
     _ensure_csrf_token()
+
+
+def _clear_pending_admin_2fa():
+    for key in (
+        'pending_admin_2fa_user_id',
+        'pending_admin_2fa_setup_secret',
+        'pending_admin_2fa_started_at',
+    ):
+        session.pop(key, None)
+
+
+def _begin_pending_admin_2fa(user: User, setup_secret: str = ''):
+    _clear_session()
+    session.permanent = True
+    session['pending_admin_2fa_user_id'] = user.id
+    session['pending_admin_2fa_started_at'] = datetime.utcnow().isoformat()
+    if setup_secret:
+        session['pending_admin_2fa_setup_secret'] = setup_secret
+    _ensure_csrf_token()
+
+
+def _admin_2fa_verified() -> bool:
+    return session.get('admin_2fa_verified') == '1'
+
+
+def _mark_admin_2fa_verified(user: User):
+    _sync_session_user(user)
+    session['admin_2fa_verified'] = '1'
+    session['admin_2fa_verified_at'] = datetime.utcnow().isoformat()
 
 
 def _clear_session():
@@ -426,6 +562,9 @@ def _get_active_user() -> Optional[User]:
         if user is None or 'user_id' in session:
             _clear_session()
         return None
+    if user.role == 'admin' and not _admin_2fa_verified():
+        _clear_session()
+        return None
     _sync_session_user(user)
     return user
 
@@ -447,6 +586,17 @@ def _get_session_user_role() -> str:
     if not user:
         return 'correspondent'
     return user.role or 'correspondent'
+
+
+def _build_admin_totp_setup_payload(user: User, secret: str) -> dict:
+    issuer_name = 'Dobroe Utro'
+    provisioning_uri = pyotp.TOTP(secret).provisioning_uri(name=user.email, issuer_name=issuer_name)
+    return {
+        'issuer': issuer_name,
+        'accountName': user.email,
+        'sharedSecret': secret,
+        'provisioningUri': provisioning_uri,
+    }
 
 
 def _application_form_payload(application: Application) -> dict:
@@ -486,6 +636,16 @@ with app.app_context():
     if 'approved_by_email' not in user_columns:
         db.session.execute(text("ALTER TABLE users ADD COLUMN approved_by_email VARCHAR(255)"))
         db.session.commit()
+    if 'totp_secret' not in user_columns:
+        db.session.execute(text("ALTER TABLE users ADD COLUMN totp_secret VARCHAR(64)"))
+        db.session.commit()
+    if 'totp_enabled' not in user_columns:
+        default_bool = 'FALSE' if db.engine.dialect.name == 'postgresql' else '0'
+        db.session.execute(text(f"ALTER TABLE users ADD COLUMN totp_enabled BOOLEAN DEFAULT {default_bool}"))
+        db.session.commit()
+    if 'totp_last_verified_at' not in user_columns:
+        db.session.execute(text(f"ALTER TABLE users ADD COLUMN totp_last_verified_at {approved_at_column_type}"))
+        db.session.commit()
     db.session.execute(text("UPDATE users SET role = 'correspondent' WHERE role IS NULL OR role = ''"))
     db.session.execute(text(
         "UPDATE users SET approval_status = 'approved' "
@@ -495,11 +655,28 @@ with app.app_context():
         "UPDATE users SET approved_at = created_at "
         "WHERE approval_status = 'approved' AND approved_at IS NULL"
     ))
+    totp_disabled_value = 'FALSE' if db.engine.dialect.name == 'postgresql' else '0'
+    db.session.execute(text(
+        f"UPDATE users SET totp_enabled = {totp_disabled_value} WHERE totp_enabled IS NULL"
+    ))
     db.session.commit()
     _ensure_admin_user()
 
 
 # ==================== РОУТЫ ====================
+
+@app.route('/robots.txt')
+def robots_txt():
+    """
+    Подсказка поисковым роботам: не обходить сайт (при BLOCK_SEARCH_INDEXING).
+    Не является гарантией: вредоносные боты файл игнорируют.
+    """
+    if BLOCK_SEARCH_INDEXING:
+        body = 'User-agent: *\nDisallow: /\n'
+    else:
+        body = 'User-agent: *\nAllow: /\n'
+    return Response(body, mimetype='text/plain; charset=utf-8')
+
 
 @app.route('/')
 def index():
@@ -549,24 +726,118 @@ def login():
     
     if _verify_and_upgrade_password(user, password):
         if user.approval_status == APPROVAL_PENDING:
+            _security_event('login_failed', level='warning', attempted_email=_mask_email(email), reason='pending_approval')
             return jsonify({
                 'success': False,
                 'message': 'Ваш аккаунт еще не одобрен администратором.'
             }), 403
         if user.approval_status == APPROVAL_REJECTED:
+            _security_event('login_failed', level='warning', attempted_email=_mask_email(email), reason='rejected_account')
             return jsonify({
                 'success': False,
                 'message': 'Доступ для этого аккаунта отклонен. Зарегистрируйтесь повторно или обратитесь к администратору.'
             }), 403
 
+        if _is_admin(user):
+            setup_secret = ''
+            setup_payload = None
+            if user.totp_enabled and user.totp_secret:
+                _begin_pending_admin_2fa(user)
+            else:
+                setup_secret = pyotp.random_base32()
+                _begin_pending_admin_2fa(user, setup_secret=setup_secret)
+                setup_payload = _build_admin_totp_setup_payload(user, setup_secret)
+
+            _security_event(
+                'admin_2fa_required',
+                user_id=user.id,
+                user_email=_mask_email(user.email),
+                setup_required=not bool(user.totp_enabled and user.totp_secret),
+            )
+            return jsonify({
+                'success': True,
+                'requiresTwoFactor': True,
+                'setupRequired': bool(setup_payload),
+                'message': 'Введите код из приложения-аутентификатора.',
+                'user': {'email': user.email, 'role': user.role, 'fullName': user.full_name},
+                'twoFactorSetup': setup_payload,
+            })
+
         _sync_session_user(user)
+        _security_event('login_success', user_id=user.id, user_email=_mask_email(user.email), role=user.role)
         return jsonify({
             'success': True,
             'user': {'email': user.email, 'role': user.role, 'fullName': user.full_name},
             'redirectUrl': _role_redirect_url(user.role or 'correspondent')
         })
     
+    _security_event('login_failed', level='warning', attempted_email=_mask_email(email), reason='bad_credentials')
     return jsonify({'success': False, 'message': 'Неверный email или пароль'}), 401
+
+
+@app.route('/api/admin/2fa/verify', methods=['POST'])
+@limiter.limit("10 per 10 minutes")
+def verify_admin_two_factor():
+    data = request.get_json() or {}
+    code = re.sub(r'\s+', '', str(data.get('code') or ''))
+    pending_user_id = session.get('pending_admin_2fa_user_id')
+    if not pending_user_id:
+        return jsonify({
+            'success': False,
+            'message': 'Сессия подтверждения истекла. Войдите снова.',
+        }), 400
+
+    user = db.session.get(User, pending_user_id)
+    if not user or not _is_admin(user) or user.approval_status != APPROVAL_APPROVED:
+        _clear_pending_admin_2fa()
+        return jsonify({
+            'success': False,
+            'message': 'Подтверждение недоступно. Войдите снова.',
+        }), 403
+
+    if not re.fullmatch(r'\d{6}', code):
+        return jsonify({
+            'success': False,
+            'message': 'Введите 6-значный код из приложения-аутентификатора.',
+        }), 400
+
+    secret = (user.totp_secret or '').strip()
+    setup_secret = (session.get('pending_admin_2fa_setup_secret') or '').strip()
+    if not (user.totp_enabled and secret):
+        secret = setup_secret
+    if not secret:
+        _clear_pending_admin_2fa()
+        return jsonify({
+            'success': False,
+            'message': 'Нет секрета для проверки. Войдите снова.',
+        }), 400
+
+    totp = pyotp.TOTP(secret)
+    if not totp.verify(code, valid_window=1):
+        _security_event('admin_2fa_failed', level='warning', user_id=user.id, user_email=_mask_email(user.email))
+        response = {
+            'success': False,
+            'message': 'Неверный код. Проверьте время в приложении-аутентификаторе и повторите.',
+        }
+        if setup_secret:
+            response['setupRequired'] = True
+            response['twoFactorSetup'] = _build_admin_totp_setup_payload(user, setup_secret)
+        return jsonify(response), 401
+
+    if not user.totp_enabled or not user.totp_secret:
+        user.totp_secret = secret
+        user.totp_enabled = True
+    user.totp_last_verified_at = datetime.utcnow()
+    db.session.commit()
+
+    _mark_admin_2fa_verified(user)
+    _security_event('admin_2fa_success', user_id=user.id, user_email=_mask_email(user.email))
+    _security_event('login_success', user_id=user.id, user_email=_mask_email(user.email), role=user.role)
+    return jsonify({
+        'success': True,
+        'user': {'email': user.email, 'role': user.role, 'fullName': user.full_name},
+        'redirectUrl': _role_redirect_url(user.role or 'correspondent')
+    })
 
 
 @app.route('/register', methods=['POST'])
@@ -591,7 +862,7 @@ def register():
             part_a, part_b = full_name.split(None, 1)
             if part_a and part_b:
                 first_name, last_name = part_a.strip(), part_b.strip()
-
+    
     if not email or not password:
         return jsonify({'success': False, 'message': 'Заполните все поля'}), 400
     if not first_name or not last_name:
@@ -613,7 +884,7 @@ def register():
     
     if password != password_confirm:
         return jsonify({'success': False, 'message': 'Пароли не совпадают'}), 400
-
+    
     if not _check_registration_captcha(captcha_answer):
         return jsonify({
             'success': False,
@@ -660,6 +931,7 @@ def register():
 @app.route('/logout', methods=['POST'])
 def logout():
     """Выход из системы"""
+    _clear_pending_admin_2fa()
     session.clear()
     return jsonify({'success': True})
 
@@ -737,6 +1009,7 @@ def get_my_applications():
     })
 
 @app.route('/api/applications', methods=['GET'])
+@limiter.limit('120 per hour', key_func=_rate_limit_key_user)
 def get_applications():
     """Получить все заявки с фильтрами"""
     user = _get_active_user()
@@ -876,11 +1149,12 @@ def create_application():
             # Генерация Word файла
             word_file = create_word_document(data, application.id)
             if word_file:
+                producer_filename = _build_producer_filename(data)
                 email_result = send_email_with_attachment(
                     _email_recipient_for_contractor(data.get('contractor')),
                     f"Заявка продюсерам: {data.get('storyTitle', '')}",
                     word_file,
-                    f"Заявка_продюсерам_{application.id}.docx",
+                    producer_filename,
                     sender_display_email=user.email,
                     sender_display_name=user.full_name
                 )
@@ -921,7 +1195,7 @@ def get_application(app_id):
 
 
 @app.route('/api/applications/<int:app_id>/status', methods=['PUT'])
-@limiter.limit('200 per hour', key_func=_rate_limit_key_user)
+@limiter.limit('60 per hour', key_func=_rate_limit_key_user)
 def update_application_status(app_id):
     """Изменить статус заявки"""
     user = _get_active_user()
@@ -951,6 +1225,13 @@ def update_application_status(app_id):
     
     application.updated_at = datetime.now()
     db.session.commit()
+    _security_event(
+        'application_status_changed',
+        user_id=user.id,
+        user_email=_mask_email(user.email),
+        application_id=application.id,
+        status=status,
+    )
     
     return jsonify({
         'success': True,
@@ -959,6 +1240,7 @@ def update_application_status(app_id):
 
 
 @app.route('/api/admin/pending-users', methods=['GET'])
+@limiter.limit('60 per hour', key_func=_rate_limit_key_user)
 def get_pending_users():
     """Получить список ожидающих одобрения пользователей"""
     user = _get_active_user()
@@ -975,6 +1257,7 @@ def get_pending_users():
 
 
 @app.route('/api/admin/users', methods=['GET'])
+@limiter.limit('60 per hour', key_func=_rate_limit_key_user)
 def get_all_users():
     """Получить список всех зарегистрированных пользователей"""
     admin_user = _get_active_user()
@@ -991,7 +1274,7 @@ def get_all_users():
 
 
 @app.route('/api/admin/users/<int:user_id>/approve', methods=['POST'])
-@limiter.limit('120 per hour', key_func=_rate_limit_key_user)
+@limiter.limit('30 per hour', key_func=_rate_limit_key_user)
 def approve_user(user_id):
     """Одобрить доступ пользователя"""
     admin_user = _get_active_user()
@@ -1007,12 +1290,19 @@ def approve_user(user_id):
     if user.role not in ['correspondent', 'admin']:
         user.role = 'correspondent'
     db.session.commit()
+    _security_event(
+        'user_approved',
+        user_id=admin_user.id,
+        user_email=_mask_email(admin_user.email),
+        target_user_id=user.id,
+        target_user_email=_mask_email(user.email),
+    )
 
     return jsonify({'success': True, 'user': user.to_dict()})
 
 
 @app.route('/api/admin/users/<int:user_id>/reject', methods=['POST'])
-@limiter.limit('120 per hour', key_func=_rate_limit_key_user)
+@limiter.limit('30 per hour', key_func=_rate_limit_key_user)
 def reject_user(user_id):
     """Отклонить доступ пользователя"""
     admin_user = _get_active_user()
@@ -1032,12 +1322,19 @@ def reject_user(user_id):
     user.approved_by_email = None
     user.role = 'correspondent'
     db.session.commit()
+    _security_event(
+        'user_rejected',
+        user_id=admin_user.id,
+        user_email=_mask_email(admin_user.email),
+        target_user_id=user.id,
+        target_user_email=_mask_email(user.email),
+    )
 
     return jsonify({'success': True, 'user': user.to_dict()})
 
 
 @app.route('/api/admin/users/<int:user_id>/delete', methods=['POST'])
-@limiter.limit('60 per hour', key_func=_rate_limit_key_user)
+@limiter.limit('15 per hour', key_func=_rate_limit_key_user)
 def delete_user(user_id: int):
     """Удалить учётную запись (кроме администраторов и самого себя). Заявки остаются в системе без привязки к пользователю."""
     admin_user = _get_active_user()
@@ -1059,6 +1356,13 @@ def delete_user(user_id: int):
         app_row.user_id = None
     db.session.delete(user)
     db.session.commit()
+    _security_event(
+        'user_deleted',
+        user_id=admin_user.id,
+        user_email=_mask_email(admin_user.email),
+        target_user_id=user.id,
+        target_user_email=_mask_email(user.email),
+    )
 
     return jsonify({'success': True})
 
@@ -1086,13 +1390,14 @@ def export_application_doc(app_id):
                 pass
             return resp
 
+        producer_dl_filename = _build_producer_filename(form_data)
         response = send_file(
             word_file,
             mimetype='application/vnd.openxmlformats-officedocument.wordprocessingml.document',
             as_attachment=True,
-            download_name=f"Заявка_{application.id}.docx"
+            download_name=producer_dl_filename
         )
-        return _set_download_headers(response, f"Заявка_{application.id}.docx")
+        return _set_download_headers(response, producer_dl_filename)
     
     return jsonify({'error': 'Failed to generate document'}), 500
 
@@ -1123,7 +1428,8 @@ def export_doc_from_form():
             pass
         return resp
 
-    filename = f"Заявка_продюсерам_{_filename_date_part(data.get('shootingDate'))}.docx"
+    data['senderFullName'] = (session.get('user_full_name') or '').strip()
+    filename = _build_producer_filename(data)
     response = send_file(
         word_file,
         mimetype='application/vnd.openxmlformats-officedocument.wordprocessingml.document',
@@ -1171,6 +1477,7 @@ def export_application_excel(app_id):
 
 
 @app.route('/api/statistics', methods=['GET'])
+@limiter.limit('30 per hour', key_func=_rate_limit_key_user)
 def get_statistics():
     """Получить статистику по заявкам"""
     user = _get_active_user()
@@ -1265,6 +1572,14 @@ def _filename_date_part(value) -> str:
     if parsed:
         return parsed.strftime("%d.%m.%Y")
     return _safe_filename(str(value or "")) or "Без_даты"
+
+
+def _build_producer_filename(form_data: dict) -> str:
+    sender_surname = _extract_sender_surname(form_data.get('senderFullName', ''))
+    surname_part = sender_surname or _extract_correspondent_surname(form_data.get('correspondent', ''))
+    story = _safe_filename(str(form_data.get('storyTitle') or '').strip())[:40] or 'Заявка'
+    date_part = _filename_date_part(form_data.get('broadcastDate') or form_data.get('applicationDate'))
+    return f"Продюсерам_{surname_part}_{story}_{date_part}.docx"
 
 
 def _build_excel_filename(form_data: dict) -> str:

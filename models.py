@@ -21,6 +21,9 @@ class User(db.Model):
     approval_status = db.Column(db.String(20), nullable=False, default='pending')
     approved_at = db.Column(db.DateTime, nullable=True)
     approved_by_email = db.Column(db.String(255), nullable=True)
+    totp_secret = db.Column(db.String(64), nullable=True)
+    totp_enabled = db.Column(db.Boolean, nullable=False, default=False)
+    totp_last_verified_at = db.Column(db.DateTime, nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.now)
     
     def to_dict(self):
@@ -32,6 +35,8 @@ class User(db.Model):
             'approvalStatus': self.approval_status,
             'approvedAt': self.approved_at.isoformat() if self.approved_at else None,
             'approvedByEmail': self.approved_by_email,
+            'totpEnabled': bool(self.totp_enabled),
+            'totpLastVerifiedAt': self.totp_last_verified_at.isoformat() if self.totp_last_verified_at else None,
             'created_at': self.created_at.isoformat() if self.created_at else None
         }
 
