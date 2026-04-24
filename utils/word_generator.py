@@ -85,14 +85,6 @@ def create_word_document(form_data, application_id):
         run_value.font.name = 'Arial'
         run_value.font.size = Pt(11)
     
-    # Номер заявки
-    doc.add_paragraph()
-    p = doc.add_paragraph()
-    run = p.add_run(f'Номер заявки: {str(application_id)[:8]}')
-    run.font.name = 'Arial'
-    run.font.size = Pt(10)
-    run.font.italic = True
-    
     # Сохранение во временный файл
     temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.docx')
     doc.save(temp_file.name)
