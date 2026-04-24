@@ -594,6 +594,7 @@ function _resetTtkMainKitMode() {
   });
 
   if (table) table.classList.remove('without-main-kit');
+  _syncTtkSonyLensOption();
 }
 
 function _initTtkMainKitToggle() {
@@ -602,6 +603,19 @@ function _initTtkMainKitToggle() {
 
   toggle.addEventListener('change', _syncTtkMainKitMode);
   _syncTtkMainKitMode();
+}
+
+function _syncTtkSonyLensOption() {
+  const fxCameraSelect = document.querySelector('#shooting-request-form-ttk select[name="add-qty-12"]');
+  const sonyLensSelect = document.querySelector('#shooting-request-form-ttk select[name="add-qty-13"]');
+  if (!fxCameraSelect || !sonyLensSelect) return;
+
+  const fxSelected = (parseInt(fxCameraSelect.value, 10) || 0) > 0;
+  sonyLensSelect.disabled = !fxSelected;
+  sonyLensSelect.title = fxSelected ? '' : 'Сначала выберите Видеокамера SONY FX 3';
+  if (!fxSelected) {
+    sonyLensSelect.value = '0';
+  }
 }
 
 function collectEquipment(formId) {
@@ -931,6 +945,7 @@ document.addEventListener('DOMContentLoaded', () => {
   _initTtkMainKitToggle();
   _initCustomDatalists();
   _initProfileAutofill();
+  _syncTtkSonyLensOption();
 
   const figaroForm = document.getElementById('shooting-request-form-figaro');
   const ttkForm = document.getElementById('shooting-request-form-ttk');
@@ -985,6 +1000,11 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   if (ttkForm) {
+    const fxCameraSelect = ttkForm.querySelector('select[name="add-qty-12"]');
+    if (fxCameraSelect) {
+      fxCameraSelect.addEventListener('change', _syncTtkSonyLensOption);
+    }
+
     ttkForm.addEventListener('submit', async (e) => {
       e.preventDefault();
       if (!_validateRequired('#shooting-request-form-ttk')) {
@@ -1039,6 +1059,7 @@ document.addEventListener('DOMContentLoaded', () => {
       setTimeout(() => {
         _resetTtkMainKitMode();
         _applyProfileDefaults();
+        _syncTtkSonyLensOption();
       }, 0);
     });
   }
