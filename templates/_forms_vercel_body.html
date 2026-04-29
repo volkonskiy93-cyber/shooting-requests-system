@@ -600,7 +600,8 @@
                 <div>Для продюсеров</div>
             </div>
             
-            <form id="shooting-request-form-producer">
+            <!-- Не <form>: у браузера не должно быть неявной отправки (Enter / автозаполнение). -->
+            <div id="shooting-request-form-producer" class="shooting-request-producer-root">
                 <table class="form-table">
                     <tr>
                         <td class="label required">Название сюжета:</td>
@@ -662,9 +663,9 @@
                 <div class="form-actions">
                     <button type="button" class="submit-btn" id="producer-submit-application">Отправить заявку</button>
                     <button type="button" class="doc-btn" onclick="exportToDOC('producer')" title="Выгрузит заявку в формате Word (DOCX)">Выгрузить в Word</button>
-                    <button type="reset" class="reset-btn">Очистить форму</button>
+                    <button type="button" class="reset-btn" id="producer-reset-form">Очистить форму</button>
                 </div>
-            </form>
+            </div>
         </div>
     </div>
 

@@ -146,6 +146,22 @@ function _preferredCorrespondentContacts() {
   return profileEmail || _storageGet(_correspondentContactsStorageKey);
 }
 
+function _resetProducerFormFields() {
+  const root = document.getElementById('shooting-request-form-producer');
+  if (!root) return;
+  root.querySelectorAll('input, textarea, select').forEach((el) => {
+    if (el._flatpickr) {
+      el._flatpickr.clear();
+      return;
+    }
+    if (el.type === 'checkbox' || el.type === 'radio') {
+      el.checked = false;
+      return;
+    }
+    el.value = '';
+  });
+}
+
 function _applyProfileDefaults() {
   const correspondentName = _preferredCorrespondentName();
   ['figaro-correspondent', 'ttk-correspondent', 'producer-correspondent'].forEach((id) => {
@@ -1065,15 +1081,12 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   if (producerForm) {
-    // Не используем type="submit": Enter в полях (в т.ч. у flatpickr altInput) иначе
-    // неявно отправляет форму. Отправка только по кнопке «Отправить заявку».
-    producerForm.addEventListener('submit', (e) => {
-      e.preventDefault();
-    });
-
+    // Контейнер — не HTML-form: исключаем любую неявную отправку браузером.
     const producerSubmitBtn = document.getElementById('producer-submit-application');
     if (producerSubmitBtn) {
-      producerSubmitBtn.addEventListener('click', async () => {
+      producerSubmitBtn.addEventListener('click', async (e) => {
+        e.preventDefault();
+        e.stopPropagation();
         if (!_validateRequired('#shooting-request-form-producer')) {
           alert('Пожалуйста, заполните все обязательные поля (отмечены *).');
           return;
@@ -1096,7 +1109,7 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
           showSendingSplash();
           const result = await _postApplication(payload);
-          producerForm.reset();
+          _resetProducerFormFields();
           goBack();
           showSuccessModal(_submissionSuccessMessage(result, 'Заявка сохранена и успешно отправлена.'));
         } catch (err) {
@@ -1106,7 +1119,8 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     }
 
-    producerForm.addEventListener('reset', () => {
+    document.getElementById('producer-reset-form')?.addEventListener('click', () => {
+      _resetProducerFormFields();
       setTimeout(_applyProfileDefaults, 0);
     });
   }
