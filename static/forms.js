@@ -1065,38 +1065,46 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   if (producerForm) {
-    producerForm.addEventListener('submit', async (e) => {
+    // Не используем type="submit": Enter в полях (в т.ч. у flatpickr altInput) иначе
+    // неявно отправляет форму. Отправка только по кнопке «Отправить заявку».
+    producerForm.addEventListener('submit', (e) => {
       e.preventDefault();
-      if (!_validateRequired('#shooting-request-form-producer')) {
-        alert('Пожалуйста, заполните все обязательные поля (отмечены *).');
-        return;
-      }
-
-      const payload = {
-        contractor: 'producer',
-        storyTitle: document.getElementById('producer-story-title')?.value || '',
-        applicationDate: _getTodayIso(),
-        broadcastDate: document.getElementById('producer-broadcast-date')?.value || null,
-        summary: document.getElementById('producer-summary')?.value || '',
-        planningDevelopment: document.getElementById('producer-planning-development')?.value || '',
-        heroes: document.getElementById('producer-heroes')?.value || '',
-        shootingDate: document.getElementById('producer-shooting-date')?.value || '',
-        correspondent: _selectedText(document.getElementById('producer-correspondent')),
-        correspondentContacts: document.getElementById('producer-correspondent-contacts')?.value || '',
-        director: _selectedText(document.getElementById('producer-director')),
-      };
-
-      try {
-        showSendingSplash();
-        const result = await _postApplication(payload);
-        producerForm.reset();
-        goBack();
-        showSuccessModal(_submissionSuccessMessage(result, 'Заявка сохранена и успешно отправлена.'));
-      } catch (err) {
-        hideSendingSplash();
-        alert(`Ошибка отправки: ${err.message}`);
-      }
     });
+
+    const producerSubmitBtn = document.getElementById('producer-submit-application');
+    if (producerSubmitBtn) {
+      producerSubmitBtn.addEventListener('click', async () => {
+        if (!_validateRequired('#shooting-request-form-producer')) {
+          alert('Пожалуйста, заполните все обязательные поля (отмечены *).');
+          return;
+        }
+
+        const payload = {
+          contractor: 'producer',
+          storyTitle: document.getElementById('producer-story-title')?.value || '',
+          applicationDate: _getTodayIso(),
+          broadcastDate: document.getElementById('producer-broadcast-date')?.value || null,
+          summary: document.getElementById('producer-summary')?.value || '',
+          planningDevelopment: document.getElementById('producer-planning-development')?.value || '',
+          heroes: document.getElementById('producer-heroes')?.value || '',
+          shootingDate: document.getElementById('producer-shooting-date')?.value || '',
+          correspondent: _selectedText(document.getElementById('producer-correspondent')),
+          correspondentContacts: document.getElementById('producer-correspondent-contacts')?.value || '',
+          director: _selectedText(document.getElementById('producer-director')),
+        };
+
+        try {
+          showSendingSplash();
+          const result = await _postApplication(payload);
+          producerForm.reset();
+          goBack();
+          showSuccessModal(_submissionSuccessMessage(result, 'Заявка сохранена и успешно отправлена.'));
+        } catch (err) {
+          hideSendingSplash();
+          alert(`Ошибка отправки: ${err.message}`);
+        }
+      });
+    }
 
     producerForm.addEventListener('reset', () => {
       setTimeout(_applyProfileDefaults, 0);
