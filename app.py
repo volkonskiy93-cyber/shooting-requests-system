@@ -1540,8 +1540,10 @@ def _subject_correspondent_surname(value: str) -> str:
     if not value:
         return "Без корреспондента"
 
-    first_part = value.split()[0].strip(".,;:()[]{}")
-    return first_part or "Без корреспондента"
+    parts = [part.strip(".,;:()[]{}") for part in value.split() if part.strip(".,;:()[]{}")]
+    if not parts:
+        return "Без корреспондента"
+    return parts[-1] or "Без корреспондента"
 
 
 def _subject_shooting_date(value) -> str:
@@ -1554,7 +1556,8 @@ def _subject_shooting_date(value) -> str:
 def _build_shooting_email_subject(form_data: dict) -> str:
     contractor_part = 'ТТК' if form_data.get('contractor') == 'ttk' else 'ТМК'
     shooting_date_part = _subject_shooting_date(form_data.get('shootingDate'))
-    correspondent_surname = _subject_correspondent_surname(form_data.get('correspondent', ''))
+    sender_surname = _extract_sender_surname(form_data.get('senderFullName', ''))
+    correspondent_surname = sender_surname or _subject_correspondent_surname(form_data.get('correspondent', ''))
     return f"Заявка {contractor_part} - {shooting_date_part} - {correspondent_surname}"
 
 
