@@ -1555,7 +1555,7 @@ def _build_shooting_email_subject(form_data: dict) -> str:
     contractor_part = 'ТТК' if form_data.get('contractor') == 'ttk' else 'ТМК'
     shooting_date_part = _subject_shooting_date(form_data.get('shootingDate'))
     correspondent_surname = _subject_correspondent_surname(form_data.get('correspondent', ''))
-    return f"{contractor_part} - {shooting_date_part} - {correspondent_surname}"
+    return f"Заявка {contractor_part} - {shooting_date_part} - {correspondent_surname}"
 
 
 def _filename_date_part(value) -> str:
