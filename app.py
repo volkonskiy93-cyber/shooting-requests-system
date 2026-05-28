@@ -1100,7 +1100,7 @@ def create_application():
                 excel_filename = _build_excel_filename(data)
                 email_result = send_email_with_attachment(
                     _email_recipient_for_contractor(data.get('contractor')),
-                    f"Заявка {'ТМК' if data.get('contractor') == 'figaro' else 'ТТК'}: {data.get('storyTitle', '')}",
+                    _build_shooting_email_subject(data),
                     excel_file,
                     excel_filename,
                     sender_display_email=user.email,
@@ -1533,6 +1533,29 @@ def _extract_sender_surname(value: str) -> str:
     if not parts:
         return ""
     return _safe_filename(parts[-1]) or ""
+
+
+def _subject_correspondent_surname(value: str) -> str:
+    value = (value or "").strip()
+    if not value:
+        return "Без корреспондента"
+
+    first_part = value.split()[0].strip(".,;:()[]{}")
+    return first_part or "Без корреспондента"
+
+
+def _subject_shooting_date(value) -> str:
+    parsed = _parse_date_yyyy_mm_dd(value)
+    if parsed:
+        return parsed.strftime("%d.%m.%Y")
+    return "Без даты"
+
+
+def _build_shooting_email_subject(form_data: dict) -> str:
+    contractor_part = 'ТТК' if form_data.get('contractor') == 'ttk' else 'ТМК'
+    shooting_date_part = _subject_shooting_date(form_data.get('shootingDate'))
+    correspondent_surname = _subject_correspondent_surname(form_data.get('correspondent', ''))
+    return f"{contractor_part} - {shooting_date_part} - {correspondent_surname}"
 
 
 def _filename_date_part(value) -> str:
