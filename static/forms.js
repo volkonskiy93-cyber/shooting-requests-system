@@ -31,6 +31,7 @@ function selectContractor(contractor) {
       // время выезда по умолчанию 09:00-18:00
       if (startTime && !startTime.value) startTime.value = '09:00';
       if (endTime && !endTime.value) endTime.value = '18:00';
+      _applyFigaroEquipmentDefaults();
     } else if (contractor === 'ttk') {
       const appDate = document.getElementById('ttk-application-date');
       const shootDate = document.getElementById('ttk-shooting-date');
@@ -668,6 +669,35 @@ function _syncTtkSonyLensOption() {
   }
 }
 
+function _applyFigaroEquipmentDefaults() {
+  document.querySelectorAll('#shooting-request-form-figaro select.figaro-default-add-qty').forEach((select) => {
+    const minQty = parseInt(select.dataset.minQty || '1', 10);
+    if ((parseInt(select.value, 10) || 0) < minQty) {
+      select.value = String(minQty);
+    }
+  });
+}
+
+function _enforceFigaroEquipmentMinimums(equipment) {
+  const rules = [
+    { pattern: /ПЕТЛЯ/i, min: 1 },
+    { pattern: /Bi-Color/i, min: 1 },
+  ];
+
+  return equipment.map((item) => {
+    const additional = String(item.additional || '');
+    for (const rule of rules) {
+      if (rule.pattern.test(additional)) {
+        const qty = parseInt(item.additionalQuantity, 10) || 0;
+        if (qty < rule.min) {
+          return { ...item, additionalQuantity: rule.min };
+        }
+      }
+    }
+    return item;
+  });
+}
+
 function collectEquipment(formId) {
   const equipment = [];
   const equipmentTable = document.querySelector(`#${formId} .equipment-table tbody`);
@@ -748,6 +778,10 @@ function collectEquipment(formId) {
       });
     }
   });
+
+  if (formId === 'shooting-request-form-figaro') {
+    return _enforceFigaroEquipmentMinimums(equipment);
+  }
   
   return equipment;
 }
@@ -1029,6 +1063,7 @@ document.addEventListener('DOMContentLoaded', () => {
   _initCustomDatalists();
   _initProfileAutofill();
   _syncTtkSonyLensOption();
+  _applyFigaroEquipmentDefaults();
 
   const figaroForm = document.getElementById('shooting-request-form-figaro');
   const ttkForm = document.getElementById('shooting-request-form-ttk');
@@ -1079,7 +1114,10 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     figaroForm.addEventListener('reset', () => {
-      setTimeout(_applyProfileDefaults, 0);
+      setTimeout(() => {
+        _applyProfileDefaults();
+        _applyFigaroEquipmentDefaults();
+      }, 0);
     });
   }
 
