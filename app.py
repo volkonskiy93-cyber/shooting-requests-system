@@ -1041,6 +1041,8 @@ def create_application():
     contractor = str(data.get('contractor') or '').strip().lower()
     if contractor not in ALLOWED_CONTRACTORS:
         return jsonify({'success': False, 'message': 'Некорректный тип заявки'}), 400
+    if contractor == 'regions' and not _is_admin(user):
+        return jsonify({'success': False, 'message': 'Заявки в регионы доступны только администратору'}), 403
     data['contractor'] = contractor
     data['senderFullName'] = user.full_name or ''
 
@@ -1401,6 +1403,8 @@ def export_doc_from_form():
     contractor = str(data.get('contractor') or '').strip().lower()
     if contractor not in {'producer', 'regions'}:
         return jsonify({'error': 'Invalid contractor'}), 400
+    if contractor == 'regions' and not _is_admin(user):
+        return jsonify({'error': 'Заявки в регионы доступны только администратору'}), 403
 
     data['contractor'] = contractor
     if contractor == 'regions':

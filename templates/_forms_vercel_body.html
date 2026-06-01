@@ -29,11 +29,13 @@
                     <button class="select-btn btn-producer">Создать заявку</button>
                 </div>
 
-                <div class="contractor-card producer" onclick="selectContractor('regions')">
+                {% if user_profile.get('role') == 'admin' %}
+                <div class="contractor-card producer" id="regions-contractor-card" onclick="selectContractor('regions')">
                     <h2>Заявка в регионы</h2>
                     <p>Заявка на видеосъемку для региональной координации программы "Доброе утро"</p>
                     <button class="select-btn btn-producer">Создать заявку</button>
                 </div>
+                {% endif %}
             </div>
         </div>
         

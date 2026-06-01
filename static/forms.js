@@ -1,6 +1,15 @@
 // Flask /forms UI logic (Vercel-identical markup + Python backend)
 
+function _isAdminUser() {
+  return (_currentUserProfile().role || '') === 'admin';
+}
+
 function selectContractor(contractor) {
+  if (contractor === 'regions' && !_isAdminUser()) {
+    alert('Заявки в регионы доступны только администратору.');
+    return;
+  }
+
   const mainScreen = document.getElementById('mainScreen');
   const forms = {
     figaro: document.getElementById('formFigaro'),
@@ -869,6 +878,11 @@ function exportToDOC(contractorType) {
 }
 
 async function exportProducerLikeToDOC(contractorType) {
+  if (contractorType === 'regions' && !_isAdminUser()) {
+    alert('Заявки в регионы доступны только администратору.');
+    return;
+  }
+
   const prefix = contractorType === 'regions' ? 'regions' : 'producer';
   if (!_validateRequired(`#shooting-request-form-${prefix}`)) {
     alert('Пожалуйста, заполните все обязательные поля (отмечены *).');
@@ -1065,6 +1079,10 @@ document.addEventListener('DOMContentLoaded', () => {
   _syncTtkSonyLensOption();
   _applyFigaroEquipmentDefaults();
 
+  if (!_isAdminUser()) {
+    document.getElementById('regions-contractor-card')?.remove();
+  }
+
   const figaroForm = document.getElementById('shooting-request-form-figaro');
   const ttkForm = document.getElementById('shooting-request-form-ttk');
   const producerForm = document.getElementById('shooting-request-form-producer');
@@ -1231,7 +1249,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  if (regionsForm) {
+  if (regionsForm && _isAdminUser()) {
     const regionsSubmitBtn = document.getElementById('regions-submit-application');
     if (regionsSubmitBtn) {
       regionsSubmitBtn.addEventListener('click', async (e) => {
