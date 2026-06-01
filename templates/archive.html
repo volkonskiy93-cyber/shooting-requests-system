@@ -129,7 +129,8 @@
 
 .badge-figaro,
 .badge-ttk,
-.badge-producer {
+.badge-producer,
+.badge-regions {
     background: linear-gradient(135deg, rgba(240, 179, 91, 0.12), rgba(244, 200, 138, 0.06));
     color: #7c6548;
 }
@@ -256,9 +257,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                 item.className = 'app-item';
                 
                 const contractorNames = {
-                    'figaro': 'ФИГАРО',
+                    'figaro': 'ТМК',
                     'ttk': 'ТТК',
-                    'producer': 'Продюсерам'
+                    'producer': 'Продюсерам',
+                    'regions': 'В регионы',
                 };
                 
                 const statusNames = {
@@ -282,7 +284,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const shootDate = app.shootingDate ? new Date(app.shootingDate).toLocaleDateString('ru-RU') : 'не указана';
                 
                 let actionButtons = '';
-                if (app.contractor === 'producer') {
+                if (app.contractor === 'producer' || app.contractor === 'regions') {
                     actionButtons = `<a href="/api/applications/${app.id}/export/doc" class="btn-download btn-doc">DOC</a>`;
                 } else {
                     actionButtons = `

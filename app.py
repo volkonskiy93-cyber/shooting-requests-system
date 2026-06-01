@@ -218,7 +218,7 @@ if _is_railway_environment():
 APPROVAL_PENDING = 'pending'
 APPROVAL_APPROVED = 'approved'
 APPROVAL_REJECTED = 'rejected'
-ALLOWED_CONTRACTORS = {'figaro', 'ttk', 'producer'}
+ALLOWED_CONTRACTORS = {'figaro', 'ttk', 'producer', 'regions'}
 MIN_PASSWORD_LENGTH = 8
 MAX_NAME_LEN = 80
 # Адреса вроде user@, без полноценного домена
@@ -1043,10 +1043,24 @@ def create_application():
         return jsonify({'success': False, 'message': 'Некорректный тип заявки'}), 400
     data['contractor'] = contractor
     data['senderFullName'] = user.full_name or ''
+
+    if contractor == 'regions':
+        phone = str(data.get('correspondentPhone') or '').strip()
+        if not phone:
+            return jsonify({'success': False, 'message': 'Укажите номер телефона'}), 400
+        data['correspondentPhone'] = phone
+        mounting_raw = data.get('mountingDate') or data.get('shootingDate')
+        if not mounting_raw:
+            return jsonify({'success': False, 'message': 'Укажите дату монтажа'}), 400
     
     # Создание заявки
     application_date = _parse_date_yyyy_mm_dd(data.get('applicationDate'))
-    shooting_date = _parse_date_yyyy_mm_dd(data.get('shootingDate'))
+    if contractor == 'regions':
+        mounting_raw = data.get('mountingDate') or data.get('shootingDate')
+        data['mountingDate'] = mounting_raw
+        shooting_date = _parse_date_yyyy_mm_dd(mounting_raw)
+    else:
+        shooting_date = _parse_date_yyyy_mm_dd(data.get('shootingDate'))
     broadcast_date = _parse_date_yyyy_mm_dd(data.get('broadcastDate'))
 
     application = Application(
@@ -1078,7 +1092,7 @@ def create_application():
         application.submission_date = _parse_datetime_local_to_date(data.get('submissionDate'))
     
     # Дополнительные поля для Producer
-    if contractor == 'producer':
+    if contractor in {'producer', 'regions'}:
         application.summary = data.get('summary', '')
         application.heroes = data.get('heroes', '')
         application.correspondent_contacts = data.get('correspondentContacts', '')
@@ -1113,16 +1127,21 @@ def create_application():
                 }
             else:
                 email_status['error'] = 'Не удалось сформировать Excel-файл для отправки'
-        elif data.get('contractor') == 'producer':
+        elif data.get('contractor') in {'producer', 'regions'}:
             # Генерация Word файла
             word_file = create_word_document(data, application.id)
             if word_file:
-                producer_filename = _build_producer_filename(data)
+                word_filename = _build_word_request_filename(data)
+                doc_subject = (
+                    f"Заявка продюсерам: {data.get('storyTitle', '')}"
+                    if data.get('contractor') == 'producer'
+                    else f"Заявка в регионы: {data.get('storyTitle', '')}"
+                )
                 email_result = send_email_with_attachment(
                     _email_recipient_for_contractor(data.get('contractor')),
-                    f"Заявка продюсерам: {data.get('storyTitle', '')}",
+                    doc_subject,
                     word_file,
-                    producer_filename,
+                    word_filename,
                     sender_display_email=user.email,
                     sender_display_name=user.full_name
                 )
@@ -1358,7 +1377,7 @@ def export_application_doc(app_id):
                 pass
             return resp
 
-        producer_dl_filename = _build_producer_filename(form_data)
+        producer_dl_filename = _build_word_request_filename(form_data)
         response = send_file(
             word_file,
             mimetype='application/vnd.openxmlformats-officedocument.wordprocessingml.document',
@@ -1373,17 +1392,22 @@ def export_application_doc(app_id):
 @app.route('/api/export/doc', methods=['POST'])
 @limiter.limit('80 per hour', key_func=_rate_limit_key_user)
 def export_doc_from_form():
-    """Экспорт DOCX по данным формы продюсерской заявки без сохранения в БД."""
+    """Экспорт DOCX по данным формы заявок producer/regions без сохранения в БД."""
     user = _get_active_user()
     if not user:
         return jsonify({'error': 'Unauthorized'}), 401
 
     data = request.get_json() or {}
     contractor = str(data.get('contractor') or '').strip().lower()
-    if contractor != 'producer':
+    if contractor not in {'producer', 'regions'}:
         return jsonify({'error': 'Invalid contractor'}), 400
 
     data['contractor'] = contractor
+    if contractor == 'regions':
+        phone = str(data.get('correspondentPhone') or '').strip()
+        if not phone:
+            return jsonify({'error': 'Укажите номер телефона'}), 400
+        data['correspondentPhone'] = phone
     word_file = create_word_document(data, application_id=0)
     if not word_file:
         return jsonify({'error': 'Failed to generate document'}), 500
@@ -1397,7 +1421,7 @@ def export_doc_from_form():
         return resp
 
     data['senderFullName'] = (session.get('user_full_name') or '').strip()
-    filename = _build_producer_filename(data)
+    filename = _build_word_request_filename(data)
     response = send_file(
         word_file,
         mimetype='application/vnd.openxmlformats-officedocument.wordprocessingml.document',
@@ -1574,6 +1598,23 @@ def _build_producer_filename(form_data: dict) -> str:
     story = _safe_filename(str(form_data.get('storyTitle') or '').strip())[:40] or 'Заявка'
     date_part = _filename_date_part(form_data.get('broadcastDate') or form_data.get('applicationDate'))
     return f"Продюсерам_{surname_part}_{story}_{date_part}.docx"
+
+
+def _build_regions_filename(form_data: dict) -> str:
+    sender_surname = _extract_sender_surname(form_data.get('senderFullName', ''))
+    surname_part = sender_surname or _extract_correspondent_surname(form_data.get('correspondent', ''))
+    story = _safe_filename(str(form_data.get('storyTitle') or '').strip())[:40] or 'Заявка'
+    date_part = _filename_date_part(
+        form_data.get('mountingDate') or form_data.get('broadcastDate') or form_data.get('applicationDate')
+    )
+    return f"В_регионы_{surname_part}_{story}_{date_part}.docx"
+
+
+def _build_word_request_filename(form_data: dict) -> str:
+    contractor = str(form_data.get('contractor') or '').strip().lower()
+    if contractor == 'regions':
+        return _build_regions_filename(form_data)
+    return _build_producer_filename(form_data)
 
 
 def _build_excel_filename(form_data: dict) -> str:

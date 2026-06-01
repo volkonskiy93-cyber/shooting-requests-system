@@ -214,6 +214,7 @@ function renderApplications() {
             figaro: 'ТМК',
             ttk: 'ТТК',
             producer: 'Продюсерам',
+            regions: 'В регионы',
         }[app.contractor] || app.contractor;
 
         const statusName = {
@@ -240,10 +241,10 @@ function renderApplications() {
                 <td><span class="table-status">${statusName}</span></td>
                 <td>
                     <button class="btn" onclick="viewApplication(${app.id})">Просмотр</button>
-                    ${app.contractor === 'producer'
+                    ${['producer', 'regions'].includes(app.contractor)
                         ? ''
                         : `<button class="btn btn-secondary" onclick="exportExcel(${app.id})">Excel</button>`}
-                    ${app.contractor === 'producer'
+                    ${['producer', 'regions'].includes(app.contractor)
                         ? `<button class="btn" onclick="exportDoc(${app.id})">Экспорт DOC</button>`
                         : ''}
                 </td>
@@ -322,6 +323,7 @@ function viewApplication(id) {
         figaro: 'ТМК',
         ttk: 'ТТК',
         producer: 'Продюсерам',
+        regions: 'В регионы',
     }[app.contractor] || app.contractor;
 
     alert(

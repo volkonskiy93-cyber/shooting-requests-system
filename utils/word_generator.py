@@ -1,5 +1,5 @@
 """
-Генерация Word документов для заявок продюсерам
+Генерация Word документов для заявок producer/regions
 """
 
 from docx import Document
@@ -27,7 +27,7 @@ def format_broadcast_date(date_string):
 
 def create_word_document(form_data, application_id):
     """
-    Создание Word документа для заявки продюсерам
+    Создание Word документа для заявок producer/regions
     
     Args:
         form_data: словарь с данными формы
@@ -36,7 +36,8 @@ def create_word_document(form_data, application_id):
     Returns:
         путь к созданному файлу или None
     """
-    if form_data.get('contractor') != 'producer':
+    contractor = str(form_data.get('contractor') or '').strip().lower()
+    if contractor not in {'producer', 'regions'}:
         return None
     
     doc = Document()
@@ -49,7 +50,8 @@ def create_word_document(form_data, application_id):
     title_font.bold = True
     
     # Заголовок
-    title = doc.add_heading('Заявка продюсерам', 0)
+    title_text = 'Заявка в регионы' if contractor == 'regions' else 'Заявка продюсерам'
+    title = doc.add_heading(title_text, 0)
     title.alignment = WD_ALIGN_PARAGRAPH.CENTER
     
     subtitle = doc.add_paragraph('Программа "Доброе утро"')
@@ -61,18 +63,33 @@ def create_word_document(form_data, application_id):
     doc.add_paragraph()  # Пустая строка
     
     # Основная информация
-    fields = [
-        ('Название сюжета', form_data.get('storyTitle', '')),
-        ('Дата эфира', format_broadcast_date(form_data.get('broadcastDate'))),
-        ('Краткое содержание сюжета', form_data.get('summary', '')),
-        ('Разработка от отдела планирования', form_data.get('planningDevelopment', '')),
-        ('Герои', form_data.get('heroes', '')),
-        ('Дата съемки', format_date(form_data.get('shootingDate'))),
-        ('Корреспондент', form_data.get('correspondentText') or form_data.get('correspondent', '')),
-        ('Контакты корреспондента', form_data.get('correspondentContacts', '')),
-        ('Редактор', form_data.get('directorText') or form_data.get('director', '')),
-        ('Дата подачи заявки', format_date(form_data.get('applicationDate'))),
-    ]
+    if contractor == 'regions':
+        fields = [
+            ('Название сюжета', form_data.get('storyTitle', '')),
+            ('Дата эфира', format_broadcast_date(form_data.get('broadcastDate'))),
+            ('Краткое содержание сюжета', form_data.get('summary', '')),
+            ('Разработка от отдела планирования', form_data.get('planningDevelopment', '')),
+            ('Герои', form_data.get('heroes', '')),
+            ('Дата монтажа', format_date(form_data.get('mountingDate') or form_data.get('shootingDate'))),
+            ('Корреспондент', form_data.get('correspondentText') or form_data.get('correspondent', '')),
+            ('Номер телефона', form_data.get('correspondentPhone', '')),
+            ('Контакты корреспондента', form_data.get('correspondentContacts', '')),
+            ('Редактор', form_data.get('directorText') or form_data.get('director', '')),
+            ('Дата подачи заявки', format_date(form_data.get('applicationDate'))),
+        ]
+    else:
+        fields = [
+            ('Название сюжета', form_data.get('storyTitle', '')),
+            ('Дата эфира', format_broadcast_date(form_data.get('broadcastDate'))),
+            ('Краткое содержание сюжета', form_data.get('summary', '')),
+            ('Разработка от отдела планирования', form_data.get('planningDevelopment', '')),
+            ('Герои', form_data.get('heroes', '')),
+            ('Дата съемки', format_date(form_data.get('shootingDate'))),
+            ('Корреспондент', form_data.get('correspondentText') or form_data.get('correspondent', '')),
+            ('Контакты корреспондента', form_data.get('correspondentContacts', '')),
+            ('Редактор', form_data.get('directorText') or form_data.get('director', '')),
+            ('Дата подачи заявки', format_date(form_data.get('applicationDate'))),
+        ]
     
     for label, value in fields:
         p = doc.add_paragraph()

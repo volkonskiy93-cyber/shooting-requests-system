@@ -28,6 +28,12 @@
                     <p>Заявка на видеосъемку для продюсеров программы "Доброе утро"</p>
                     <button class="select-btn btn-producer">Создать заявку</button>
                 </div>
+
+                <div class="contractor-card producer" onclick="selectContractor('regions')">
+                    <h2>Заявка в регионы</h2>
+                    <p>Заявка на видеосъемку для региональной координации программы "Доброе утро"</p>
+                    <button class="select-btn btn-producer">Создать заявку</button>
+                </div>
             </div>
         </div>
         
@@ -664,6 +670,93 @@
                     <button type="button" class="submit-btn" id="producer-submit-application">Отправить заявку</button>
                     <button type="button" class="doc-btn" onclick="exportToDOC('producer')" title="Выгрузит заявку в формате Word (DOCX)">Выгрузить в Word</button>
                     <button type="button" class="reset-btn" id="producer-reset-form">Очистить форму</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Форма для заявок в регионы -->
+        <div id="formRegions" class="form-container producer">
+            <div class="form-header producer">
+                <h1>Заявка в регионы</h1>
+                <button class="back-btn" onclick="goBack()">← Назад к выбору</button>
+            </div>
+
+            <div class="header-info">
+                <div>Заявка на видеосъемку</div>
+                <div>Программа "Доброе утро"</div>
+                <div>Для региональной координации</div>
+            </div>
+
+            <!-- Не <form>: исключаем неявную отправку по Enter. -->
+            <div id="shooting-request-form-regions" class="shooting-request-producer-root">
+                <table class="form-table">
+                    <tr>
+                        <td class="label required">Название сюжета:</td>
+                        <td>
+                            <input type="text" id="regions-story-title" name="story-title" placeholder="Введите название сюжета" required>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="label">Дата эфира:</td>
+                        <td>
+                            <input type="date" id="regions-broadcast-date" name="broadcast-date">
+                            <div class="note">Если не указана, в заявке будет написано "по гот."</div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="label required">Краткое содержание сюжета:</td>
+                        <td>
+                            <textarea id="regions-summary" name="summary" placeholder="Введите краткое содержание сюжета" required></textarea>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="label">Разработка от отдела планирования:</td>
+                        <td>
+                            <textarea id="regions-planning-development" name="planning-development" placeholder="Укажите разработку от отдела планирования"></textarea>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="label">Герои:</td>
+                        <td>
+                            <textarea id="regions-heroes" name="heroes" placeholder="Укажите героев сюжета"></textarea>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="label required">Дата монтажа:</td>
+                        <td>
+                            <input type="date" id="regions-mounting-date" name="mounting-date" required>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="label required">Корреспондент:</td>
+                        <td>
+                            <input type="text" id="regions-correspondent" name="correspondent" list="correspondents-list" placeholder="Выберите из списка или введите вручную" required>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="label required">Номер телефона:</td>
+                        <td>
+                            <input type="tel" id="regions-correspondent-phone" name="correspondent-phone" placeholder="Введите номер телефона" required autocomplete="tel">
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="label">Контакты корреспондента:</td>
+                        <td>
+                            <input type="text" id="regions-correspondent-contacts" name="correspondent-contacts" placeholder="Email или другие контакты (необязательно)">
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="label required">Редактор:</td>
+                        <td>
+                            <input type="text" id="regions-director" name="director" list="editors-list" placeholder="Выберите из списка или введите вручную" required>
+                        </td>
+                    </tr>
+                </table>
+
+                <div class="form-actions">
+                    <button type="button" class="submit-btn" id="regions-submit-application">Отправить заявку</button>
+                    <button type="button" class="doc-btn" onclick="exportToDOC('regions')" title="Выгрузит заявку в формате Word (DOCX)">Выгрузить в Word</button>
+                    <button type="button" class="reset-btn" id="regions-reset-form">Очистить форму</button>
                 </div>
             </div>
         </div>

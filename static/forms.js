@@ -6,6 +6,7 @@ function selectContractor(contractor) {
     figaro: document.getElementById('formFigaro'),
     ttk: document.getElementById('formTTK'),
     producer: document.getElementById('formProducer'),
+    regions: document.getElementById('formRegions'),
   };
 
   if (!mainScreen) return;
@@ -43,13 +44,16 @@ function selectContractor(contractor) {
     } else if (contractor === 'producer') {
       const shootDate = document.getElementById('producer-shooting-date');
       if (shootDate) shootDate.min = today;
+    } else if (contractor === 'regions') {
+      const mountDate = document.getElementById('regions-mounting-date');
+      if (mountDate) mountDate.min = today;
     }
   }
 }
 
 function goBack() {
   const mainScreen = document.getElementById('mainScreen');
-  ['formFigaro', 'formTTK', 'formProducer'].forEach((id) => {
+  ['formFigaro', 'formTTK', 'formProducer', 'formRegions'].forEach((id) => {
     const el = document.getElementById(id);
     if (el) el.classList.remove('active');
   });
@@ -61,6 +65,7 @@ function updateStoryTitleFromDate(formType) {
     figaro: ['figaro-shooting-date', 'figaro-story-title'],
     ttk: ['ttk-shooting-date', 'ttk-story-title'],
     producer: ['producer-shooting-date', 'producer-story-title'],
+    regions: ['regions-mounting-date', 'regions-story-title'],
   };
   const pair = ids[formType];
   if (!pair) return;
@@ -103,6 +108,7 @@ function _getTodayIso() {
 
 const _correspondentStorageKey = 'davinci.correspondentName';
 const _correspondentContactsStorageKey = 'davinci.correspondentContacts';
+const _correspondentPhoneStorageKey = 'davinci.correspondentPhone';
 
 function _storageGet(key) {
   try {
@@ -162,19 +168,43 @@ function _resetProducerFormFields() {
   });
 }
 
+function _resetRegionsFormFields() {
+  const root = document.getElementById('shooting-request-form-regions');
+  if (!root) return;
+  root.querySelectorAll('input, textarea, select').forEach((el) => {
+    if (el._flatpickr) {
+      el._flatpickr.clear();
+      return;
+    }
+    if (el.type === 'checkbox' || el.type === 'radio') {
+      el.checked = false;
+      return;
+    }
+    el.value = '';
+  });
+}
+
 function _applyProfileDefaults() {
   const correspondentName = _preferredCorrespondentName();
-  ['figaro-correspondent', 'ttk-correspondent', 'producer-correspondent'].forEach((id) => {
+  ['figaro-correspondent', 'ttk-correspondent', 'producer-correspondent', 'regions-correspondent'].forEach((id) => {
     const input = document.getElementById(id);
     if (input && !input.value.trim() && correspondentName) {
       input.value = correspondentName;
     }
   });
 
-  const contactsInput = document.getElementById('producer-correspondent-contacts');
   const correspondentContacts = _preferredCorrespondentContacts();
-  if (contactsInput && !contactsInput.value.trim() && correspondentContacts) {
-    contactsInput.value = correspondentContacts;
+  ['producer-correspondent-contacts', 'regions-correspondent-contacts'].forEach((id) => {
+    const contactsInput = document.getElementById(id);
+    if (contactsInput && !contactsInput.value.trim() && correspondentContacts) {
+      contactsInput.value = correspondentContacts;
+    }
+  });
+
+  const phoneInput = document.getElementById('regions-correspondent-phone');
+  const savedPhone = _storageGet(_correspondentPhoneStorageKey);
+  if (phoneInput && !phoneInput.value.trim() && savedPhone) {
+    phoneInput.value = savedPhone;
   }
 }
 
@@ -184,6 +214,9 @@ function _initProfileAutofill() {
     ['ttk-correspondent', _correspondentStorageKey],
     ['producer-correspondent', _correspondentStorageKey],
     ['producer-correspondent-contacts', _correspondentContactsStorageKey],
+    ['regions-correspondent', _correspondentStorageKey],
+    ['regions-correspondent-contacts', _correspondentContactsStorageKey],
+    ['regions-correspondent-phone', _correspondentPhoneStorageKey],
   ].forEach(([id, key]) => {
     const input = document.getElementById(id);
     if (!input) return;
@@ -450,7 +483,8 @@ function _initPickers() {
   // Apply
   ['figaro-application-date', 'figaro-shooting-date', 'figaro-broadcast-date',
    'ttk-application-date', 'ttk-shooting-date', 'ttk-broadcast-date',
-   'producer-shooting-date', 'producer-broadcast-date'
+   'producer-shooting-date', 'producer-broadcast-date',
+   'regions-mounting-date', 'regions-broadcast-date'
   ].forEach((id) => {
     const el = document.getElementById(id);
     if (el) flatpickr(el, dateCfg);
@@ -762,8 +796,8 @@ function _validateRequired(formSelector) {
 }
 
 function exportToDOC(contractorType) {
-  if (contractorType === 'producer') {
-    exportProducerToDOC();
+  if (contractorType === 'producer' || contractorType === 'regions') {
+    exportProducerLikeToDOC(contractorType);
     return;
   }
 
@@ -773,6 +807,7 @@ function exportToDOC(contractorType) {
     figaro: 'ВЕК XXL (ТМК)',
     ttk: 'Технологический центр ТВ (ТТК)',
     producer: 'Заявка продюсерам',
+    regions: 'Заявка в регионы',
   };
 
   const storyTitle =
@@ -799,25 +834,33 @@ function exportToDOC(contractorType) {
   URL.revokeObjectURL(url);
 }
 
-async function exportProducerToDOC() {
-  if (!_validateRequired('#shooting-request-form-producer')) {
+async function exportProducerLikeToDOC(contractorType) {
+  const prefix = contractorType === 'regions' ? 'regions' : 'producer';
+  if (!_validateRequired(`#shooting-request-form-${prefix}`)) {
     alert('Пожалуйста, заполните все обязательные поля (отмечены *).');
     return;
   }
 
-  const payload = {
-    contractor: 'producer',
-    storyTitle: document.getElementById('producer-story-title')?.value || '',
-    broadcastDate: document.getElementById('producer-broadcast-date')?.value || null,
-    summary: document.getElementById('producer-summary')?.value || '',
-    planningDevelopment: document.getElementById('producer-planning-development')?.value || '',
-    heroes: document.getElementById('producer-heroes')?.value || '',
-    shootingDate: document.getElementById('producer-shooting-date')?.value || '',
-    correspondent: _selectedText(document.getElementById('producer-correspondent')),
-    correspondentContacts: document.getElementById('producer-correspondent-contacts')?.value || '',
-    director: _selectedText(document.getElementById('producer-director')),
-    applicationDate: _getTodayIso(),
-  };
+  const payload = prefix === 'regions'
+    ? _buildRegionsPayload()
+    : {
+        contractor: 'producer',
+        storyTitle: document.getElementById('producer-story-title')?.value || '',
+        broadcastDate: document.getElementById('producer-broadcast-date')?.value || null,
+        summary: document.getElementById('producer-summary')?.value || '',
+        planningDevelopment: document.getElementById('producer-planning-development')?.value || '',
+        heroes: document.getElementById('producer-heroes')?.value || '',
+        shootingDate: document.getElementById('producer-shooting-date')?.value || '',
+        correspondent: _selectedText(document.getElementById('producer-correspondent')),
+        correspondentContacts: document.getElementById('producer-correspondent-contacts')?.value || '',
+        director: _selectedText(document.getElementById('producer-director')),
+        applicationDate: _getTodayIso(),
+      };
+
+  if (prefix === 'regions' && !payload.correspondentPhone) {
+    alert('Укажите номер телефона — без него заявка не выгрузится.');
+    return;
+  }
 
   try {
     const resp = await window.fetchWithCsrfRetry('/api/export/doc', {
@@ -835,7 +878,8 @@ async function exportProducerToDOC() {
     const explicitName = resp.headers.get('X-Download-Filename');
     const cd = resp.headers.get('Content-Disposition') || '';
     const m = cd.match(/filename\\*=UTF-8''([^;]+)|filename=\"?([^\";]+)\"?/i);
-    const fileName = decodeURIComponent(explicitName || m?.[1] || m?.[2] || 'Заявка_продюсерам.docx');
+    const fallbackName = contractorType === 'regions' ? 'Заявка_в_регионы.docx' : 'Заявка_продюсерам.docx';
+    const fileName = decodeURIComponent(explicitName || m?.[1] || m?.[2] || fallbackName);
 
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -848,6 +892,29 @@ async function exportProducerToDOC() {
   } catch (err) {
     alert(`Ошибка выгрузки Word: ${err.message}`);
   }
+}
+
+function _buildRegionsPayload() {
+  const phone = (document.getElementById('regions-correspondent-phone')?.value || '').trim();
+  if (!phone) {
+    const phoneInput = document.getElementById('regions-correspondent-phone');
+    if (phoneInput) phoneInput.style.borderColor = '#e74c3c';
+  }
+
+  return {
+    contractor: 'regions',
+    storyTitle: document.getElementById('regions-story-title')?.value || '',
+    applicationDate: _getTodayIso(),
+    broadcastDate: document.getElementById('regions-broadcast-date')?.value || null,
+    summary: document.getElementById('regions-summary')?.value || '',
+    planningDevelopment: document.getElementById('regions-planning-development')?.value || '',
+    heroes: document.getElementById('regions-heroes')?.value || '',
+    mountingDate: document.getElementById('regions-mounting-date')?.value || '',
+    correspondent: _selectedText(document.getElementById('regions-correspondent')),
+    correspondentPhone: phone,
+    correspondentContacts: document.getElementById('regions-correspondent-contacts')?.value || '',
+    director: _selectedText(document.getElementById('regions-director')),
+  };
 }
 
 async function exportToExcel(contractorType) {
@@ -966,6 +1033,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const figaroForm = document.getElementById('shooting-request-form-figaro');
   const ttkForm = document.getElementById('shooting-request-form-ttk');
   const producerForm = document.getElementById('shooting-request-form-producer');
+  const regionsForm = document.getElementById('shooting-request-form-regions');
 
   if (figaroForm) {
     figaroForm.addEventListener('submit', async (e) => {
@@ -1121,6 +1189,42 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.getElementById('producer-reset-form')?.addEventListener('click', () => {
       _resetProducerFormFields();
+      setTimeout(_applyProfileDefaults, 0);
+    });
+  }
+
+  if (regionsForm) {
+    const regionsSubmitBtn = document.getElementById('regions-submit-application');
+    if (regionsSubmitBtn) {
+      regionsSubmitBtn.addEventListener('click', async (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (!_validateRequired('#shooting-request-form-regions')) {
+          alert('Пожалуйста, заполните все обязательные поля (отмечены *).');
+          return;
+        }
+
+        const payload = _buildRegionsPayload();
+        if (!payload.correspondentPhone) {
+          alert('Укажите номер телефона — без него заявка не отправится.');
+          return;
+        }
+
+        try {
+          showSendingSplash();
+          const result = await _postApplication(payload);
+          _resetRegionsFormFields();
+          goBack();
+          showSuccessModal(_submissionSuccessMessage(result, 'Заявка сохранена и успешно отправлена.'));
+        } catch (err) {
+          hideSendingSplash();
+          alert(`Ошибка отправки: ${err.message}`);
+        }
+      });
+    }
+
+    document.getElementById('regions-reset-form')?.addEventListener('click', () => {
+      _resetRegionsFormFields();
       setTimeout(_applyProfileDefaults, 0);
     });
   }
