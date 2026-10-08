@@ -632,9 +632,9 @@
                         </td>
                     </tr>
                     <tr>
-                        <td class="label required">Краткое содержание сюжета:</td>
+                        <td class="label">Краткое содержание сюжета:</td>
                         <td>
-                            <textarea id="producer-summary" name="summary" placeholder="Введите краткое содержание сюжета" required></textarea>
+                            <textarea id="producer-summary" name="summary" placeholder="Введите краткое содержание сюжета"></textarea>
                         </td>
                     </tr>
                     <tr>
@@ -652,7 +652,8 @@
                     <tr>
                         <td class="label required">Дата съемки:</td>
                         <td>
-                            <input type="date" id="producer-shooting-date" name="shooting-date" required>
+                            <input type="text" id="producer-shooting-date" name="shooting-date" required placeholder="Выберите один день или период" autocomplete="off">
+                            <div class="note">Можно выбрать один день или диапазон дат</div>
                         </td>
                     </tr>
                     <tr>

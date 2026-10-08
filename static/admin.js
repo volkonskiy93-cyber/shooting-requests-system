@@ -195,6 +195,19 @@ function resetFilters() {
     applyFilters();
 }
 
+function formatShootingDates(app) {
+    if (!app.shootingDate) return '-';
+    const formatPart = (value, includeYear = true) => {
+        const [year, month, day] = String(value).slice(0, 10).split('-');
+        return includeYear ? `${day}.${month}.${year}` : `${day}.${month}`;
+    };
+    if (app.shootingEndDate) {
+        const endYear = String(app.shootingEndDate).slice(2, 4);
+        return `${formatPart(app.shootingDate, false)}-${formatPart(app.shootingEndDate, false)}.${endYear}`;
+    }
+    return formatPart(app.shootingDate);
+}
+
 function renderApplications() {
     const tbody = document.getElementById('applications-tbody');
     const summary = document.getElementById('applications-summary');
@@ -224,9 +237,7 @@ function renderApplications() {
             rejected: 'Отклонена',
         }[app.status] || app.status;
 
-        const shootingDate = app.shootingDate
-            ? new Date(app.shootingDate).toLocaleDateString('ru-RU')
-            : '-';
+        const shootingDate = formatShootingDates(app);
         const createdAt = app.createdAt
             ? new Date(app.createdAt).toLocaleString('ru-RU')
             : '-';
@@ -332,7 +343,7 @@ function viewApplication(id) {
         `Поступила: ${app.createdAt ? new Date(app.createdAt).toLocaleString('ru-RU') : '-'}\n` +
         `Подрядчик: ${contractorName}\n` +
         `Корреспондент: ${app.correspondent || '-'}\n` +
-        `Дата съемки: ${app.shootingDate ? new Date(app.shootingDate).toLocaleDateString('ru-RU') : '-'}\n` +
+        `Дата съемки: ${formatShootingDates(app)}\n` +
         `Статус: ${app.status || '-'}`
     );
 }

@@ -14,10 +14,24 @@ def format_date(date_string):
     if not date_string:
         return ''
     try:
-        date = datetime.strptime(date_string, '%Y-%m-%d')
+        date = datetime.strptime(str(date_string).strip()[:10], '%Y-%m-%d')
         return date.strftime('%d.%m.%Y')
     except:
-        return date_string
+        return str(date_string)
+
+
+def format_shooting_period(start_value, end_value=None):
+    """Одна дата или период съемки в формате 10.10-21.10.26."""
+    if not start_value:
+        return ''
+    if not end_value or str(end_value)[:10] == str(start_value)[:10]:
+        return format_date(start_value)
+    try:
+        start_date = datetime.strptime(str(start_value).strip()[:10], '%Y-%m-%d')
+        end_date = datetime.strptime(str(end_value).strip()[:10], '%Y-%m-%d')
+        return f'{start_date:%d.%m}-{end_date:%d.%m.%y}'
+    except (TypeError, ValueError):
+        return f'{format_date(start_value)}-{format_date(end_value)}'
 
 
 def format_broadcast_date(date_string):
@@ -84,7 +98,10 @@ def create_word_document(form_data, application_id):
             ('Краткое содержание сюжета', form_data.get('summary', '')),
             ('Разработка от отдела планирования', form_data.get('planningDevelopment', '')),
             ('Герои', form_data.get('heroes', '')),
-            ('Дата съемки', format_date(form_data.get('shootingDate'))),
+            (
+                'Дата съемки',
+                format_shooting_period(form_data.get('shootingDate'), form_data.get('shootingEndDate'))
+            ),
             ('Корреспондент', form_data.get('correspondentText') or form_data.get('correspondent', '')),
             ('Контакты корреспондента', form_data.get('correspondentContacts', '')),
             ('Редактор', form_data.get('directorText') or form_data.get('director', '')),

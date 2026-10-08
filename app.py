@@ -973,7 +973,7 @@ def get_my_applications():
     
     return jsonify({
         'success': True,
-        'applications': [app.to_dict() for app in applications]
+        'applications': [_application_form_payload(app) for app in applications]
     })
 
 @app.route('/api/applications', methods=['GET'])
@@ -1025,7 +1025,7 @@ def get_applications():
     
     return jsonify({
         'success': True,
-        'applications': [app.to_dict() for app in applications]
+        'applications': [_application_form_payload(app) for app in applications]
     })
 
 
@@ -1061,6 +1061,11 @@ def create_application():
         mounting_raw = data.get('mountingDate') or data.get('shootingDate')
         data['mountingDate'] = mounting_raw
         shooting_date = _parse_date_yyyy_mm_dd(mounting_raw)
+    elif contractor == 'producer':
+        _normalize_producer_shooting_period(data)
+        if not data.get('shootingDate'):
+            return jsonify({'success': False, 'message': 'Укажите хотя бы одну дату съемки'}), 400
+        shooting_date = _parse_date_yyyy_mm_dd(data.get('shootingDate'))
     else:
         shooting_date = _parse_date_yyyy_mm_dd(data.get('shootingDate'))
     broadcast_date = _parse_date_yyyy_mm_dd(data.get('broadcastDate'))
@@ -1412,6 +1417,10 @@ def export_doc_from_form():
         if not phone:
             return jsonify({'error': 'Укажите номер телефона'}), 400
         data['correspondentPhone'] = phone
+    elif contractor == 'producer':
+        _normalize_producer_shooting_period(data)
+        if not data.get('shootingDate'):
+            return jsonify({'error': 'Укажите хотя бы одну дату съемки'}), 400
     word_file = create_word_document(data, application_id=0)
     if not word_file:
         return jsonify({'error': 'Failed to generate document'}), 500
@@ -1642,9 +1651,32 @@ def _parse_date_yyyy_mm_dd(value):
     if isinstance(value, date):
         return value
     try:
-        return datetime.strptime(str(value), "%Y-%m-%d").date()
+        return datetime.strptime(str(value).strip()[:10], "%Y-%m-%d").date()
     except Exception:
         return None
+
+
+def _normalize_producer_shooting_period(data: dict) -> None:
+    """Нормализует начало и окончание периода съемки для заявки продюсерам."""
+    start_date = _parse_date_yyyy_mm_dd(data.get('shootingDate'))
+    end_date = _parse_date_yyyy_mm_dd(data.get('shootingEndDate'))
+
+    # Совместимость с локальными/старыми payload, где даты передавались массивом.
+    legacy_dates = data.get('shootingDates')
+    if isinstance(legacy_dates, list):
+        parsed_legacy = sorted(
+            parsed for parsed in (_parse_date_yyyy_mm_dd(value) for value in legacy_dates) if parsed
+        )
+        if parsed_legacy:
+            start_date = start_date or parsed_legacy[0]
+            end_date = end_date or (parsed_legacy[-1] if len(parsed_legacy) > 1 else None)
+
+    if start_date and end_date and end_date < start_date:
+        start_date, end_date = end_date, start_date
+
+    data.pop('shootingDates', None)
+    data['shootingDate'] = start_date.isoformat() if start_date else ''
+    data['shootingEndDate'] = end_date.isoformat() if end_date and end_date != start_date else None
 
 
 def _parse_datetime_local_to_date(value):

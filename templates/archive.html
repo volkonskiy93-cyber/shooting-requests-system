@@ -281,7 +281,18 @@ document.addEventListener('DOMContentLoaded', async () => {
                     minute: '2-digit'
                 });
                 
-                const shootDate = app.shootingDate ? new Date(app.shootingDate).toLocaleDateString('ru-RU') : 'не указана';
+                const shootDate = (() => {
+                    if (!app.shootingDate) return 'не указана';
+                    const formatPart = (value, includeYear = true) => {
+                        const [year, month, day] = String(value).slice(0, 10).split('-');
+                        return includeYear ? `${day}.${month}.${year}` : `${day}.${month}`;
+                    };
+                    if (app.shootingEndDate) {
+                        const endYear = String(app.shootingEndDate).slice(2, 4);
+                        return `${formatPart(app.shootingDate, false)}-${formatPart(app.shootingEndDate, false)}.${endYear}`;
+                    }
+                    return formatPart(app.shootingDate);
+                })();
                 
                 let actionButtons = '';
                 if (app.contractor === 'producer' || app.contractor === 'regions') {

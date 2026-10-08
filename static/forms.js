@@ -53,7 +53,9 @@ function selectContractor(contractor) {
       if (endTime && !endTime.value) endTime.value = '18:00';
     } else if (contractor === 'producer') {
       const shootDate = document.getElementById('producer-shooting-date');
-      if (shootDate) shootDate.min = today;
+      if (shootDate?._flatpickr) {
+        shootDate._flatpickr.set('minDate', _getTodayIso());
+      }
     } else if (contractor === 'regions') {
       const mountDate = document.getElementById('regions-mounting-date');
       if (mountDate) mountDate.min = today;
@@ -104,6 +106,22 @@ function _clearShootingPeriod(contractor) {
   } else if (el) {
     el.value = '';
   }
+}
+
+function _buildProducerPayload() {
+  return {
+    contractor: 'producer',
+    storyTitle: document.getElementById('producer-story-title')?.value || '',
+    applicationDate: _getTodayIso(),
+    broadcastDate: document.getElementById('producer-broadcast-date')?.value || null,
+    summary: document.getElementById('producer-summary')?.value || '',
+    planningDevelopment: document.getElementById('producer-planning-development')?.value || '',
+    heroes: document.getElementById('producer-heroes')?.value || '',
+    ..._getShootingPeriod('producer'),
+    correspondent: _selectedText(document.getElementById('producer-correspondent')),
+    correspondentContacts: document.getElementById('producer-correspondent-contacts')?.value || '',
+    director: _selectedText(document.getElementById('producer-director')),
+  };
 }
 
 function updateStoryTitleFromDate(formType) {
@@ -529,7 +547,7 @@ function _initPickers() {
   // Apply
   ['figaro-application-date', 'figaro-broadcast-date',
    'ttk-application-date', 'ttk-broadcast-date',
-   'producer-shooting-date', 'producer-broadcast-date',
+   'producer-broadcast-date',
    'regions-mounting-date', 'regions-broadcast-date'
   ].forEach((id) => {
     const el = document.getElementById(id);
@@ -545,6 +563,15 @@ function _initPickers() {
       minDate: _getTodayIso(),
     });
   });
+
+  const producerShoot = document.getElementById('producer-shooting-date');
+  if (producerShoot) {
+    flatpickr(producerShoot, {
+      ...dateCfg,
+      mode: 'range',
+      minDate: _getTodayIso(),
+    });
+  }
 
   // Time inputs
   ['figaro-start-time', 'figaro-end-time', 'ttk-start-time', 'ttk-end-time', 'producer-start-time', 'producer-end-time']
@@ -586,6 +613,21 @@ function _initPickers() {
       if (ttkBroad.value && v && ttkBroad.value < v) _setDateInput('ttk-broadcast-date', v);
     };
     ttkShoot.addEventListener('change', updateMin);
+    updateMin();
+  }
+
+  const producerBroad = document.getElementById('producer-broadcast-date');
+  if (producerShoot && producerBroad) {
+    const updateMin = () => {
+      const period = _getShootingPeriod('producer');
+      const v = period.shootingEndDate || period.shootingDate;
+      if (producerBroad._flatpickr) producerBroad._flatpickr.set('minDate', v || null);
+      producerBroad.min = v || '';
+      if (producerBroad.value && v && producerBroad.value < v) {
+        _setDateInput('producer-broadcast-date', v);
+      }
+    };
+    producerShoot.addEventListener('change', updateMin);
     updateMin();
   }
 }
@@ -1021,22 +1063,14 @@ async function exportProducerLikeToDOC(contractorType) {
 
   const payload = prefix === 'regions'
     ? _buildRegionsPayload()
-    : {
-        contractor: 'producer',
-        storyTitle: document.getElementById('producer-story-title')?.value || '',
-        broadcastDate: document.getElementById('producer-broadcast-date')?.value || null,
-        summary: document.getElementById('producer-summary')?.value || '',
-        planningDevelopment: document.getElementById('producer-planning-development')?.value || '',
-        heroes: document.getElementById('producer-heroes')?.value || '',
-        shootingDate: document.getElementById('producer-shooting-date')?.value || '',
-        correspondent: _selectedText(document.getElementById('producer-correspondent')),
-        correspondentContacts: document.getElementById('producer-correspondent-contacts')?.value || '',
-        director: _selectedText(document.getElementById('producer-director')),
-        applicationDate: _getTodayIso(),
-      };
+    : _buildProducerPayload();
 
   if (prefix === 'regions' && !payload.correspondentPhone) {
     alert('Укажите номер телефона — без него заявка не выгрузится.');
+    return;
+  }
+  if (prefix === 'producer' && !payload.shootingDate) {
+    alert('Укажите хотя бы одну дату съемки.');
     return;
   }
 
@@ -1353,19 +1387,11 @@ document.addEventListener('DOMContentLoaded', () => {
           return;
         }
 
-        const payload = {
-          contractor: 'producer',
-          storyTitle: document.getElementById('producer-story-title')?.value || '',
-          applicationDate: _getTodayIso(),
-          broadcastDate: document.getElementById('producer-broadcast-date')?.value || null,
-          summary: document.getElementById('producer-summary')?.value || '',
-          planningDevelopment: document.getElementById('producer-planning-development')?.value || '',
-          heroes: document.getElementById('producer-heroes')?.value || '',
-          shootingDate: document.getElementById('producer-shooting-date')?.value || '',
-          correspondent: _selectedText(document.getElementById('producer-correspondent')),
-          correspondentContacts: document.getElementById('producer-correspondent-contacts')?.value || '',
-          director: _selectedText(document.getElementById('producer-director')),
-        };
+        const payload = _buildProducerPayload();
+        if (!payload.shootingDate) {
+          alert('Укажите хотя бы одну дату съемки.');
+          return;
+        }
 
         try {
           showSendingSplash();
