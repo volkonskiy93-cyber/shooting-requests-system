@@ -632,6 +632,7 @@ function _syncFigaroMainKitMode() {
   const mainHeader = document.querySelector('#shooting-request-form-figaro .figaro-main-header');
   const mainTexts = document.querySelectorAll('#shooting-request-form-figaro .figaro-main-text');
   const rows = document.querySelectorAll('#shooting-request-form-figaro .equipment-table tbody tr');
+  const cameraSelect = document.querySelector('#shooting-request-form-figaro .figaro-camera-qty');
 
   if (!toggle || !table) return;
 
@@ -676,6 +677,18 @@ function _syncFigaroMainKitMode() {
       cell?.classList.remove('no-kit-cell');
     }
   });
+
+  if (cameraSelect) {
+    if (withoutMainKit) {
+      if (cameraSelect.dataset.savedValue === undefined) {
+        cameraSelect.dataset.savedValue = cameraSelect.value;
+      }
+      cameraSelect.value = '1';
+    } else if (cameraSelect.dataset.savedValue !== undefined) {
+      cameraSelect.value = cameraSelect.dataset.savedValue;
+      delete cameraSelect.dataset.savedValue;
+    }
+  }
 
   table.classList.toggle('without-main-kit', withoutMainKit);
 }
