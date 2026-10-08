@@ -479,6 +479,54 @@ input.time-input.flatpickr-input {
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%238d877f' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cpolyline points='12 6 12 12 16 14'/%3E%3C/svg%3E") !important;
 }
 
+/* Глобальные стили полей не должны делать заголовок flatpickr бледным или тесным. */
+.flatpickr-calendar .flatpickr-months {
+    min-height: 48px;
+    background: #fff;
+}
+
+.flatpickr-calendar .flatpickr-current-month {
+    height: 48px;
+    padding-top: 8px;
+    color: #17130f;
+    font-size: 16px;
+    font-weight: 700;
+}
+
+.flatpickr-calendar .flatpickr-current-month .flatpickr-monthDropdown-months {
+    width: auto !important;
+    min-width: 118px;
+    min-height: 32px !important;
+    height: 32px !important;
+    padding: 0 26px 0 8px !important;
+    border: 1px solid rgba(17, 17, 17, 0.14) !important;
+    border-radius: 9px !important;
+    background-color: #fff !important;
+    color: #17130f !important;
+    font-size: 15px !important;
+    font-weight: 700 !important;
+    opacity: 1 !important;
+}
+
+.flatpickr-calendar .flatpickr-current-month input.cur-year {
+    width: 68px !important;
+    min-height: 32px !important;
+    height: 32px !important;
+    padding: 0 18px 0 7px !important;
+    color: #17130f !important;
+    font-size: 15px !important;
+    font-weight: 700 !important;
+    opacity: 1 !important;
+}
+
+.flatpickr-calendar .flatpickr-prev-month,
+.flatpickr-calendar .flatpickr-next-month {
+    height: 48px;
+    padding: 14px;
+    color: #4b3321 !important;
+    fill: #4b3321 !important;
+}
+
 .required::after {
     content: " *";
     color: #7a3026;
