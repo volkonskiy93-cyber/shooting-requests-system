@@ -148,6 +148,32 @@ def _replace_qty_in_text(text: str, qty: int) -> str:
     except:
         return text
 
+
+def _prepare_figaro_without_main_kit(ws):
+    """Приводит стандартный шаблон ТМК к виду из образца без основного комплекта."""
+    _set_cell_value(ws, "A15", "без основного комплекта", force_black=False)
+
+    remaining_main_equipment = {
+        16: "с накамерным светом Штатив для видеокамеры -1 шт, Наушники SENNHEISER HD280 -1 шт",
+        17: "Аккумулятор -2 шт",
+        18: "Карта памяти -2 шт",
+        19: None,
+        20: "Светоотражатель флекс -1 шт",
+        21: "Кофр транспортный -1 шт",
+        22: "Дождевик (зимник) для камеры",
+        23: None,
+        24: None,
+        25: None,
+        26: None,
+    }
+
+    for row_idx, value in remaining_main_equipment.items():
+        if value is None:
+            _clear_cell_value(ws, ws.cell(row=row_idx, column=1))
+        else:
+            _set_cell_value(ws, ws.cell(row=row_idx, column=1), value, force_black=False)
+
+
 def _apply_equipment(ws, equipment, contractor=None, without_main_kit=False):
     """
     Заполняет таблицу оборудования. 
@@ -161,9 +187,8 @@ def _apply_equipment(ws, equipment, contractor=None, without_main_kit=False):
     header_row = None
     for r in range(1, ws.max_row + 1):
         a = ws.cell(r, 1).value
-        if isinstance(a, str) and (
-            "Основной комплект" in a or "Без основного комплекта" in a
-        ):
+        normalized_header = a.lower() if isinstance(a, str) else ""
+        if "основной комплект" in normalized_header or "без основного комплекта" in normalized_header:
             header_row = r
             break
     
@@ -210,11 +235,11 @@ def _apply_equipment(ws, equipment, contractor=None, without_main_kit=False):
                 add_qty = max(int(add_qty or 0), 1)
 
         # Колонка A: Обновляем текст основного комплекта.
-        # Для ТТК в режиме "без основного комплекта" не затираем шаблон:
+        # В режиме "без основного комплекта" не затираем подготовленный шаблон:
         # в образце основной блок остается как в исходном файле.
         cell_main = ws.cell(row=row_idx, column=1)
         if cell_main.value and isinstance(cell_main.value, str):
-            if not (contractor == 'ttk' and without_main_kit):
+            if not (contractor in {'ttk', 'figaro'} and without_main_kit):
                 new_val = _replace_qty_in_text(cell_main.value, main_qty)
                 _set_cell_value(ws, cell_main, new_val, force_black=False) # Сохраняем стиль шаблона
 
@@ -258,6 +283,9 @@ def create_excel_document(form_data, application_id):
         ws = wb.active
 
         if contractor == 'figaro':
+            if without_main_kit:
+                _prepare_figaro_without_main_kit(ws)
+
             # Точные координаты для ФИГАРО
             _set_cell_value(ws, "B2", form_data.get("storyTitle", ""))
             _set_cell_value(ws, "B3", form_data.get("annotation", ""))
@@ -284,7 +312,12 @@ def create_excel_document(form_data, application_id):
             _set_cell_value(ws, "C13", f"{form_data.get('startTime')} - {form_data.get('endTime')}")
             _set_cell_value(ws, "D13", _parse_date_yyyy_mm_dd(form_data.get("broadcastDate")))
             
-            _apply_equipment(ws, form_data.get("equipment", []), contractor='figaro')
+            _apply_equipment(
+                ws,
+                form_data.get("equipment", []),
+                contractor='figaro',
+                without_main_kit=without_main_kit
+            )
 
         elif contractor == 'ttk':
             # Точные координаты для ТТК (на основе дампа)

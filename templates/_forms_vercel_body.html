@@ -159,12 +159,19 @@
                     </tr>
                 </table>
                 
-                <h3>Оборудование</h3>
+                <div class="equipment-heading">
+                    <h3>Оборудование</h3>
+                    <label class="kit-toggle" for="figaro-without-main-kit">
+                        <input type="checkbox" id="figaro-without-main-kit" name="without-main-kit">
+                        <span>Без основного комплекта</span>
+                    </label>
+                </div>
+                <div class="note">Если включить этот режим, основной комплект не попадет в заявку ТМК, а дополнительное оборудование останется доступным.</div>
                 
                 <table class="equipment-table">
                     <thead>
                         <tr>
-                            <th width="40%">Основной комплект</th>
+                            <th width="40%" class="figaro-main-header" data-default-text="Основной комплект" data-no-kit-text="Без основного комплекта">Основной комплект</th>
                             <th width="40%">Дополнительное оборудование</th>
                             <th width="20%">Выбор дополнительного оборудования</th>
                         </tr>
@@ -172,8 +179,8 @@
                     <tbody>
                         <tr>
                             <td>
-                                камера HD SONY (XDCAM, HDCAM) c Объективом CANON\17 накамерным светом
-                                <input type="number" class="small-input" value="1" min="0" max="10"> шт
+                                <span class="figaro-main-text" data-default-text="камера HD SONY (XDCAM, HDCAM) c Объективом CANON\17 накамерным светом" data-no-kit-text="с накамерным светом Штатив для видеокамеры -1 шт, Наушники SENNHEISER HD280 -1 шт">камера HD SONY (XDCAM, HDCAM) c Объективом CANON\17 накамерным светом</span>
+                                <input type="number" class="small-input" value="1" min="0" max="10"><span class="figaro-main-qty-suffix"> шт</span>
                             </td>
                             <td>Экшн-камера, карты памяти 2шт, система стабилизации или крепления.</td>
                             <td>
@@ -188,7 +195,7 @@
                             </td>
                         </tr>
                         <tr>
-                            <td>Аккумулятор <input type="number" class="small-input" value="2" min="0" max="10"> шт</td>
+                            <td><span class="figaro-main-text" data-default-text="Аккумулятор" data-no-kit-text="Аккумулятор -2 шт">Аккумулятор</span> <input type="number" class="small-input" value="2" min="0" max="10"><span class="figaro-main-qty-suffix"> шт</span></td>
                             <td>Микрофон ручной с Логотипом Первого канала. Плагон.</td>
                             <td>
                                 <select class="small-input">
@@ -202,7 +209,7 @@
                             </td>
                         </tr>
                         <tr>
-                            <td>Карта памяти <input type="number" class="small-input" value="2" min="0" max="10"> шт</td>
+                            <td><span class="figaro-main-text" data-default-text="Карта памяти" data-no-kit-text="Карта памяти -2 шт">Карта памяти</span> <input type="number" class="small-input" value="2" min="0" max="10"><span class="figaro-main-qty-suffix"> шт</span></td>
                             <td>Микрофон ручной (проводной) с Логотипом Первого канала. Звуковой кабель xlr 5м.</td>
                             <td>
                                 <select class="small-input">
@@ -217,8 +224,8 @@
                         </tr>
                         <tr>
                             <td>
-                                Комплект света: DEDOLIGHT 3 прибора.(направленный свет) 1 прибор(заполняющий свет)
-                                <input type="number" class="small-input" value="1" min="0" max="10"> шт
+                                <span class="figaro-main-text" data-default-text="Комплект света: DEDOLIGHT 3 прибора.(направленный свет) 1 прибор(заполняющий свет)" data-no-kit-text="">Комплект света: DEDOLIGHT 3 прибора.(направленный свет) 1 прибор(заполняющий свет)</span>
+                                <input type="number" class="small-input" value="1" min="0" max="10"><span class="figaro-main-qty-suffix"> шт</span>
                             </td>
                             <td>Радиосистема SENNHEISER EK 100 "ПЕТЛЯ" 1 ШТ.</td>
                             <td>
@@ -232,7 +239,7 @@
                             </td>
                         </tr>
                         <tr>
-                            <td>Светоотражатель флекс <input type="number" class="small-input" value="1" min="0" max="10"> шт</td>
+                            <td><span class="figaro-main-text" data-default-text="Светоотражатель флекс" data-no-kit-text="Светоотражатель флекс -1 шт">Светоотражатель флекс</span> <input type="number" class="small-input" value="1" min="0" max="10"><span class="figaro-main-qty-suffix"> шт</span></td>
                             <td>"Удочка" микрофонная SENNHEISER.</td>
                             <td>
                                 <select class="small-input">
@@ -246,7 +253,7 @@
                             </td>
                         </tr>
                         <tr>
-                            <td>Кофр транспортный <input type="number" class="small-input" value="1" min="0" max="10"> шт</td>
+                            <td><span class="figaro-main-text" data-default-text="Кофр транспортный" data-no-kit-text="Кофр транспортный -1 шт">Кофр транспортный</span> <input type="number" class="small-input" value="1" min="0" max="10"><span class="figaro-main-qty-suffix"> шт</span></td>
                             <td>Лайтпанель 1шт Bi-Color Flood DMX.</td>
                             <td>
                                 <select class="small-input figaro-default-add-qty" data-min-qty="1" name="add-qty-5">
@@ -259,7 +266,7 @@
                             </td>
                         </tr>
                         <tr>
-                            <td>Дождевик (зимник) для камеры <input type="number" class="small-input" value="1" min="0" max="10"> шт</td>
+                            <td><span class="figaro-main-text" data-default-text="Дождевик (зимник) для камеры" data-no-kit-text="Дождевик (зимник) для камеры">Дождевик (зимник) для камеры</span> <input type="number" class="small-input" value="1" min="0" max="10"><span class="figaro-main-qty-suffix"> шт</span></td>
                             <td>Фильтры.</td>
                             <td>
                                 <select class="small-input">
@@ -273,7 +280,7 @@
                             </td>
                         </tr>
                         <tr>
-                            <td>Наушники SENNHEISER HD280 <input type="number" class="small-input" value="1" min="0" max="10"> шт</td>
+                            <td><span class="figaro-main-text" data-default-text="Наушники SENNHEISER HD280" data-no-kit-text="">Наушники SENNHEISER HD280</span> <input type="number" class="small-input" value="1" min="0" max="10"><span class="figaro-main-qty-suffix"> шт</span></td>
                             <td>Объектив широкоугольный 11*</td>
                             <td>
                                 <select class="small-input">
@@ -287,7 +294,7 @@
                             </td>
                         </tr>
                         <tr>
-                            <td>Штатив для видеокамеры <input type="number" class="small-input" value="1" min="0" max="10"> шт</td>
+                            <td><span class="figaro-main-text" data-default-text="Штатив для видеокамеры" data-no-kit-text="">Штатив для видеокамеры</span> <input type="number" class="small-input" value="1" min="0" max="10"><span class="figaro-main-qty-suffix"> шт</span></td>
                             <td>Широкоугольная линза.</td>
                             <td>
                                 <select class="small-input">

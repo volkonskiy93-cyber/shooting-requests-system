@@ -625,6 +625,75 @@ function _syncTtkMainKitMode() {
   table.classList.toggle('without-main-kit', withoutMainKit);
 }
 
+function _syncFigaroMainKitMode() {
+  const toggle = document.getElementById('figaro-without-main-kit');
+  const table = document.querySelector('#shooting-request-form-figaro .equipment-table');
+  const mainInputs = document.querySelectorAll('#shooting-request-form-figaro tbody td:first-child input[type="number"]');
+  const mainHeader = document.querySelector('#shooting-request-form-figaro .figaro-main-header');
+  const mainTexts = document.querySelectorAll('#shooting-request-form-figaro .figaro-main-text');
+  const rows = document.querySelectorAll('#shooting-request-form-figaro .equipment-table tbody tr');
+
+  if (!toggle || !table) return;
+
+  const withoutMainKit = Boolean(toggle.checked);
+
+  if (mainHeader) {
+    mainHeader.textContent = withoutMainKit
+      ? (mainHeader.dataset.noKitText || mainHeader.textContent)
+      : (mainHeader.dataset.defaultText || mainHeader.textContent);
+  }
+
+  mainTexts.forEach((node) => {
+    node.textContent = withoutMainKit
+      ? (node.dataset.noKitText || '')
+      : (node.dataset.defaultText || '');
+  });
+
+  rows.forEach((row) => {
+    const mainText = row.querySelector('.figaro-main-text');
+    row.classList.toggle('without-main-row', withoutMainKit && mainText && !mainText.textContent.trim());
+  });
+
+  mainInputs.forEach((input) => {
+    const cell = input.closest('td');
+    if (withoutMainKit) {
+      if (input.dataset.savedValue === undefined) {
+        input.dataset.savedValue = input.value;
+      }
+      input.value = '0';
+      input.disabled = true;
+      input.style.display = 'none';
+      cell?.classList.add('no-kit-cell');
+    } else {
+      input.disabled = false;
+      input.style.display = '';
+      if (input.dataset.savedValue !== undefined) {
+        input.value = input.dataset.savedValue;
+        delete input.dataset.savedValue;
+      } else {
+        input.value = input.defaultValue || input.value || '0';
+      }
+      cell?.classList.remove('no-kit-cell');
+    }
+  });
+
+  table.classList.toggle('without-main-kit', withoutMainKit);
+}
+
+function _resetFigaroMainKitMode() {
+  const toggle = document.getElementById('figaro-without-main-kit');
+  if (toggle) toggle.checked = false;
+  _syncFigaroMainKitMode();
+}
+
+function _initFigaroMainKitToggle() {
+  const toggle = document.getElementById('figaro-without-main-kit');
+  if (!toggle) return;
+
+  toggle.addEventListener('change', _syncFigaroMainKitMode);
+  _syncFigaroMainKitMode();
+}
+
 function _resetTtkMainKitMode() {
   const toggle = document.getElementById('ttk-without-main-kit');
   const table = document.querySelector('#shooting-request-form-ttk .equipment-table');
@@ -993,6 +1062,7 @@ async function exportToExcel(contractorType) {
       startTime: document.getElementById('figaro-start-time')?.value || '',
       endTime: document.getElementById('figaro-end-time')?.value || '',
       broadcastDate: document.getElementById('figaro-broadcast-date')?.value || null,
+      withoutMainKit: document.getElementById('figaro-without-main-kit')?.checked || false,
       equipment: collectEquipment('shooting-request-form-figaro'),
     };
   } else if (contractorType === 'ttk') {
@@ -1073,6 +1143,7 @@ document.addEventListener('DOMContentLoaded', () => {
   window.exportToExcel = exportToExcel;
 
   _initPickers();
+  _initFigaroMainKitToggle();
   _initTtkMainKitToggle();
   _initCustomDatalists();
   _initProfileAutofill();
@@ -1116,6 +1187,7 @@ document.addEventListener('DOMContentLoaded', () => {
         startTime: document.getElementById('figaro-start-time')?.value || '',
         endTime: document.getElementById('figaro-end-time')?.value || '',
         broadcastDate: document.getElementById('figaro-broadcast-date')?.value || null,
+        withoutMainKit: document.getElementById('figaro-without-main-kit')?.checked || false,
         equipment: collectEquipment('shooting-request-form-figaro'),
       };
 
@@ -1123,6 +1195,7 @@ document.addEventListener('DOMContentLoaded', () => {
         showSendingSplash();
         const result = await _postApplication(payload);
         figaroForm.reset();
+        _resetFigaroMainKitMode();
         goBack();
         showSuccessModal(_submissionSuccessMessage(result, 'Файл сформирован, заявка сохранена и отправлена адресату.'));
       } catch (err) {
@@ -1133,6 +1206,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     figaroForm.addEventListener('reset', () => {
       setTimeout(() => {
+        _resetFigaroMainKitMode();
         _applyProfileDefaults();
         _applyFigaroEquipmentDefaults();
       }, 0);

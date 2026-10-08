@@ -408,8 +408,13 @@ select:focus {
     accent-color: #4b3321;
 }
 
-.equipment-table.without-main-kit .ttk-main-header {
+.equipment-table.without-main-kit .ttk-main-header,
+.equipment-table.without-main-kit .figaro-main-header {
     background: linear-gradient(135deg, rgba(240, 179, 91, 0.18), rgba(244, 200, 138, 0.08));
+}
+
+.equipment-table.without-main-kit .figaro-main-qty-suffix {
+    display: none;
 }
 
 .equipment-table .no-kit-cell {
