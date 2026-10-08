@@ -36,7 +36,7 @@ function selectContractor(contractor) {
       const startTime = document.getElementById('figaro-start-time');
       const endTime = document.getElementById('figaro-end-time');
       if (appDate) _setDateInput('figaro-application-date', today);
-      if (shootDate) shootDate.min = today;
+      if (shootDate?._flatpickr) shootDate._flatpickr.set('minDate', today);
       // время выезда по умолчанию 09:00-18:00
       if (startTime && !startTime.value) startTime.value = '09:00';
       if (endTime && !endTime.value) endTime.value = '18:00';
@@ -47,7 +47,7 @@ function selectContractor(contractor) {
       const startTime = document.getElementById('ttk-start-time');
       const endTime = document.getElementById('ttk-end-time');
       if (appDate) _setDateInput('ttk-application-date', today);
-      if (shootDate) shootDate.min = today;
+      if (shootDate?._flatpickr) shootDate._flatpickr.set('minDate', today);
       // время выезда по умолчанию 09:00-18:00
       if (startTime && !startTime.value) startTime.value = '09:00';
       if (endTime && !endTime.value) endTime.value = '18:00';
@@ -68,6 +68,42 @@ function goBack() {
     if (el) el.classList.remove('active');
   });
   if (mainScreen) mainScreen.classList.add('active');
+}
+
+function _dateToLocalIso(date) {
+  if (!(date instanceof Date) || Number.isNaN(date.getTime())) return '';
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function _getShootingPeriod(contractor) {
+  const el = document.getElementById(`${contractor}-shooting-date`);
+  if (!el) return { shootingDate: '', shootingEndDate: null };
+
+  let dates = [];
+  if (el._flatpickr) {
+    dates = el._flatpickr.selectedDates.map(_dateToLocalIso).filter(Boolean);
+  }
+
+  if (!dates.length) {
+    dates = ((el.value || '').match(/\d{4}-\d{2}-\d{2}/g) || []).slice(0, 2);
+  }
+
+  return {
+    shootingDate: dates[0] || '',
+    shootingEndDate: dates[1] || null,
+  };
+}
+
+function _clearShootingPeriod(contractor) {
+  const el = document.getElementById(`${contractor}-shooting-date`);
+  if (el?._flatpickr) {
+    el._flatpickr.clear();
+  } else if (el) {
+    el.value = '';
+  }
 }
 
 function updateStoryTitleFromDate(formType) {
@@ -491,13 +527,23 @@ function _initPickers() {
   };
 
   // Apply
-  ['figaro-application-date', 'figaro-shooting-date', 'figaro-broadcast-date',
-   'ttk-application-date', 'ttk-shooting-date', 'ttk-broadcast-date',
+  ['figaro-application-date', 'figaro-broadcast-date',
+   'ttk-application-date', 'ttk-broadcast-date',
    'producer-shooting-date', 'producer-broadcast-date',
    'regions-mounting-date', 'regions-broadcast-date'
   ].forEach((id) => {
     const el = document.getElementById(id);
     if (el) flatpickr(el, dateCfg);
+  });
+
+  ['figaro', 'ttk'].forEach((contractor) => {
+    const shootInput = document.getElementById(`${contractor}-shooting-date`);
+    if (!shootInput) return;
+    flatpickr(shootInput, {
+      ...dateCfg,
+      mode: 'range',
+      minDate: _getTodayIso(),
+    });
   });
 
   // Time inputs
@@ -519,7 +565,8 @@ function _initPickers() {
   const figBroad = document.getElementById('figaro-broadcast-date');
   if (figShoot && figBroad) {
     const updateMin = () => {
-      const v = figShoot.value;
+      const period = _getShootingPeriod('figaro');
+      const v = period.shootingEndDate || period.shootingDate;
       if (figBroad._flatpickr) figBroad._flatpickr.set('minDate', v || null);
       figBroad.min = v || '';
       if (figBroad.value && v && figBroad.value < v) _setDateInput('figaro-broadcast-date', v);
@@ -532,7 +579,8 @@ function _initPickers() {
   const ttkBroad = document.getElementById('ttk-broadcast-date');
   if (ttkShoot && ttkBroad) {
     const updateMin = () => {
-      const v = ttkShoot.value;
+      const period = _getShootingPeriod('ttk');
+      const v = period.shootingEndDate || period.shootingDate;
       if (ttkBroad._flatpickr) ttkBroad._flatpickr.set('minDate', v || null);
       ttkBroad.min = v || '';
       if (ttkBroad.value && v && ttkBroad.value < v) _setDateInput('ttk-broadcast-date', v);
@@ -1071,7 +1119,7 @@ async function exportToExcel(contractorType) {
       operator: _selectedText(document.getElementById('figaro-operator')),
       videoEngineer: _selectedText(document.getElementById('figaro-video-engineer')),
       applicationDate: today,
-      shootingDate: document.getElementById('figaro-shooting-date')?.value || '',
+      ..._getShootingPeriod('figaro'),
       startTime: document.getElementById('figaro-start-time')?.value || '',
       endTime: document.getElementById('figaro-end-time')?.value || '',
       broadcastDate: document.getElementById('figaro-broadcast-date')?.value || null,
@@ -1100,7 +1148,7 @@ async function exportToExcel(contractorType) {
       videoEngineer: _selectedText(document.getElementById('ttk-video-engineer')),
       carNumber: document.getElementById('ttk-car-number')?.value || '',
       applicationDate: today,
-      shootingDate: document.getElementById('ttk-shooting-date')?.value || '',
+      ..._getShootingPeriod('ttk'),
       startTime: document.getElementById('ttk-start-time')?.value || '',
       endTime: document.getElementById('ttk-end-time')?.value || '',
       extension: document.getElementById('ttk-extension')?.value || '',
@@ -1196,7 +1244,7 @@ document.addEventListener('DOMContentLoaded', () => {
         operator: _selectedText(document.getElementById('figaro-operator')),
         videoEngineer: _selectedText(document.getElementById('figaro-video-engineer')),
         applicationDate: today,
-        shootingDate: document.getElementById('figaro-shooting-date')?.value || '',
+        ..._getShootingPeriod('figaro'),
         startTime: document.getElementById('figaro-start-time')?.value || '',
         endTime: document.getElementById('figaro-end-time')?.value || '',
         broadcastDate: document.getElementById('figaro-broadcast-date')?.value || null,
@@ -1219,6 +1267,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     figaroForm.addEventListener('reset', () => {
       setTimeout(() => {
+        _clearShootingPeriod('figaro');
         _resetFigaroMainKitMode();
         _applyProfileDefaults();
         _applyFigaroEquipmentDefaults();
@@ -1257,7 +1306,7 @@ document.addEventListener('DOMContentLoaded', () => {
         videoEngineer: _selectedText(document.getElementById('ttk-video-engineer')),
         carNumber: document.getElementById('ttk-car-number')?.value || '',
         applicationDate: today,
-        shootingDate: document.getElementById('ttk-shooting-date')?.value || '',
+        ..._getShootingPeriod('ttk'),
         startTime: document.getElementById('ttk-start-time')?.value || '',
         endTime: document.getElementById('ttk-end-time')?.value || '',
         extension: document.getElementById('ttk-extension')?.value || '',
@@ -1284,6 +1333,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     ttkForm.addEventListener('reset', () => {
       setTimeout(() => {
+        _clearShootingPeriod('ttk');
         _resetTtkMainKitMode();
         _applyProfileDefaults();
         _syncTtkSonyLensOption();

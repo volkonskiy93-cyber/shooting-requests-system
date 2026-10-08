@@ -131,6 +131,25 @@ def _set_cell_date(ws, coord_or_cell, value, number_format="dd.mm.yy"):
         target_cell.number_format = number_format
 
 
+def _set_shooting_period(ws, coord_or_cell, start_value, end_value):
+    """Записывает одну дату или период в формате 10.10-21.10.26."""
+    start_date = _parse_date_yyyy_mm_dd(start_value)
+    end_date = _parse_date_yyyy_mm_dd(end_value)
+
+    if not start_date:
+        return
+
+    if end_date and end_date != start_date:
+        period = f"{start_date:%d.%m}-{end_date:%d.%m.%y}"
+        _set_cell_value(ws, coord_or_cell, period, force_black=False)
+        target_cell = _resolve_target_cell(ws, coord_or_cell)
+        if target_cell is not None:
+            target_cell.number_format = "@"
+        return
+
+    _set_cell_date(ws, coord_or_cell, start_date)
+
+
 def _format_extension_value(value):
     normalized = str(value or "").strip()
     return normalized or "нет"
@@ -310,7 +329,12 @@ def create_excel_document(form_data, application_id):
                 _set_cell_value(ws, "B11", ve)
             
             _set_cell_date(ws, "A13", form_data.get("applicationDate"))
-            _set_cell_date(ws, "B13", form_data.get("shootingDate"))
+            _set_shooting_period(
+                ws,
+                "B13",
+                form_data.get("shootingDate"),
+                form_data.get("shootingEndDate")
+            )
             _set_cell_value(ws, "C13", f"{form_data.get('startTime')} - {form_data.get('endTime')}")
             _set_cell_value(ws, "D13", _parse_date_yyyy_mm_dd(form_data.get("broadcastDate")))
             
@@ -347,7 +371,12 @@ def create_excel_document(form_data, application_id):
             
             # Даты и время (строка 14 для значений)
             _set_cell_date(ws, "A14", form_data.get("applicationDate"))
-            _set_cell_date(ws, "B14", form_data.get("shootingDate"))
+            _set_shooting_period(
+                ws,
+                "B14",
+                form_data.get("shootingDate"),
+                form_data.get("shootingEndDate")
+            )
             _set_cell_value(ws, "C14", f"{form_data.get('startTime')} - {form_data.get('endTime')}")
             _set_cell_value(ws, "D14", _parse_date_yyyy_mm_dd(form_data.get("broadcastDate")))
             _set_cell_value(ws, "D15", _format_extension_value(form_data.get("extension", "")))
