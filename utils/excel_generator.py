@@ -250,8 +250,6 @@ def _apply_equipment(ws, equipment, contractor=None, without_main_kit=False):
         additional_text = str(eq.get("additional", "") or "").strip()
 
         if contractor == 'figaro':
-            if additional_text and ("ПЕТЛЯ" in additional_text.upper() or "BI-COLOR" in additional_text.upper()):
-                add_qty = max(int(add_qty or 0), 1)
             if without_main_kit and "ФОТОАППАРАТ" in additional_text.upper():
                 add_qty = max(int(add_qty or 0), 1)
 
