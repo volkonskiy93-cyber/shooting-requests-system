@@ -67,6 +67,24 @@
             text-transform: uppercase;
         }
 
+        .schedule-back {
+            display: inline-flex;
+            align-items: center;
+            min-height: 44px;
+            margin-bottom: 14px;
+            padding: 0 16px;
+            border: 1px solid var(--border-strong);
+            border-radius: 14px;
+            background: #fff;
+            color: var(--text-primary);
+            font-weight: 700;
+            text-decoration: none;
+        }
+
+        .schedule-back:hover {
+            border-color: rgba(17, 17, 17, 0.28);
+        }
+
         header.screen-only {
             display: flex;
             align-items: baseline;
@@ -616,6 +634,7 @@
 </head>
 <body>
     <div class="container">
+        <a class="schedule-back screen-only" href="/dashboard">← Назад</a>
         <header class="screen-only">
             <div class="kicker">График монтажа</div>
             <h1>Аппаратные AVID</h1>
@@ -716,6 +735,7 @@
         let currentDate = START_DATE;
         let currentRoom = 1;
         let canEditFromServer = false;
+        let viewerRole = 'anonymous';
         let csrfToken = '';
         const saveTimers = new Map();
         let correspondentNames = [];
@@ -1100,6 +1120,8 @@
             document.getElementById('access-label').textContent = canEdit()
                 ? 'Редактирование: администратор / координатор'
                 : 'Только просмотр';
+            document.querySelector('.role-box').hidden =
+                !canEdit() && viewerRole === 'correspondent';
             document.getElementById('mode-note').hidden = canEdit();
             document.getElementById('print-btn').hidden = !canEdit();
             document.getElementById('actual-filter-btn').hidden = !canEdit();
@@ -1482,6 +1504,7 @@
                 maxDate = data.maxDate || minDate;
                 currentDate = data.initialDate || minDate;
                 canEditFromServer = Boolean(data.canEdit);
+                viewerRole = data.viewerRole || 'anonymous';
                 csrfToken = data.csrfToken || '';
                 state.days = data.days && typeof data.days === 'object' ? data.days : {};
 
@@ -1510,6 +1533,7 @@
             } catch (error) {
                 console.error('Не удалось загрузить общий график', error);
                 canEditFromServer = false;
+                viewerRole = 'anonymous';
                 status.textContent = `Не удалось загрузить общий график: ${error.message}`;
             }
             render();

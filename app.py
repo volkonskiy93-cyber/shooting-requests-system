@@ -1057,6 +1057,7 @@ def get_montage_schedule():
     return jsonify({
         'success': True,
         'canEdit': _can_edit_montage_schedule(user),
+        'viewerRole': (user.role or 'correspondent') if user else 'anonymous',
         'minDate': min_date.isoformat(),
         'initialDate': initial_date.isoformat(),
         'maxDate': max_date.isoformat(),

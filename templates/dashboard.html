@@ -114,6 +114,11 @@
     color: #fff;
 }
 
+.dashboard-card-full {
+    grid-column: 1 / -1;
+    min-height: 150px;
+}
+
 .dashboard-card.dashboard-card-wide span,
 .dashboard-card.dashboard-card-wide p {
     color: rgba(255, 255, 255, 0.72);
@@ -215,7 +220,7 @@
         <section class="dashboard-grid">
             {% if user_role == 'correspondent' %}
             <a href="/forms" class="dashboard-card dashboard-card-wide">
-                <span>Система заявок</span>
+                <span>Заявки</span>
                 <h2>Отправить заявку</h2>
                 <p>Открыть формы ТТК, ТМК и заявки продюсерам.</p>
             </a>
@@ -232,16 +237,24 @@
                 <p>Посмотреть актуальный график монтажных аппаратных.</p>
             </a>
             {% else %}
+            {% if user_role == 'admin' %}
+            <a href="/admin" class="dashboard-card dashboard-card-wide">
+                <span>Доступ к системе</span>
+                <h2>Регистрация пользователей</h2>
+                <p>Одобрить новые аккаунты и открыть панель администрирования.</p>
+            </a>
+            {% endif %}
+
+            <a href="/montage-schedule" class="dashboard-card dashboard-card-full">
+                <span>Аппаратные AVID</span>
+                <h2>График монтажа</h2>
+                <p>Открыть и редактировать график монтажных аппаратных.</p>
+            </a>
+
             <a href="/forms" class="dashboard-card">
                 <span>Панель заявок</span>
                 <h2>Заявки</h2>
                 <p>Открыть формы ТТК, ФИГАРО и заявки продюсерам.</p>
-            </a>
-
-            <a href="/montage-schedule" class="dashboard-card">
-                <span>Аппаратные AVID</span>
-                <h2>График монтажа</h2>
-                <p>Открыть и редактировать график монтажных аппаратных.</p>
             </a>
 
             <a href="/story-output/overview" class="dashboard-card">
@@ -249,14 +262,6 @@
                 <h2>Выработка корреспондентов</h2>
                 <p>Посмотреть количество и список вышедших сюжетов за период с 21-го по 20-е.</p>
             </a>
-
-            {% if user_role == 'admin' %}
-            <a href="/admin" class="dashboard-card">
-                <span>Панель администратора</span>
-                <h2>Администрирование</h2>
-                <p>Просмотр, фильтрация, статусы и обработка поступивших заявок.</p>
-            </a>
-            {% endif %}
             {% endif %}
         </section>
 
