@@ -27,7 +27,7 @@ import secrets
 from typing import Optional
 from urllib.parse import quote
 from dotenv import load_dotenv
-from models import db, User, Application, MontageScheduleDay
+from models import db, User, Application
 from utils.excel_generator import create_excel_document
 from utils.word_generator import create_word_document
 from utils.email_sender import send_email_with_attachment
@@ -277,7 +277,7 @@ def _registration_name_ok(first: str, last: str) -> tuple[bool, str]:
 
 
 def _role_redirect_url(role: str) -> str:
-    return url_for('dashboard') if role in ('admin', 'coordinator') else url_for('forms')
+    return url_for('dashboard') if role == 'admin' else url_for('forms')
 
 
 def _refresh_registration_captcha(exclude_prompt: Optional[str] = None) -> str:
@@ -564,27 +564,6 @@ def _get_active_user() -> Optional[User]:
 
 def _is_admin(user: Optional[User]) -> bool:
     return bool(user and user.role == 'admin')
-
-
-def _can_edit_montage_schedule(user: Optional[User]) -> bool:
-    return bool(user and user.role in ('admin', 'coordinator'))
-
-
-MONTAGE_SCHEDULE_START_DATE = date(2026, 12, 1)
-
-
-def _montage_schedule_window():
-    """Окно графика: вчера, сегодня и три дня вперёд, но не раньше даты запуска."""
-    today = date.today()
-    anchor = max(today, MONTAGE_SCHEDULE_START_DATE)
-    return max(MONTAGE_SCHEDULE_START_DATE, anchor - timedelta(days=1)), anchor, anchor + timedelta(days=3)
-
-
-def _parse_schedule_date(value: str) -> Optional[date]:
-    try:
-        return datetime.strptime((value or '').strip(), '%Y-%m-%d').date()
-    except (TypeError, ValueError):
-        return None
 
 
 def _user_can_access_application(user: Optional[User], application: Application) -> bool:
@@ -946,17 +925,13 @@ def forms():
 
 @app.route('/dashboard')
 def dashboard():
-    """Рабочая панель администратора или координатора."""
+    """Промежуточная панель доступа для администратора"""
     user = _get_active_user()
     if not user:
         return redirect(url_for('index'))
-    if not _can_edit_montage_schedule(user):
+    if not _is_admin(user):
         return redirect(url_for('forms'))
-    return render_template(
-        'dashboard.html',
-        user_email=user.email,
-        user_role=user.role,
-    )
+    return render_template('dashboard.html', user_email=user.email)
 
 
 @app.route('/admin')
@@ -979,90 +954,7 @@ def archive():
     return render_template('archive.html')
 
 
-@app.route('/montage-schedule')
-def montage_schedule():
-    """Публичный график монтажа; авторизация для просмотра не требуется."""
-    return send_file(os.path.join(app.root_path, 'avid_schedule.html'))
-
-
 # ==================== API ENDPOINTS ====================
-
-@app.route('/api/montage-schedule', methods=['GET'])
-def get_montage_schedule():
-    """Публично вернуть дни текущего пятидневного окна графика."""
-    user = _get_active_user()
-    min_date, initial_date, max_date = _montage_schedule_window()
-    rows = MontageScheduleDay.query.filter(
-        MontageScheduleDay.schedule_date >= min_date,
-        MontageScheduleDay.schedule_date <= max_date,
-    ).order_by(MontageScheduleDay.schedule_date.asc()).all()
-
-    days = {}
-    for row in rows:
-        item = row.to_dict()
-        if isinstance(item.get('day'), dict):
-            days[item['date']] = item['day']
-
-    registered_users = []
-    if _can_edit_montage_schedule(user):
-        registered_users = [
-            candidate.full_name.strip()
-            for candidate in User.query.filter_by(approval_status=APPROVAL_APPROVED).all()
-            if (candidate.full_name or '').strip()
-        ]
-
-    return jsonify({
-        'success': True,
-        'canEdit': _can_edit_montage_schedule(user),
-        'minDate': min_date.isoformat(),
-        'initialDate': initial_date.isoformat(),
-        'maxDate': max_date.isoformat(),
-        'days': days,
-        'registeredUsers': sorted(set(registered_users)),
-        'csrfToken': _ensure_csrf_token(),
-    })
-
-
-@app.route('/api/montage-schedule/<schedule_date>', methods=['PUT'])
-def save_montage_schedule_day(schedule_date):
-    """Сохранить один день графика; доступно администратору и координатору."""
-    user = _get_active_user()
-    if not user:
-        return jsonify({'success': False, 'message': 'Требуется вход в систему.'}), 401
-    if not _can_edit_montage_schedule(user):
-        return jsonify({'success': False, 'message': 'Недостаточно прав для изменения графика.'}), 403
-
-    parsed_date = _parse_schedule_date(schedule_date)
-    min_date, _, max_date = _montage_schedule_window()
-    if not parsed_date or parsed_date < min_date or parsed_date > max_date:
-        return jsonify({'success': False, 'message': 'Дата находится вне доступного окна графика.'}), 400
-
-    payload = request.get_json(silent=True) or {}
-    day = payload.get('day')
-    if not isinstance(day, dict) or not isinstance(day.get('rooms'), list):
-        return jsonify({'success': False, 'message': 'Некорректные данные графика.'}), 400
-    if len(day['rooms']) > 8:
-        return jsonify({'success': False, 'message': 'В графике не может быть больше восьми аппаратных.'}), 400
-
-    serialized = json.dumps(day, ensure_ascii=False, separators=(',', ':'))
-    if len(serialized.encode('utf-8')) > 1024 * 1024:
-        return jsonify({'success': False, 'message': 'Данные графика слишком велики.'}), 413
-
-    row = MontageScheduleDay.query.filter_by(schedule_date=parsed_date).first()
-    if not row:
-        row = MontageScheduleDay(schedule_date=parsed_date, payload=serialized)
-        db.session.add(row)
-    else:
-        row.payload = serialized
-    row.updated_by_user_id = user.id
-    row.updated_at = datetime.now()
-    db.session.commit()
-
-    return jsonify({
-        'success': True,
-        'date': parsed_date.isoformat(),
-        'updatedAt': row.updated_at.isoformat(),
-    })
 
 @app.route('/api/my-applications', methods=['GET'])
 def get_my_applications():
