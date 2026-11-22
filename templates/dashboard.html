@@ -157,9 +157,9 @@
 <div class="container">
     <div class="dashboard-shell">
         <section class="dashboard-hero">
-            <div class="dashboard-kicker">Администратор</div>
+            <div class="dashboard-kicker">{{ 'Администратор' if user_role == 'admin' else 'Координатор' }}</div>
             <h1>Рабочая панель</h1>
-            <p>Здесь собраны оба сценария администратора: переход в панель заявок и переход в административную панель обработки.</p>
+            <p>Здесь собраны доступные разделы системы подачи заявок и графика монтажа.</p>
             <div class="dashboard-meta">Вы вошли как {{ user_email }}</div>
         </section>
 
@@ -170,11 +170,19 @@
                 <p>Открыть формы ТТК, ФИГАРО и заявки продюсерам.</p>
             </a>
 
+            <a href="/montage-schedule" class="dashboard-card">
+                <span>Аппаратные AVID</span>
+                <h2>График монтажа</h2>
+                <p>Открыть и редактировать график монтажных аппаратных.</p>
+            </a>
+
+            {% if user_role == 'admin' %}
             <a href="/admin" class="dashboard-card">
                 <span>Панель администратора</span>
                 <h2>Администрирование</h2>
                 <p>Просмотр, фильтрация, статусы и обработка поступивших заявок.</p>
             </a>
+            {% endif %}
         </section>
 
         <div class="dashboard-actions">
