@@ -41,6 +41,57 @@ class User(db.Model):
         }
 
 
+class MontageScheduleDay(db.Model):
+    """Общий график монтажных аппаратных на один день."""
+    __tablename__ = 'montage_schedule_days'
+
+    id = db.Column(db.Integer, primary_key=True)
+    schedule_date = db.Column(db.Date, unique=True, nullable=False, index=True)
+    payload = db.Column(db.Text, nullable=False)
+    updated_by_user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
+    updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now, nullable=False)
+
+    def to_dict(self):
+        try:
+            day = json.loads(self.payload)
+        except (TypeError, ValueError, json.JSONDecodeError):
+            day = None
+        return {
+            'date': self.schedule_date.isoformat(),
+            'day': day,
+            'updatedAt': self.updated_at.isoformat() if self.updated_at else None,
+        }
+
+
+class StoryOutputEntry(db.Model):
+    """Личная запись корреспондента о сюжете, вышедшем в эфир."""
+    __tablename__ = 'story_output_entries'
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
+    air_date = db.Column(db.Date, nullable=False, index=True)
+    title = db.Column(db.String(500), nullable=False)
+    note = db.Column(db.Text, nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.now, nullable=False)
+    updated_at = db.Column(
+        db.DateTime,
+        default=datetime.now,
+        onupdate=datetime.now,
+        nullable=False,
+    )
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'userId': self.user_id,
+            'airDate': self.air_date.isoformat(),
+            'title': self.title,
+            'note': self.note or '',
+            'createdAt': self.created_at.isoformat() if self.created_at else None,
+            'updatedAt': self.updated_at.isoformat() if self.updated_at else None,
+        }
+
+
 class Application(db.Model):
     """Модель заявки на видеосъемку"""
     __tablename__ = 'applications'

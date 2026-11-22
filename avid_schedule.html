@@ -1,0 +1,1743 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow, noarchive">
+    <title>График монтажа AVID</title>
+    <style>
+        :root {
+            --bg-primary: #f5f2eb;
+            --bg-secondary: #ffffff;
+            --bg-muted: #efebe4;
+            --bg-elevated: rgba(255, 255, 255, 0.9);
+            --accent-sunrise: #f0b35b;
+            --accent-apricot: #f4c88a;
+            --accent-dawn: #d98747;
+            --text-primary: #111111;
+            --text-secondary: #615c55;
+            --text-muted: #928c83;
+            --border-soft: rgba(17, 17, 17, 0.07);
+            --border-strong: rgba(17, 17, 17, 0.12);
+            --shadow-soft: 0 18px 48px rgba(17, 17, 17, 0.05);
+            --shadow-card: 0 28px 72px rgba(17, 17, 17, 0.07);
+            --radius-xl: 40px;
+            --content-width: 1480px;
+            --break: #e7f6df;
+            --break-text: #1f6b32;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Helvetica Neue', Arial, sans-serif;
+            min-height: 100vh;
+            color: var(--text-primary);
+            -webkit-font-smoothing: antialiased;
+            line-height: 1.5;
+            background:
+                radial-gradient(circle at 18% 4%, rgba(240, 179, 91, 0.16), rgba(240, 179, 91, 0) 20%),
+                radial-gradient(circle at 82% 8%, rgba(244, 200, 138, 0.16), rgba(244, 200, 138, 0) 22%),
+                linear-gradient(180deg, #fcfbf8 0%, var(--bg-primary) 52%, #ece7de 100%);
+        }
+
+        button, input, select { font: inherit; color: inherit; }
+        button { cursor: pointer; }
+        button:disabled { cursor: default; opacity: 0.35; }
+
+        .container {
+            max-width: var(--content-width);
+            margin: 0 auto;
+            padding: 16px 18px 40px;
+        }
+
+        .kicker {
+            display: inline-flex;
+            align-items: center;
+            min-height: 34px;
+            padding: 0 14px;
+            margin-bottom: 14px;
+            border-radius: 999px;
+            background: linear-gradient(135deg, rgba(240, 179, 91, 0.16), rgba(244, 200, 138, 0.08));
+            border: 1px solid rgba(217, 135, 71, 0.12);
+            color: #8a5a2c;
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+        }
+
+        header.screen-only {
+            display: flex;
+            align-items: baseline;
+            gap: 18px;
+        }
+        header.screen-only .kicker { display: none; }
+
+        h1 {
+            max-width: 920px;
+            margin-bottom: 6px;
+            font-size: clamp(2rem, 3.4vw, 3.4rem);
+            line-height: 0.94;
+            letter-spacing: -0.06em;
+            font-weight: 700;
+        }
+
+        .lede {
+            max-width: 760px;
+            color: var(--text-secondary);
+            font-size: 1.02rem;
+            line-height: 1.4;
+        }
+
+        .toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px 16px;
+            align-items: flex-end;
+            margin: 14px 0 12px;
+        }
+
+        .date-nav {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px;
+            background: rgba(255, 255, 255, 0.92);
+            border: 1px solid var(--border-soft);
+            border-radius: 22px;
+            box-shadow: var(--shadow-soft);
+        }
+
+        .date-copy { min-width: 220px; padding: 4px 8px 6px; }
+        .date-copy strong {
+            display: block;
+            font-size: 1.05rem;
+            letter-spacing: -0.03em;
+        }
+        .date-copy span { color: var(--text-muted); font-size: 0.84rem; }
+
+        .icon-btn, .segment button, .text-btn, .primary-btn, .room-btn, .row-btn {
+            border: 1px solid var(--border-strong);
+            background: #fff;
+        }
+
+        .icon-btn {
+            width: 44px;
+            height: 44px;
+            border-radius: 14px;
+            font-size: 1.2rem;
+        }
+
+        .icon-btn:hover, .text-btn:hover, .room-btn:hover, .row-btn:hover {
+            border-color: rgba(17, 17, 17, 0.28);
+        }
+
+        .date-field {
+            position: relative;
+            width: 44px;
+            height: 44px;
+            min-height: 44px;
+            padding: 0;
+            border: 1px solid var(--border-strong);
+            border-radius: 14px;
+            background: #fff;
+            color: transparent;
+        }
+
+        .date-field::-webkit-datetime-edit,
+        .date-field::-webkit-datetime-edit-fields-wrapper,
+        .date-field::-webkit-datetime-edit-text,
+        .date-field::-webkit-datetime-edit-month-field,
+        .date-field::-webkit-datetime-edit-day-field,
+        .date-field::-webkit-datetime-edit-year-field {
+            display: none;
+        }
+
+        .date-field::-webkit-calendar-picker-indicator {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            cursor: pointer;
+            opacity: 0.75;
+        }
+
+        .role-box { margin-left: auto; max-width: 420px; }
+        .role-box p, .save-state {
+            margin-top: 8px;
+            color: var(--text-muted);
+            font-size: 0.82rem;
+            line-height: 1.45;
+        }
+        .toolbar .role-box p, .save-state { display: none; }
+        .save-state.is-fresh { color: #1f6b32; }
+
+        .segment {
+            display: inline-flex;
+            padding: 4px;
+            border-radius: 16px;
+            background: rgba(255, 255, 255, 0.92);
+            border: 1px solid var(--border-soft);
+            box-shadow: var(--shadow-soft);
+        }
+        .segment button {
+            min-height: 40px;
+            padding: 0 14px;
+            border: 0;
+            border-radius: 12px;
+            background: transparent;
+            font-weight: 650;
+            font-size: 0.92rem;
+        }
+        .segment .access-label {
+            display: inline-flex;
+            align-items: center;
+            min-height: 40px;
+            padding: 0 14px;
+            border-radius: 12px;
+            background: #1a1713;
+            color: #fff;
+            font-weight: 650;
+            font-size: 0.92rem;
+        }
+        .segment button.active {
+            background: #1a1713;
+            color: #fff;
+        }
+
+        .mode-note {
+            margin-bottom: 16px;
+            padding: 12px 16px;
+            border-radius: 16px;
+            background: rgba(255, 255, 255, 0.72);
+            border: 1px solid var(--border-soft);
+            color: var(--text-secondary);
+            font-size: 0.92rem;
+        }
+
+        .room-nav {
+            display: grid;
+            grid-template-columns: repeat(8, minmax(0, 1fr));
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .room-btn {
+            min-height: 64px;
+            padding: 8px 10px;
+            border-radius: 16px;
+            background: rgba(255, 255, 255, 0.88);
+            text-align: left;
+            box-shadow: var(--shadow-soft);
+        }
+        .room-select {
+            width: 100%;
+            border: 0;
+            background: transparent;
+            text-align: left;
+        }
+        .room-btn small {
+            display: block;
+            color: #8e6f53;
+            font-size: 0.68rem;
+            font-weight: 700;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+        }
+        .room-btn strong {
+            display: block;
+            margin-top: 4px;
+            font-size: 0.9rem;
+            letter-spacing: -0.03em;
+            line-height: 1.25;
+        }
+        .room-btn em {
+            display: block;
+            margin-top: 4px;
+            color: var(--text-muted);
+            font-style: normal;
+            font-size: 0.75rem;
+        }
+        .room-btn.active {
+            background: #1a1713;
+            color: #fff;
+            border-color: #1a1713;
+        }
+        .room-btn.active small { color: var(--accent-sunrise); }
+        .room-btn.active em { color: rgba(255, 255, 255, 0.62); }
+        .room-editor-input {
+            width: 100%;
+            min-height: 28px;
+            margin-top: 3px;
+            padding: 2px 6px;
+            border: 1px solid rgba(17, 17, 17, 0.12);
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.9);
+            font-size: 0.82rem;
+            font-weight: 700;
+        }
+        .room-btn.active .room-editor-input {
+            color: #111;
+            border-color: rgba(255, 255, 255, 0.35);
+        }
+
+        .board {
+            padding: 16px 18px 14px;
+            background: rgba(255, 255, 255, 0.92);
+            border: 1px solid var(--border-soft);
+            border-radius: var(--radius-xl);
+            box-shadow: var(--shadow-card);
+        }
+
+        .board-head {
+            display: flex;
+            justify-content: space-between;
+            gap: 16px;
+            align-items: flex-start;
+            margin-bottom: 10px;
+        }
+        .board-head h2 {
+            font-size: clamp(1.25rem, 1.7vw, 1.65rem);
+            letter-spacing: -0.045em;
+            line-height: 1.15;
+        }
+        .board-head p { margin-top: 6px; color: var(--text-secondary); }
+
+        .note-input, .table-wrap input, .table-wrap select, .editor-band input {
+            width: 100%;
+            min-height: 36px;
+            padding: 0 10px;
+            border: 1px solid var(--border-strong);
+            border-radius: 11px;
+            background: #fff;
+        }
+        .note-input { max-width: 360px; }
+        .table-wrap input:focus, .table-wrap select:focus, .editor-band input:focus, .note-input:focus {
+            outline: none;
+            border-color: #111;
+            box-shadow: 0 0 0 4px rgba(17, 17, 17, 0.06);
+        }
+
+        .table-wrap { overflow-x: auto; }
+
+        table { width: 100%; border-collapse: collapse; min-width: 1120px; }
+        .schedule-table .col-correspondent { width: 16%; }
+        .schedule-table .col-time { width: 15%; }
+        .schedule-table .col-title { width: 27%; }
+        .schedule-table .col-air { width: 20%; }
+        .schedule-table .col-story-editor { width: 12%; }
+        .schedule-table .col-actions { width: 3%; }
+        th {
+            padding: 0 8px 6px 0;
+            text-align: left;
+            color: var(--text-muted);
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+        td {
+            padding: 3px 8px 3px 0;
+            border-top: 1px solid rgba(17, 17, 17, 0.06);
+            vertical-align: middle;
+        }
+        .cell-text { min-height: 36px; display: flex; align-items: center; font-size: 0.92rem; }
+        .muted { color: var(--text-muted); }
+
+        .time-pair {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+            gap: 8px;
+            align-items: center;
+        }
+        .time-pair span { color: var(--text-muted); }
+
+        .correspondent-choice input,
+        .time-pair input,
+        input[data-bind="title"],
+        .schedule-table tbody tr:not(.is-break) td:nth-child(-n+3) .cell-text {
+            font-weight: 700;
+        }
+
+        .correspondent-choice {
+            display: grid;
+            grid-template-columns: 108px minmax(110px, 1fr);
+            gap: 8px;
+        }
+
+        .correspondent-choice.is-actual {
+            grid-template-columns: 1fr;
+        }
+
+        .correspondent-choice.is-actual input {
+            display: none;
+        }
+
+        .correspondent-choice.is-actual select,
+        .actual-label {
+            color: #b42318;
+            font-weight: 800;
+        }
+
+        .air-choice {
+            display: grid;
+            grid-template-columns: minmax(150px, 1fr) 46px;
+            gap: 8px;
+        }
+
+        .air-picker {
+            min-height: 36px;
+            padding: 0 6px;
+            cursor: pointer;
+        }
+
+        tr.is-break td { background: var(--break); }
+        tr.is-break td:first-child { border-radius: 16px 0 0 16px; }
+        tr.is-break td:last-child { border-radius: 0 16px 16px 0; }
+        .break-view {
+            min-height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--break-text);
+            font-weight: 700;
+            letter-spacing: -0.02em;
+        }
+        .break-edit {
+            display: grid;
+            grid-template-columns: 220px 160px;
+            gap: 10px;
+            align-items: center;
+            padding: 4px 0;
+        }
+
+        tr.is-invalid .time-pair input { border-color: #b42318; }
+        .invalid-hint { margin-top: 4px; color: #b42318; font-size: 0.75rem; }
+
+        .row-actions { display: flex; gap: 6px; justify-content: flex-end; }
+        .row-btn {
+            width: 30px;
+            height: 30px;
+            border-radius: 9px;
+            font-size: 0.95rem;
+        }
+
+        .editor-band {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+            margin-top: 10px;
+            padding: 10px 14px;
+            border-radius: 18px;
+            background: linear-gradient(135deg, rgba(240, 179, 91, 0.16), rgba(244, 200, 138, 0.08));
+            text-align: center;
+        }
+        .editor-band span {
+            color: #8a5a2c;
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+        }
+        .editor-band strong { font-size: 1.45rem; letter-spacing: -0.04em; }
+        .editor-band input, .editor-band select { max-width: 420px; text-align: center; font-weight: 700; }
+        .editor-hint { max-width: 520px; color: var(--text-secondary); font-size: 0.82rem; }
+        .night-editor-block {
+            width: min(420px, 100%);
+            margin-top: 5px;
+            padding-top: 10px;
+            border-top: 1px solid rgba(138, 90, 44, 0.18);
+        }
+        .night-editor-block span { display: block; margin-bottom: 5px; }
+
+        .board-tools {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 10px;
+        }
+        .text-btn, .primary-btn {
+            min-height: 44px;
+            padding: 0 14px;
+            border-radius: 14px;
+            font-weight: 650;
+        }
+        .primary-btn {
+            border: 0;
+            background: linear-gradient(135deg, #1a1713 0%, #4b3321 100%);
+            color: #fff;
+        }
+        .text-btn.danger { color: #8d2b22; }
+
+        .empty-board { padding: 48px 32px; }
+        .empty-board h2 { margin-bottom: 8px; letter-spacing: -0.04em; }
+        .empty-board p { max-width: 640px; margin-bottom: 18px; color: var(--text-secondary); }
+        .empty-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+
+        .filter-dialog {
+            width: min(1080px, calc(100vw - 28px));
+            max-height: calc(100vh - 28px);
+            margin: auto;
+            padding: 0;
+            overflow: hidden;
+            border: 1px solid var(--border-soft);
+            border-radius: 30px;
+            background: #f8f5ef;
+            box-shadow: 0 36px 100px rgba(17, 17, 17, 0.22);
+        }
+
+        .filter-dialog::backdrop {
+            background: rgba(17, 17, 17, 0.42);
+            backdrop-filter: blur(5px);
+        }
+
+        .filter-shell {
+            display: flex;
+            flex-direction: column;
+            max-height: calc(100vh - 28px);
+        }
+
+        .filter-head {
+            display: flex;
+            justify-content: space-between;
+            gap: 20px;
+            align-items: flex-start;
+            padding: 28px 30px 20px;
+            background: #fff;
+            border-bottom: 1px solid var(--border-soft);
+        }
+
+        .filter-head h2 {
+            font-size: 2rem;
+            line-height: 1;
+            letter-spacing: -0.05em;
+        }
+
+        .filter-head p { margin-top: 8px; color: var(--text-secondary); }
+
+        .filter-controls {
+            display: grid;
+            grid-template-columns: 180px repeat(2, minmax(160px, 1fr)) auto;
+            gap: 12px;
+            align-items: end;
+            padding: 20px 30px;
+        }
+
+        .filter-field label {
+            display: block;
+            margin-bottom: 6px;
+            color: var(--text-muted);
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        .filter-field input,
+        .filter-field select {
+            width: 100%;
+            min-height: 46px;
+            padding: 0 12px;
+            border: 1px solid var(--border-strong);
+            border-radius: 14px;
+            background: #fff;
+        }
+
+        .filter-results {
+            padding: 0 30px 30px;
+            overflow: auto;
+        }
+
+        .filter-summary { margin-bottom: 12px; color: var(--text-secondary); }
+        .filter-table { min-width: 760px; background: #fff; }
+        .filter-table th, .filter-table td { padding: 12px; }
+        .filter-table th:first-child, .filter-table td:first-child { padding-left: 16px; }
+        .filter-empty {
+            padding: 36px;
+            border-radius: 20px;
+            background: #fff;
+            color: var(--text-secondary);
+            text-align: center;
+        }
+
+        .print-only { display: none; }
+
+        @media (max-width: 1100px) {
+            .room-nav { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+            .role-box { margin-left: 0; }
+        }
+
+        @media (max-width: 760px) {
+            .container { padding: 16px 12px 40px; }
+            .room-nav { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .board { padding: 18px 14px 16px; border-radius: 28px; }
+            .board-head { flex-direction: column; }
+            .note-input { max-width: none; }
+            .break-edit { grid-template-columns: 1fr; }
+            table { min-width: 940px; }
+            .filter-head { padding: 22px 18px 16px; }
+            .filter-controls { grid-template-columns: 1fr 1fr; padding: 16px 18px; }
+            .filter-controls .primary-btn { grid-column: 1 / -1; }
+            .filter-results { padding: 0 18px 20px; }
+        }
+
+        @media print {
+            body { background: #fff; }
+            .screen-only { display: none !important; }
+            .print-only { display: block; }
+            .container { max-width: none; padding: 0; }
+            .print-room { break-after: page; padding-bottom: 12px; }
+            .print-room:last-child { break-after: auto; }
+            .print-room h2 { font-size: 18px; margin-bottom: 4px; }
+            .print-room .print-note { margin-bottom: 8px; }
+            .print-room table { min-width: 0; }
+            .print-room th, .print-room td { border: 1px solid #bbb; padding: 6px 8px; font-size: 12px; }
+            .print-room tr.is-break td {
+                background: #e7f6df !important;
+                text-align: center;
+                font-weight: 700;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            .actual-label {
+                color: #b42318 !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            .print-room tbody tr:not(.is-break) td:nth-child(-n+3) {
+                font-weight: 700;
+            }
+            .print-editor { margin-top: 12px; text-align: center; font-weight: 700; font-size: 16px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="screen-only">
+            <div class="kicker">График монтажа</div>
+            <h1>Аппаратные AVID</h1>
+            <p class="lede">График работы аппаратных с 09:00 до 23:00.</p>
+        </header>
+
+        <div class="toolbar screen-only">
+            <div class="date-nav">
+                <button type="button" class="icon-btn" id="prev-day" aria-label="Предыдущий день">←</button>
+                <div class="date-copy">
+                    <strong id="date-label"></strong>
+                    <span id="date-sub"></span>
+                </div>
+                <input class="date-field" id="date-input" type="date" aria-label="Дата графика">
+                <button type="button" class="icon-btn" id="next-day" aria-label="Следующий день">→</button>
+            </div>
+            <button type="button" class="text-btn" id="print-btn" hidden>Печать дня</button>
+            <button type="button" class="text-btn" id="actual-filter-btn" hidden>Фильтр актуалок</button>
+            <div class="role-box">
+                <div class="segment" aria-label="Уровень доступа">
+                    <span class="access-label" id="access-label">Загрузка доступа…</span>
+                </div>
+                <p>Права определяются учётной записью в системе.</p>
+            </div>
+        </div>
+        <p class="save-state screen-only" id="save-state">График загружается из общей системы.</p>
+        <p class="mode-note screen-only" id="mode-note" hidden>Режим просмотра. Изменять график могут администратор и координатор.</p>
+        <div class="room-nav screen-only" id="room-nav"></div>
+        <div id="stage" class="screen-only"></div>
+        <div id="print-pack" class="print-only"></div>
+    </div>
+
+    <dialog class="filter-dialog screen-only" id="actual-filter-dialog">
+        <div class="filter-shell">
+            <header class="filter-head">
+                <div>
+                    <h2>Фильтр графика</h2>
+                    <p>Актуалки за выбранный период.</p>
+                </div>
+                <button type="button" class="icon-btn" id="actual-filter-close" aria-label="Закрыть">×</button>
+            </header>
+            <div class="filter-controls">
+                <div class="filter-field">
+                    <label for="filter-type">Параметр</label>
+                    <select id="filter-type">
+                        <option value="all">Все актуалки</option>
+                        <option value="actual">Обычная актуалка</option>
+                        <option value="night">Ночная актуалка</option>
+                    </select>
+                </div>
+                <div class="filter-field">
+                    <label for="filter-from">Дата с</label>
+                    <input id="filter-from" type="date" min="2026-12-01">
+                </div>
+                <div class="filter-field">
+                    <label for="filter-to">Дата по</label>
+                    <input id="filter-to" type="date" min="2026-12-01">
+                </div>
+                <button type="button" class="primary-btn" id="actual-filter-apply">Показать</button>
+            </div>
+            <div class="filter-results" id="actual-filter-results"></div>
+        </div>
+    </dialog>
+
+    <datalist id="correspondents-list"></datalist>
+    <datalist id="story-editors-list"></datalist>
+
+    <script>
+        const START_DATE = '2026-12-01';
+        const WEEKDAYS = ['Воскресенье', 'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота'];
+        const MONTHS = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
+
+        function slot(correspondent, timeStart, timeEnd, title, airDate, storyEditor) {
+            return {
+                type: 'slot',
+                correspondent: correspondent || '',
+                timeStart,
+                timeEnd,
+                title: title || '',
+                airDate: airDate || '',
+                storyEditor: storyEditor || '',
+                isActual: false,
+                isNightActual: false,
+            };
+        }
+
+        function brk(label, timeStart, timeEnd) {
+            return { type: 'break', label, timeStart, timeEnd };
+        }
+
+        let state = {
+            version: 5,
+            editors: [],
+            days: {},
+        };
+        let minDate = START_DATE;
+        let maxDate = START_DATE;
+        let currentDate = START_DATE;
+        let currentRoom = 1;
+        let canEditFromServer = false;
+        let csrfToken = '';
+        const saveTimers = new Map();
+        let correspondentNames = [];
+        let storyEditorNames = [];
+
+        function saveState() {
+            if (!canEdit()) return;
+            const dateToSave = currentDate;
+            window.clearTimeout(saveTimers.get(dateToSave));
+            const node = document.getElementById('save-state');
+            node.textContent = 'Сохранение изменений…';
+            node.classList.remove('is-fresh');
+            saveTimers.set(dateToSave, window.setTimeout(async () => {
+                try {
+                    const response = await fetch(`/api/montage-schedule/${dateToSave}`, {
+                        method: 'PUT',
+                        credentials: 'same-origin',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-Token': csrfToken,
+                        },
+                        body: JSON.stringify({ day: state.days[dateToSave] }),
+                    });
+                    const data = await response.json();
+                    if (!response.ok || !data.success) {
+                        throw new Error(data.message || `HTTP ${response.status}`);
+                    }
+                    node.textContent = 'Сохранено в общей системе';
+                    node.classList.add('is-fresh');
+                } catch (error) {
+                    console.error('Не удалось сохранить график', error);
+                    node.textContent = `Не удалось сохранить: ${error.message}`;
+                    node.classList.remove('is-fresh');
+                } finally {
+                    saveTimers.delete(dateToSave);
+                }
+            }, 450));
+        }
+
+        function canEdit() {
+            return canEditFromServer;
+        }
+
+        function currentDay() {
+            return state.days[currentDate] || null;
+        }
+
+        function roomByNumber(day, number) {
+            return day.rooms.find((room) => room.number === number);
+        }
+
+        function parseDate(iso) {
+            return new Date(`${iso}T12:00:00`);
+        }
+
+        function toIso(date) {
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${date.getFullYear()}-${month}-${day}`;
+        }
+
+        function formatLong(iso) {
+            const date = parseDate(iso);
+            return `${WEEKDAYS[date.getDay()]}, ${date.getDate()} ${MONTHS[date.getMonth()]} ${date.getFullYear()}`;
+        }
+
+        function formatShort(value) {
+            if (!value) return '';
+            const iso = String(value).match(/^(\d{4})-(\d{2})-(\d{2})$/);
+            if (iso) return `${iso[3]}.${iso[2]}.${iso[1]}`;
+            return value;
+        }
+
+        function formatRange(row) {
+            if (row.timeStart && row.timeEnd) {
+                return `${row.timeStart} – ${row.timeEnd}`;
+            }
+            return row.timeStart || row.timeEnd || 'время не задано';
+        }
+
+        function clockOk(value) {
+            return value === '' || /^([01]\d|2[0-3]):[0-5]\d$/.test(value);
+        }
+
+        function timeInvalid(row) {
+            if (!clockOk(row.timeStart) || !clockOk(row.timeEnd)) return true;
+            if (row.isNightActual) return row.timeStart !== '23:00' || row.timeEnd !== '05:00';
+            return Boolean(row.timeStart && row.timeEnd && row.timeEnd <= row.timeStart);
+        }
+
+        function timeHint(row) {
+            if (!clockOk(row.timeStart) || !clockOk(row.timeEnd)) return 'Формат времени 09:00';
+            if (row.isNightActual && (row.timeStart !== '23:00' || row.timeEnd !== '05:00')) {
+                return 'Ночная актуалка: 23:00–05:00';
+            }
+            if (row.isNightActual) return '';
+            if (row.timeStart && row.timeEnd && row.timeEnd <= row.timeStart) return 'Конец раньше начала';
+            return '';
+        }
+
+        function normalizeTime(value) {
+            const match = value.trim().match(/^(\d{1,2}):(\d{2})$/);
+            if (!match) return value.trim();
+            const hours = Number(match[1]);
+            const minutes = Number(match[2]);
+            if (hours > 23 || minutes > 59) return value.trim();
+            return `${String(hours).padStart(2, '0')}:${match[2]}`;
+        }
+
+        function normalizeAir(value) {
+            const text = value.trim();
+            if (!text) return '';
+            const match = text.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/);
+            if (!match) return text;
+            const day = Number(match[1]);
+            const month = Number(match[2]);
+            const year = Number(match[3]);
+            const date = new Date(year, month - 1, day);
+            if (date.getFullYear() !== year || date.getMonth() !== month - 1 || date.getDate() !== day) return text;
+            return `${String(day).padStart(2, '0')}.${String(month).padStart(2, '0')}.${year}`;
+        }
+
+        function airIso(value) {
+            const text = String(value || '');
+            if (/^\d{4}-\d{2}-\d{2}$/.test(text)) return text;
+            const match = text.match(/^(\d{2})\.(\d{2})\.(\d{4})$/);
+            return match ? `${match[3]}-${match[2]}-${match[1]}` : '';
+        }
+
+        function surname(fullName) {
+            const cleaned = (fullName || '').trim().split(/\s+/)[0];
+            return cleaned || 'не назначен';
+        }
+
+        function esc(value) {
+            return String(value ?? '').replace(/[&<>"']/g, (char) => ({
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#39;',
+            }[char]));
+        }
+
+        function timeMinutes(value) {
+            const [hours, minutes] = String(value || '').split(':').map(Number);
+            return Number.isFinite(hours) && Number.isFinite(minutes) ? hours * 60 + minutes : -1;
+        }
+
+        function replaceTimeRange(rows, start, end, replacements) {
+            const rangeStart = timeMinutes(start);
+            const rangeEnd = timeMinutes(end);
+            const kept = rows.filter((row) => {
+                const rowStart = timeMinutes(row.timeStart);
+                const rowEnd = timeMinutes(row.timeEnd);
+                return rowStart < 0 || rowEnd < 0 || rowEnd <= rangeStart || rowStart >= rangeEnd;
+            });
+            replacements.forEach((row) => insertByStart(kept, row));
+            return kept;
+        }
+
+        function applyMealRowsToRoom(date, room) {
+            const weekday = parseDate(date).getDay();
+            if (weekday === 6) return;
+
+            const lateLunch = [1, 4, 6, 8].includes(room.number);
+            room.rows = replaceTimeRange(room.rows, '13:00', '15:00', lateLunch
+                ? [slot('', '13:00', '14:00'), brk('ОБЕД', '14:00', '15:00')]
+                : [brk('ОБЕД', '13:00', '14:00'), slot('', '14:00', '15:00')]);
+
+            if (room.number === 8) {
+                room.rows = replaceTimeRange(room.rows, '19:00', '21:30', [
+                    slot('', '19:00', '20:00'),
+                    slot('', '20:00', '21:00'),
+                    brk('УЖИН', '21:00', '21:30'),
+                ]);
+                return;
+            }
+
+            const cinemaDay = room.number === 2 && (weekday === 2 || weekday === 4);
+            const earlyDinner = [1, 5, 6, 7].includes(room.number) || cinemaDay;
+            if (room.number === 3) {
+                room.rows = replaceTimeRange(room.rows, '19:00', '20:00', [
+                    slot('', '19:00', '19:30'),
+                    slot('', '19:30', '20:00'),
+                ]);
+            } else if (earlyDinner) {
+                room.rows = replaceTimeRange(room.rows, '19:00', '20:00', [
+                    brk('УЖИН', '19:00', '19:30'),
+                    slot('', '19:30', '20:00'),
+                ]);
+            } else {
+                room.rows = replaceTimeRange(room.rows, '19:00', '20:00', [
+                    slot('', '19:00', '19:30'),
+                    brk('УЖИН', '19:30', '20:00'),
+                ]);
+            }
+        }
+
+        function applyFixedRowsToRoom(date, room) {
+            const weekday = parseDate(date).getDay();
+            if (weekday === 6) return;
+
+            if (room.number === 2 && (weekday === 2 || weekday === 4)) {
+                room.rows = replaceTimeRange(room.rows, '14:00', '20:00', [
+                    slot('ЭТО КИНО', '14:00', '17:00'),
+                    slot('ЭТО КИНО', '17:00', '19:00'),
+                    brk('УЖИН', '19:00', '19:30'),
+                    slot('ЭТО КИНО', '19:30', '20:00'),
+                ]);
+            }
+            if (room.number === 5) {
+                room.rows = replaceTimeRange(room.rows, '16:00', '20:00', [
+                    slot('СВЕДЕНИЕ', '16:00', '19:00'),
+                    brk('УЖИН', '19:00', '19:30'),
+                    slot('СВЕДЕНИЕ', '19:30', '20:00'),
+                ]);
+            }
+            if (room.number === 6) {
+                room.rows = replaceTimeRange(room.rows, '19:30', '20:00', [
+                    slot('СПОРТ', '19:30', '20:00'),
+                ]);
+            }
+            if (room.number === 7) {
+                room.rows = replaceTimeRange(room.rows, '14:00', '23:00', [
+                    slot('МОНТАЖ ГОСТЕЙ', '14:00', '19:00'),
+                    brk('УЖИН', '19:00', '19:30'),
+                    slot('ЭФИР', '19:30', '23:00'),
+                ]);
+            }
+            if (room.number === 8) {
+                room.rows = replaceTimeRange(room.rows, '18:00', '23:00', [
+                    slot('АНОНСЫ + ВИНЕГРЕТ + ВИДЕОПОДВОДКИ', '18:00', '21:00'),
+                    brk('УЖИН', '21:00', '21:30'),
+                    slot('ЭФИР', '21:30', '23:00'),
+                ]);
+            }
+        }
+
+        function applyFixedRowsToDay(day) {
+            if (!day || day.saturday || !Array.isArray(day.rooms)) return;
+            day.rooms.forEach((room) => applyFixedRowsToRoom(day.date, room));
+        }
+
+        function applyMealRowsToDay(day) {
+            if (!day || day.saturday || !Array.isArray(day.rooms)) return;
+            day.rooms.forEach((room) => applyMealRowsToRoom(day.date, room));
+        }
+
+        function blankDay(date) {
+            const saturday = parseDate(date).getDay() === 6;
+            const rows = saturday
+                ? [
+                    slot('', '09:00', '10:00'),
+                    slot('', '10:00', '11:00'),
+                    slot('', '11:00', '12:00'),
+                    slot('', '12:00', '13:00'),
+                    brk('ОБЕД', '13:00', '14:00'),
+                    slot('', '14:00', '15:00'),
+                    slot('', '15:00', '16:00'),
+                    slot('', '16:00', '17:00'),
+                    slot('', '17:00', '18:00'),
+                    slot('', '18:00', '19:00'),
+                    brk('УЖИН', '19:00', '19:30'),
+                    slot('', '19:30', '21:00'),
+                ]
+                : [
+                    slot('', '09:00', '10:00'),
+                    slot('', '10:00', '11:00'),
+                    slot('', '11:00', '12:00'),
+                    slot('', '12:00', '13:00'),
+                    brk('ОБЕД', '13:00', '14:00'),
+                    slot('', '14:00', '15:00'),
+                    slot('', '15:00', '16:00'),
+                    slot('', '16:00', '17:00'),
+                    slot('', '17:00', '18:00'),
+                    slot('', '18:00', '19:00'),
+                    brk('УЖИН', '19:00', '19:30'),
+                    slot('', '19:30', '20:00'),
+                    slot('', '20:00', '21:00'),
+                    slot('', '21:00', '22:00'),
+                    slot('', '22:00', '23:00'),
+                ];
+            return {
+                date,
+                saturday,
+                rooms: Array.from({ length: saturday ? 4 : 8 }, (_, index) => {
+                    const room = {
+                        number: index + 1,
+                        note: '',
+                        editor: '',
+                        nightEditor: '',
+                        rows: structuredClone(rows),
+                    };
+                    applyMealRowsToRoom(date, room);
+                    applyFixedRowsToRoom(date, room);
+                    return room;
+                }),
+            };
+        }
+
+        function insertByStart(rows, row) {
+            const key = row.timeStart || '99:99';
+            const index = rows.findIndex((item) => (item.timeStart || '99:99') > key);
+            if (index === -1) rows.push(row);
+            else rows.splice(index, 0, row);
+        }
+
+        function editorOptions() {
+            return state.editors.map((name) => `<option value="${esc(name)}"></option>`).join('');
+        }
+
+        function fillNameList(id, names) {
+            const list = document.getElementById(id);
+            if (list) list.innerHTML = names.map((name) => `<option value="${esc(name)}"></option>`).join('');
+        }
+
+        function normalizeNames(names) {
+            return [...new Set(names.map((name) => String(name).trim()).filter(Boolean))]
+                .sort((a, b) => a.localeCompare(b, 'ru'));
+        }
+
+        function applyInlineAutocomplete(input, names) {
+            const typed = input.value.trim();
+            if (typed.length < 2) return input.value;
+            const query = typed.toLocaleLowerCase('ru');
+            const matches = names.filter((name) => name.toLocaleLowerCase('ru').startsWith(query));
+            if (matches.length !== 1 || matches[0] === typed) return input.value;
+            input.value = matches[0];
+            input.setSelectionRange(typed.length, matches[0].length);
+            return input.value;
+        }
+
+        async function loadTextNames(url) {
+            const response = await fetch(url);
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            return normalizeNames((await response.text()).split(/\r?\n/));
+        }
+
+        function updateRegisteredUserOptions() {
+            fillNameList('correspondents-list', correspondentNames);
+            fillNameList('story-editors-list', storyEditorNames);
+        }
+
+        async function loadRegisteredUsers() {
+            try {
+                const response = await fetch('/api/admin/users', { credentials: 'same-origin' });
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                const data = await response.json();
+                if (!data.success || !Array.isArray(data.users)) throw new Error('Некорректный ответ сервера');
+                const registeredNames = normalizeNames(data.users
+                    .filter((user) => user.approvalStatus === 'approved' && user.fullName)
+                    .map((user) => String(user.fullName).trim())
+                    .filter(Boolean));
+                correspondentNames = registeredNames;
+                storyEditorNames = registeredNames;
+                updateRegisteredUserOptions();
+            } catch (error) {
+                console.warn('API пользователей недоступен, загружаются локальные списки', error);
+                const [correspondents, editors] = await Promise.allSettled([
+                    loadTextNames('Коресспонденты.txt'),
+                    loadTextNames('редакторы.txt'),
+                ]);
+                correspondentNames = correspondents.status === 'fulfilled' ? correspondents.value : [];
+                storyEditorNames = editors.status === 'fulfilled' ? editors.value : [];
+                updateRegisteredUserOptions();
+            }
+        }
+
+        function renderChrome() {
+            document.getElementById('date-label').textContent = formatLong(currentDate);
+            const day = currentDay();
+            document.getElementById('date-sub').textContent = day?.saturday
+                ? 'Суббота · 4 аппаратные · 09:00–21:00'
+                : '8 аппаратных · 09:00–23:00';
+            const dateInput = document.getElementById('date-input');
+            dateInput.value = currentDate;
+            dateInput.min = minDate;
+            dateInput.max = maxDate;
+            document.getElementById('prev-day').disabled = currentDate <= minDate;
+            document.getElementById('next-day').disabled = currentDate >= maxDate;
+            document.getElementById('access-label').textContent = canEdit()
+                ? 'Редактирование: администратор / координатор'
+                : 'Только просмотр';
+            document.getElementById('mode-note').hidden = canEdit();
+            document.getElementById('print-btn').hidden = !canEdit();
+            document.getElementById('actual-filter-btn').hidden = !canEdit();
+
+            if (day && !roomByNumber(day, currentRoom)) currentRoom = 1;
+            const roomCount = day ? day.rooms.length : (parseDate(currentDate).getDay() === 6 ? 4 : 8);
+            document.getElementById('room-nav').innerHTML = Array.from({ length: roomCount }, (_, index) => {
+                const number = index + 1;
+                const room = day ? roomByNumber(day, number) : null;
+                return `
+                    <div class="room-btn ${number === currentRoom ? 'active' : ''}">
+                        <button type="button" class="room-select" data-room="${number}">
+                            <small>AVID ${number}</small>
+                            ${!canEdit() || !room ? `<strong>${esc(room ? surname(room.editor) : '—')}</strong>` : ''}
+                            ${room ? '' : '<em>нет графика</em>'}
+                        </button>
+                        ${canEdit() && room
+                            ? `<input class="room-editor-input" data-room-editor="${number}" value="${esc(room.editor)}" placeholder="Монтажёр" aria-label="Монтажёр AVID ${number}">`
+                            : ''}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderActions(index, total) {
+            return `
+                <td>
+                    <div class="row-actions">
+                        <button type="button" class="row-btn" data-action="up" data-index="${index}" ${index === 0 ? 'disabled' : ''} aria-label="Выше">↑</button>
+                        <button type="button" class="row-btn" data-action="down" data-index="${index}" ${index === total - 1 ? 'disabled' : ''} aria-label="Ниже">↓</button>
+                        <button type="button" class="row-btn" data-action="delete" data-index="${index}" aria-label="Удалить строку">×</button>
+                    </div>
+                </td>
+            `;
+        }
+
+        function renderEditableRow(row, index, total) {
+            const hint = timeHint(row);
+            if (row.type === 'break') {
+                return `
+                    <tr class="is-break ${hint ? 'is-invalid' : ''}" data-index="${index}">
+                        <td colspan="5">
+                            <div class="break-edit">
+                                <div class="time-pair">
+                                    <input data-bind="start" value="${esc(row.timeStart)}" inputmode="numeric" maxlength="5" placeholder="09:00" spellcheck="false" aria-label="Начало перерыва">
+                                    <span>–</span>
+                                    <input data-bind="end" value="${esc(row.timeEnd)}" inputmode="numeric" maxlength="5" placeholder="14:00" spellcheck="false" aria-label="Конец перерыва">
+                                </div>
+                                <select data-bind="label" aria-label="Вид перерыва">
+                                    <option value="ОБЕД" ${row.label === 'ОБЕД' ? 'selected' : ''}>ОБЕД</option>
+                                    <option value="УЖИН" ${row.label === 'УЖИН' ? 'selected' : ''}>УЖИН</option>
+                                </select>
+                            </div>
+                            ${hint ? `<div class="invalid-hint">${esc(hint)}</div>` : ''}
+                        </td>
+                        ${renderActions(index, total)}
+                    </tr>
+                `;
+            }
+            return `
+                <tr class="${hint ? 'is-invalid' : ''}" data-index="${index}">
+                    <td>
+                        <div class="correspondent-choice ${row.isActual ? 'is-actual' : ''}">
+                            <select data-bind="correspondent-mode" aria-label="Тип корреспондента">
+                                <option value="surname" ${!row.isActual ? 'selected' : ''}>Фамилия</option>
+                                <option value="actual" ${row.isActual && !row.isNightActual ? 'selected' : ''}>АКТУАЛКА</option>
+                                <option value="night" ${row.isNightActual ? 'selected' : ''}>НОЧНАЯ АКТУАЛКА</option>
+                            </select>
+                            <input data-bind="correspondent" value="${esc(row.correspondent)}" placeholder="Введите фамилию" aria-label="Корреспондент" autocomplete="off">
+                        </div>
+                    </td>
+                    <td>
+                        <div class="time-pair">
+                            <input data-bind="start" value="${esc(row.timeStart)}" inputmode="numeric" maxlength="5" placeholder="09:00" spellcheck="false" aria-label="Начало интервала" ${row.isNightActual ? 'disabled' : ''}>
+                            <span>–</span>
+                            <input data-bind="end" value="${esc(row.timeEnd)}" inputmode="numeric" maxlength="5" placeholder="10:00" spellcheck="false" aria-label="Конец интервала" ${row.isNightActual ? 'disabled' : ''}>
+                        </div>
+                        ${hint ? `<div class="invalid-hint">${esc(hint)}</div>` : ''}
+                    </td>
+                    <td><input data-bind="title" value="${esc(row.title)}" placeholder="Сюжет" aria-label="Название сюжета"></td>
+                    <td>
+                        <div class="air-choice">
+                            <input data-bind="air" value="${esc(formatShort(row.airDate))}" inputmode="numeric" maxlength="10" placeholder="дд.мм.гггг" spellcheck="false" aria-label="Дата эфира">
+                            <input class="air-picker" type="date" data-bind="air-picker" value="${esc(airIso(row.airDate))}" aria-label="Выбрать дату эфира">
+                        </div>
+                    </td>
+                    <td><input data-bind="story-editor" value="${esc(row.storyEditor || '')}" placeholder="Фамилия" aria-label="Редактор" autocomplete="off"></td>
+                    ${renderActions(index, total)}
+                </tr>
+            `;
+        }
+
+        function renderViewRow(row) {
+            if (row.type === 'break') {
+                return `<tr class="is-break"><td colspan="5"><div class="break-view">${esc(formatRange(row))} — ${esc(row.label)}</div></td></tr>`;
+            }
+            return `
+                <tr>
+                    <td><div class="cell-text">${row.isActual ? `<strong class="actual-label">${row.isNightActual ? 'НОЧНАЯ АКТУАЛКА' : 'АКТУАЛКА'}</strong>` : (row.correspondent ? esc(row.correspondent) : '<span class="muted">—</span>')}</div></td>
+                    <td><div class="cell-text">${esc(formatRange(row))}</div></td>
+                    <td><div class="cell-text">${row.title ? esc(row.title) : '<span class="muted">—</span>'}</div></td>
+                    <td><div class="cell-text">${row.airDate ? esc(formatShort(row.airDate)) : '<span class="muted">—</span>'}</div></td>
+                    <td><div class="cell-text">${row.storyEditor ? esc(row.storyEditor) : '<span class="muted">—</span>'}</div></td>
+                </tr>
+            `;
+        }
+
+        function renderStage() {
+            const stage = document.getElementById('stage');
+            const day = currentDay();
+            if (!day) {
+                const saturday = parseDate(currentDate).getDay() === 6;
+                stage.innerHTML = canEdit()
+                    ? `
+                        <section class="board empty-board">
+                            <h2>На эту дату графика ещё нет</h2>
+                            <p>${saturday ? 'Будут созданы четыре аппаратные с 09:00 до 21:00.' : 'Будут созданы восемь аппаратных с 09:00 до 23:00.'} Время, фамилии и сюжеты затем меняются вручную.</p>
+                            <div class="empty-actions">
+                                <button type="button" class="primary-btn" data-action="create">Создать график на этот день</button>
+                            </div>
+                        </section>
+                    `
+                    : `
+                        <section class="board empty-board">
+                            <h2>На эту дату графика ещё нет</h2>
+                            <p>График на этот день ещё не составлен.</p>
+                        </section>
+                    `;
+                return;
+            }
+
+            const room = roomByNumber(day, currentRoom);
+            const editing = canEdit();
+            const showNightEditor = room.rows.some((row) => row.type === 'slot' && row.isNightActual);
+            const headNote = editing
+                ? `<input class="note-input" data-bind="note" value="${esc(room.note)}" placeholder="Пометка к аппаратной">`
+                : (room.note ? `<p>${esc(room.note)}</p>` : '<p>Без дополнительной пометки</p>');
+            const rows = room.rows.map((row, index) => (
+                editing
+                    ? renderEditableRow(row, index, room.rows.length)
+                    : renderViewRow(row)
+            )).join('');
+            const tools = editing ? `
+                <div class="board-tools">
+                    <button type="button" class="text-btn" data-action="add-slot">Добавить интервал</button>
+                    <button type="button" class="text-btn" data-action="add-break" data-label="ОБЕД" data-start="13:00" data-end="14:00">Добавить обед</button>
+                    <button type="button" class="text-btn" data-action="add-break" data-label="УЖИН" data-start="19:00" data-end="19:30">Добавить ужин</button>
+                </div>
+            ` : '';
+
+            stage.innerHTML = `
+                <section class="board">
+                    <div class="board-head">
+                        <div>
+                            <h2>График монтажа аппаратной AVID № ${room.number}</h2>
+                            <p>${esc(formatLong(currentDate))}</p>
+                        </div>
+                        ${headNote}
+                    </div>
+                    <div class="table-wrap">
+                        <table class="schedule-table">
+                            <colgroup>
+                                <col class="col-correspondent">
+                                <col class="col-time">
+                                <col class="col-title">
+                                <col class="col-air">
+                                <col class="col-story-editor">
+                                ${editing ? '<col class="col-actions">' : ''}
+                            </colgroup>
+                            <thead>
+                                <tr>
+                                    <th>Корреспондент</th>
+                                    <th>Время</th>
+                                    <th>Название сюжета</th>
+                                    <th>Дата эфира</th>
+                                    <th>Редактор</th>
+                                    ${editing ? '<th></th>' : ''}
+                                </tr>
+                            </thead>
+                            <tbody>${rows}</tbody>
+                        </table>
+                    </div>
+                    <footer class="editor-band">
+                        <span>Монтажёр</span>
+                        ${editing ? `
+                            <input list="editor-list" data-bind="editor" value="${esc(room.editor)}" placeholder="Фамилия и имя" aria-label="Монтажёр">
+                            <datalist id="editor-list">${editorOptions()}</datalist>
+                            <p class="editor-hint">Монтажёр пока не назначен. После получения полного списка здесь появится автоподстановка.</p>
+                        ` : `<strong>${room.editor ? esc(room.editor) : 'Не назначен'}</strong>`}
+                        ${showNightEditor ? `
+                            <div class="night-editor-block">
+                                <span>Ночной монтажёр</span>
+                                ${editing
+                                    ? `<input list="editor-list" data-bind="night-room-editor" value="${esc(room.nightEditor || '')}" placeholder="Фамилия и имя" aria-label="Ночной монтажёр">`
+                                    : `<strong>${room.nightEditor ? esc(room.nightEditor) : 'Не назначен'}</strong>`}
+                            </div>
+                        ` : ''}
+                    </footer>
+                    ${tools}
+                </section>
+            `;
+        }
+
+        function renderPrint() {
+            const day = currentDay();
+            const pack = document.getElementById('print-pack');
+            if (!day) {
+                pack.innerHTML = `<h1>График монтажа ${esc(formatLong(currentDate))}</h1><p>На эту дату графика нет.</p>`;
+                return;
+            }
+            pack.innerHTML = day.rooms.map((room) => {
+                const showNightEditor = room.rows.some((row) => row.type === 'slot' && row.isNightActual);
+                return `
+                    <section class="print-room">
+                    <h2>График монтажа аппаратной AVID № ${room.number}</h2>
+                    <p>${esc(formatLong(currentDate))}</p>
+                    ${room.note ? `<p class="print-note">${esc(room.note)}</p>` : ''}
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Корреспондент</th>
+                                <th>Время</th>
+                                <th>Название сюжета</th>
+                                <th>Дата эфира</th>
+                                <th>Редактор</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${room.rows.map((row) => row.type === 'break'
+                                ? `<tr class="is-break"><td colspan="5">${esc(formatRange(row))} — ${esc(row.label)}</td></tr>`
+                                : `<tr><td>${row.isActual ? `<span class="actual-label">${row.isNightActual ? 'НОЧНАЯ АКТУАЛКА' : 'АКТУАЛКА'}</span>` : esc(row.correspondent)}</td><td>${esc(formatRange(row))}</td><td>${esc(row.title)}</td><td>${esc(formatShort(row.airDate))}</td><td>${esc(row.storyEditor || '')}</td></tr>`
+                            ).join('')}
+                        </tbody>
+                    </table>
+                    <p class="print-editor">${room.editor ? esc(room.editor) : ''}</p>
+                    ${showNightEditor ? `<p class="print-editor">Ночной монтажёр: ${esc(room.nightEditor || '')}</p>` : ''}
+                    </section>
+                `;
+            }).join('');
+        }
+
+        function render() {
+            if (currentDate < minDate) currentDate = minDate;
+            if (currentDate > maxDate) currentDate = maxDate;
+            if (!state.days[currentDate]) {
+                state.days[currentDate] = blankDay(currentDate);
+                saveState();
+            }
+            renderChrome();
+            renderStage();
+            renderPrint();
+        }
+
+        function markSaved() {
+            const node = document.getElementById('save-state');
+            node.textContent = 'Сохранение изменений…';
+            node.classList.remove('is-fresh');
+        }
+
+        function rememberEditor(name) {
+            const clean = name.replace(/\s+/g, ' ').trim();
+            if (!clean) return clean;
+            const exists = state.editors.some((item) => item.toLowerCase() === clean.toLowerCase());
+            if (!exists) {
+                state.editors.push(clean);
+                state.editors.sort((a, b) => a.localeCompare(b, 'ru'));
+            }
+            return clean;
+        }
+
+        function actualRows(from, to, type) {
+            const result = [];
+            Object.keys(state.days).sort().forEach((date) => {
+                if (date < from || date > to) return;
+                state.days[date].rooms.forEach((room) => {
+                    room.rows.forEach((row) => {
+                        if (row.type !== 'slot' || !row.isActual) return;
+                        if (type === 'actual' && row.isNightActual) return;
+                        if (type === 'night' && !row.isNightActual) return;
+                        result.push({
+                            date,
+                            room: room.number,
+                            type: row.isNightActual ? 'Ночная актуалка' : 'Актуалка',
+                            montageEditor: row.isNightActual ? (room.nightEditor || '') : (room.editor || ''),
+                            title: row.title || '',
+                            air: formatShort(row.airDate),
+                        });
+                    });
+                });
+            });
+            return result;
+        }
+
+        function renderActualFilter() {
+            const fromInput = document.getElementById('filter-from');
+            const toInput = document.getElementById('filter-to');
+            const from = fromInput.value || minDate;
+            const to = toInput.value || currentDate;
+            const type = document.getElementById('filter-type').value || 'all';
+            const target = document.getElementById('actual-filter-results');
+            if (from > to) {
+                target.innerHTML = '<div class="filter-empty">Дата начала периода позже даты окончания.</div>';
+                return;
+            }
+            const rows = actualRows(from, to, type);
+            if (!rows.length) {
+                target.innerHTML = '<div class="filter-empty">За выбранный период актуалок нет.</div>';
+                return;
+            }
+            target.innerHTML = `
+                <p class="filter-summary">Найдено: ${rows.length}</p>
+                <div class="table-wrap">
+                    <table class="filter-table">
+                        <thead>
+                            <tr>
+                                <th>Дата</th>
+                                <th>AVID</th>
+                                <th>Тип</th>
+                                <th>Монтажёр</th>
+                                <th>Название сюжета</th>
+                                <th>Эфир</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${rows.map((item) => `
+                                <tr>
+                                    <td>${esc(formatShort(item.date))}</td>
+                                    <td>№ ${item.room}</td>
+                                    <td><span class="actual-label">${esc(item.type)}</span></td>
+                                    <td>${item.montageEditor ? esc(item.montageEditor) : '<span class="muted">Не назначен</span>'}</td>
+                                    <td>${item.title ? esc(item.title) : '<span class="muted">Без названия</span>'}</td>
+                                    <td>${item.air ? esc(item.air) : '<span class="muted">Не указан</span>'}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+        function openActualFilter() {
+            const dates = Object.keys(state.days).sort();
+            document.getElementById('filter-from').value = dates[0] || minDate;
+            document.getElementById('filter-to').value = dates[dates.length - 1] || currentDate;
+            renderActualFilter();
+            document.getElementById('actual-filter-dialog').showModal();
+        }
+
+        function shiftDate(delta) {
+            const date = parseDate(currentDate);
+            date.setDate(date.getDate() + delta);
+            const shifted = toIso(date);
+            currentDate = shifted < minDate ? minDate : (shifted > maxDate ? maxDate : shifted);
+            render();
+        }
+
+        function activeRoom() {
+            const day = currentDay();
+            return day ? roomByNumber(day, currentRoom) : null;
+        }
+
+        function rowIsDirty(row) {
+            if (row.type === 'break') return false;
+            return Boolean((row.correspondent || row.title || row.airDate || row.storyEditor || '').trim() || row.isActual || row.isNightActual);
+        }
+
+        async function initializeSchedule() {
+            const status = document.getElementById('save-state');
+            try {
+                const response = await fetch('/api/montage-schedule', {
+                    credentials: 'same-origin',
+                    cache: 'no-store',
+                });
+                const data = await response.json();
+                if (!response.ok || !data.success) {
+                    throw new Error(data.message || `HTTP ${response.status}`);
+                }
+
+                minDate = data.minDate || START_DATE;
+                maxDate = data.maxDate || minDate;
+                currentDate = data.initialDate || minDate;
+                canEditFromServer = Boolean(data.canEdit);
+                csrfToken = data.csrfToken || '';
+                state.days = data.days && typeof data.days === 'object' ? data.days : {};
+
+                const loadedEditors = Object.values(state.days).flatMap((day) =>
+                    Array.isArray(day?.rooms)
+                        ? day.rooms.flatMap((room) => [room.editor, room.nightEditor])
+                        : []
+                );
+                state.editors = normalizeNames(loadedEditors);
+
+                const registeredNames = normalizeNames(
+                    Array.isArray(data.registeredUsers) ? data.registeredUsers : []
+                );
+                correspondentNames = registeredNames;
+                storyEditorNames = registeredNames;
+                updateRegisteredUserOptions();
+
+                ['filter-from', 'filter-to'].forEach((id) => {
+                    const input = document.getElementById(id);
+                    input.min = minDate;
+                    input.max = maxDate;
+                });
+                status.textContent = canEdit()
+                    ? 'Изменения сохраняются в общей системе автоматически.'
+                    : 'Публичный режим: график доступен только для просмотра.';
+            } catch (error) {
+                console.error('Не удалось загрузить общий график', error);
+                canEditFromServer = false;
+                status.textContent = `Не удалось загрузить общий график: ${error.message}`;
+            }
+            render();
+        }
+
+        document.getElementById('prev-day').addEventListener('click', () => shiftDate(-1));
+        document.getElementById('next-day').addEventListener('click', () => shiftDate(1));
+        document.getElementById('date-input').addEventListener('change', (event) => {
+            if (!event.target.value) return;
+            currentDate = event.target.value < minDate
+                ? minDate
+                : (event.target.value > maxDate ? maxDate : event.target.value);
+            render();
+        });
+        document.getElementById('print-btn').addEventListener('click', () => {
+            if (canEdit()) window.print();
+        });
+        document.getElementById('actual-filter-btn').addEventListener('click', () => {
+            if (canEdit()) openActualFilter();
+        });
+        document.getElementById('actual-filter-close').addEventListener('click', () => {
+            document.getElementById('actual-filter-dialog').close();
+        });
+        document.getElementById('actual-filter-apply').addEventListener('click', renderActualFilter);
+        document.getElementById('actual-filter-dialog').addEventListener('click', (event) => {
+            if (event.target === event.currentTarget) event.currentTarget.close();
+        });
+        document.getElementById('room-nav').addEventListener('click', (event) => {
+            const button = event.target.closest('[data-room]');
+            if (!button) return;
+            currentRoom = Number(button.dataset.room);
+            render();
+        });
+
+        document.getElementById('room-nav').addEventListener('input', (event) => {
+            const number = Number(event.target.dataset.roomEditor);
+            const day = currentDay();
+            const room = day ? roomByNumber(day, number) : null;
+            if (!canEdit() || !room) return;
+            room.editor = event.target.value;
+            saveState();
+            markSaved();
+            if (number === currentRoom) {
+                const editorInput = document.querySelector('#stage [data-bind="editor"]');
+                if (editorInput) editorInput.value = room.editor;
+            }
+            renderPrint();
+        });
+
+        document.getElementById('room-nav').addEventListener('change', (event) => {
+            const number = Number(event.target.dataset.roomEditor);
+            const day = currentDay();
+            const room = day ? roomByNumber(day, number) : null;
+            if (!canEdit() || !room) return;
+            room.editor = rememberEditor(event.target.value);
+            event.target.value = room.editor;
+            saveState();
+            markSaved();
+            renderPrint();
+        });
+
+        document.getElementById('stage').addEventListener('input', (event) => {
+            if (!canEdit()) return;
+            const bind = event.target.dataset.bind;
+            if (!bind || bind === 'editor' || bind === 'night-room-editor') return;
+            const room = activeRoom();
+            if (!room) return;
+            if (bind === 'note') {
+                room.note = event.target.value;
+                saveState();
+                markSaved();
+                renderPrint();
+                return;
+            }
+            const index = Number(event.target.closest('[data-index]').dataset.index);
+            const row = room.rows[index];
+            if (bind === 'correspondent') applyInlineAutocomplete(event.target, correspondentNames);
+            if (bind === 'story-editor') applyInlineAutocomplete(event.target, storyEditorNames);
+            if (bind === 'correspondent') row.correspondent = event.target.value;
+            if (bind === 'title') row.title = event.target.value;
+            if (bind === 'story-editor') row.storyEditor = event.target.value;
+            if (bind === 'air') row.airDate = event.target.value;
+            if (bind === 'start') row.timeStart = event.target.value;
+            if (bind === 'end') row.timeEnd = event.target.value;
+            if (bind === 'label') row.label = event.target.value;
+            saveState();
+            markSaved();
+            renderChrome();
+            renderPrint();
+            const invalid = timeInvalid(row);
+            event.target.closest('tr').classList.toggle('is-invalid', invalid);
+        });
+
+        document.getElementById('stage').addEventListener('change', (event) => {
+            if (!canEdit()) return;
+            const bind = event.target.dataset.bind;
+            const room = activeRoom();
+            if (!room || !bind) return;
+            if (bind === 'editor') {
+                room.editor = rememberEditor(event.target.value);
+                event.target.value = room.editor;
+                saveState();
+                markSaved();
+                renderChrome();
+                renderPrint();
+                const list = document.getElementById('editor-list');
+                if (list) list.innerHTML = editorOptions();
+                return;
+            }
+            if (bind === 'night-room-editor') {
+                room.nightEditor = rememberEditor(event.target.value);
+                event.target.value = room.nightEditor;
+                saveState();
+                markSaved();
+                renderPrint();
+                const list = document.getElementById('editor-list');
+                if (list) list.innerHTML = editorOptions();
+                return;
+            }
+            if (bind === 'correspondent-mode') {
+                const index = Number(event.target.closest('[data-index]').dataset.index);
+                const row = room.rows[index];
+                const wasNight = Boolean(row.isNightActual);
+                if (event.target.value === 'night' && !wasNight) {
+                    row.normalTimeStart = row.timeStart;
+                    row.normalTimeEnd = row.timeEnd;
+                }
+                row.isActual = event.target.value === 'actual' || event.target.value === 'night';
+                row.isNightActual = event.target.value === 'night';
+                if (row.isNightActual) {
+                    row.timeStart = '23:00';
+                    row.timeEnd = '05:00';
+                } else if (wasNight) {
+                    row.timeStart = row.normalTimeStart || '';
+                    row.timeEnd = row.normalTimeEnd || '';
+                    delete row.normalTimeStart;
+                    delete row.normalTimeEnd;
+                }
+                saveState();
+                markSaved();
+                render();
+                return;
+            }
+            if (bind !== 'start' && bind !== 'end' && bind !== 'air' && bind !== 'air-picker') return;
+            const index = Number(event.target.closest('[data-index]').dataset.index);
+            const row = room.rows[index];
+            if (bind === 'start' || bind === 'end') {
+                const normalized = normalizeTime(event.target.value);
+                event.target.value = normalized;
+                if (bind === 'start') {
+                    row.timeStart = normalized;
+                    if (index > 0 && clockOk(normalized)) room.rows[index - 1].timeEnd = normalized;
+                } else {
+                    row.timeEnd = normalized;
+                    if (index < room.rows.length - 1 && clockOk(normalized)) room.rows[index + 1].timeStart = normalized;
+                }
+            }
+            if (bind === 'air') {
+                const normalized = normalizeAir(event.target.value);
+                event.target.value = normalized;
+                row.airDate = normalized;
+            }
+            if (bind === 'air-picker') {
+                row.airDate = formatShort(event.target.value);
+            }
+            saveState();
+            markSaved();
+            if (bind === 'start' || bind === 'end' || bind === 'air-picker') {
+                render();
+                return;
+            }
+            renderChrome();
+            renderPrint();
+            const hint = timeHint(row);
+            const line = event.target.closest('tr');
+            line.classList.toggle('is-invalid', Boolean(hint));
+            const existing = line.querySelector('.invalid-hint');
+            if (hint && !existing) {
+                const note = document.createElement('div');
+                note.className = 'invalid-hint';
+                note.textContent = hint;
+                event.target.closest('td').appendChild(note);
+            } else if (!hint && existing) {
+                existing.remove();
+            } else if (hint && existing) {
+                existing.textContent = hint;
+            }
+        });
+
+        document.getElementById('stage').addEventListener('click', (event) => {
+            const button = event.target.closest('[data-action]');
+            if (!button || !canEdit()) return;
+            const action = button.dataset.action;
+            if (action === 'create') {
+                state.days[currentDate] = blankDay(currentDate);
+                saveState();
+                markSaved();
+                render();
+                return;
+            }
+            const room = activeRoom();
+            if (!room) return;
+            if (action === 'add-slot') {
+                const nightIndex = room.rows.findIndex((row) => row.type === 'slot' && row.isNightActual);
+                const insertIndex = nightIndex === -1 ? room.rows.length : nightIndex;
+                const previous = room.rows[insertIndex - 1];
+                room.rows.splice(insertIndex, 0, slot('', previous?.timeEnd || '', ''));
+            } else if (action === 'add-break') {
+                insertByStart(room.rows, brk(button.dataset.label, button.dataset.start, button.dataset.end));
+            } else if (action === 'up' || action === 'down') {
+                const index = Number(button.dataset.index);
+                const next = index + (action === 'up' ? -1 : 1);
+                if (next < 0 || next >= room.rows.length) return;
+                const [item] = room.rows.splice(index, 1);
+                room.rows.splice(next, 0, item);
+            } else if (action === 'delete') {
+                const index = Number(button.dataset.index);
+                if (rowIsDirty(room.rows[index]) && !window.confirm('Удалить эту строку?')) return;
+                room.rows.splice(index, 1);
+            } else {
+                return;
+            }
+            saveState();
+            markSaved();
+            render();
+        });
+
+        initializeSchedule();
+    </script>
+</body>
+</html>

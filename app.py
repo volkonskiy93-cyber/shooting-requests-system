@@ -27,7 +27,7 @@ import secrets
 from typing import Optional
 from urllib.parse import quote
 from dotenv import load_dotenv
-from models import db, User, Application
+from models import db, User, Application, MontageScheduleDay, StoryOutputEntry
 from utils.excel_generator import create_excel_document
 from utils.word_generator import create_word_document
 from utils.email_sender import send_email_with_attachment
@@ -277,7 +277,7 @@ def _registration_name_ok(first: str, last: str) -> tuple[bool, str]:
 
 
 def _role_redirect_url(role: str) -> str:
-    return url_for('dashboard') if role == 'admin' else url_for('forms')
+    return url_for('dashboard')
 
 
 def _refresh_registration_captcha(exclude_prompt: Optional[str] = None) -> str:
@@ -566,6 +566,52 @@ def _is_admin(user: Optional[User]) -> bool:
     return bool(user and user.role == 'admin')
 
 
+def _can_edit_montage_schedule(user: Optional[User]) -> bool:
+    return bool(user and user.role in ('admin', 'coordinator'))
+
+
+MONTAGE_SCHEDULE_START_DATE = date(2026, 12, 1)
+
+
+def _montage_schedule_window():
+    """Окно графика: вчера, сегодня и три дня вперёд, но не раньше даты запуска."""
+    today = date.today()
+    anchor = max(today, MONTAGE_SCHEDULE_START_DATE)
+    return max(MONTAGE_SCHEDULE_START_DATE, anchor - timedelta(days=1)), anchor, anchor + timedelta(days=3)
+
+
+def _parse_schedule_date(value: str) -> Optional[date]:
+    try:
+        return datetime.strptime((value or '').strip(), '%Y-%m-%d').date()
+    except (TypeError, ValueError):
+        return None
+
+
+def _story_output_period(anchor: date):
+    """Расчётный период, содержащий дату: с 21-го по 20-е следующего месяца."""
+    if anchor.day >= 21:
+        period_start = anchor.replace(day=21)
+        next_month = (period_start.replace(day=28) + timedelta(days=4)).replace(day=1)
+        period_end = next_month.replace(day=20)
+    else:
+        period_end = anchor.replace(day=20)
+        previous_month_last_day = period_end.replace(day=1) - timedelta(days=1)
+        period_start = previous_month_last_day.replace(day=21)
+    return period_start, period_end
+
+
+def _parse_iso_date(value: str) -> Optional[date]:
+    try:
+        return datetime.strptime((value or '').strip(), '%Y-%m-%d').date()
+    except (TypeError, ValueError):
+        return None
+
+
+def _story_period_from_request():
+    anchor = _parse_iso_date(request.args.get('period', '')) or date.today()
+    return _story_output_period(anchor)
+
+
 def _user_can_access_application(user: Optional[User], application: Application) -> bool:
     return bool(user and (_is_admin(user) or application.user_id == user.id))
 
@@ -673,18 +719,11 @@ def robots_txt():
 
 @app.route('/')
 def index():
-    """Главная страница - авторизация и выбор роли"""
+    """Для гостей — вход, для авторизованных — рабочая панель."""
     user = _get_active_user()
-    captcha_prompt = _current_registration_captcha()
     if user:
-        return render_template(
-            'index.html',
-            user=user.email,
-            user_role=user.role,
-            user_name=user.full_name,
-            approval_status=user.approval_status,
-            registration_captcha_prompt=captcha_prompt,
-        )
+        return redirect(url_for('dashboard'))
+    captcha_prompt = _current_registration_captcha()
     return render_template(
         'index.html',
         user=None,
@@ -925,13 +964,42 @@ def forms():
 
 @app.route('/dashboard')
 def dashboard():
-    """Промежуточная панель доступа для администратора"""
+    """Рабочая панель с разделами, доступными текущей роли."""
     user = _get_active_user()
     if not user:
         return redirect(url_for('index'))
-    if not _is_admin(user):
-        return redirect(url_for('forms'))
-    return render_template('dashboard.html', user_email=user.email)
+    return render_template(
+        'dashboard.html',
+        user_email=user.email,
+        user_role=user.role,
+    )
+
+
+@app.route('/story-output')
+def story_output():
+    """Личный журнал вышедших сюжетов."""
+    user = _get_active_user()
+    if not user:
+        return redirect(url_for('index'))
+    return render_template(
+        'story_output.html',
+        user_name=user.full_name or user.email,
+        user_role=user.role or 'correspondent',
+    )
+
+
+@app.route('/story-output/overview')
+def story_output_overview():
+    """Сводка выработки для администратора и координатора."""
+    user = _get_active_user()
+    if not user:
+        return redirect(url_for('index'))
+    if not _can_edit_montage_schedule(user):
+        return redirect(url_for('story_output'))
+    return render_template(
+        'story_output_overview.html',
+        user_role=user.role,
+    )
 
 
 @app.route('/admin')
@@ -954,7 +1022,253 @@ def archive():
     return render_template('archive.html')
 
 
+@app.route('/montage-schedule')
+def montage_schedule():
+    """Публичный график монтажа; авторизация для просмотра не требуется."""
+    return send_file(os.path.join(app.root_path, 'avid_schedule.html'))
+
+
 # ==================== API ENDPOINTS ====================
+
+@app.route('/api/montage-schedule', methods=['GET'])
+def get_montage_schedule():
+    """Публично вернуть дни текущего пятидневного окна графика."""
+    user = _get_active_user()
+    min_date, initial_date, max_date = _montage_schedule_window()
+    rows = MontageScheduleDay.query.filter(
+        MontageScheduleDay.schedule_date >= min_date,
+        MontageScheduleDay.schedule_date <= max_date,
+    ).order_by(MontageScheduleDay.schedule_date.asc()).all()
+
+    days = {}
+    for row in rows:
+        item = row.to_dict()
+        if isinstance(item.get('day'), dict):
+            days[item['date']] = item['day']
+
+    registered_users = []
+    if _can_edit_montage_schedule(user):
+        registered_users = [
+            candidate.full_name.strip()
+            for candidate in User.query.filter_by(approval_status=APPROVAL_APPROVED).all()
+            if (candidate.full_name or '').strip()
+        ]
+
+    return jsonify({
+        'success': True,
+        'canEdit': _can_edit_montage_schedule(user),
+        'minDate': min_date.isoformat(),
+        'initialDate': initial_date.isoformat(),
+        'maxDate': max_date.isoformat(),
+        'days': days,
+        'registeredUsers': sorted(set(registered_users)),
+        'csrfToken': _ensure_csrf_token(),
+    })
+
+
+@app.route('/api/montage-schedule/<schedule_date>', methods=['PUT'])
+def save_montage_schedule_day(schedule_date):
+    """Сохранить один день графика; доступно администратору и координатору."""
+    user = _get_active_user()
+    if not user:
+        return jsonify({'success': False, 'message': 'Требуется вход в систему.'}), 401
+    if not _can_edit_montage_schedule(user):
+        return jsonify({'success': False, 'message': 'Недостаточно прав для изменения графика.'}), 403
+
+    parsed_date = _parse_schedule_date(schedule_date)
+    min_date, _, max_date = _montage_schedule_window()
+    if not parsed_date or parsed_date < min_date or parsed_date > max_date:
+        return jsonify({'success': False, 'message': 'Дата находится вне доступного окна графика.'}), 400
+
+    payload = request.get_json(silent=True) or {}
+    day = payload.get('day')
+    if not isinstance(day, dict) or not isinstance(day.get('rooms'), list):
+        return jsonify({'success': False, 'message': 'Некорректные данные графика.'}), 400
+    if len(day['rooms']) > 8:
+        return jsonify({'success': False, 'message': 'В графике не может быть больше восьми аппаратных.'}), 400
+
+    serialized = json.dumps(day, ensure_ascii=False, separators=(',', ':'))
+    if len(serialized.encode('utf-8')) > 1024 * 1024:
+        return jsonify({'success': False, 'message': 'Данные графика слишком велики.'}), 413
+
+    row = MontageScheduleDay.query.filter_by(schedule_date=parsed_date).first()
+    if not row:
+        row = MontageScheduleDay(schedule_date=parsed_date, payload=serialized)
+        db.session.add(row)
+    else:
+        row.payload = serialized
+    row.updated_by_user_id = user.id
+    row.updated_at = datetime.now()
+    db.session.commit()
+
+    return jsonify({
+        'success': True,
+        'date': parsed_date.isoformat(),
+        'updatedAt': row.updated_at.isoformat(),
+    })
+
+
+def _story_entry_payload():
+    payload = request.get_json(silent=True) or {}
+    air_date = _parse_iso_date(str(payload.get('airDate') or ''))
+    title = str(payload.get('title') or '').strip()
+    note = str(payload.get('note') or '').strip()
+    if not air_date:
+        return None, 'Укажите корректную дату выхода в эфир.'
+    if not title:
+        return None, 'Укажите название сюжета.'
+    if len(title) > 500:
+        return None, 'Название сюжета не должно превышать 500 символов.'
+    if len(note) > 2000:
+        return None, 'Заметка не должна превышать 2000 символов.'
+    return {
+        'air_date': air_date,
+        'title': title,
+        'note': note,
+    }, None
+
+
+@app.route('/api/story-output', methods=['GET'])
+def get_story_output_entries():
+    """Вернуть личные записи или записи выбранного корреспондента руководителю."""
+    user = _get_active_user()
+    if not user:
+        return jsonify({'success': False, 'message': 'Требуется вход в систему.'}), 401
+
+    target_user = user
+    requested_user_id = request.args.get('user_id', type=int)
+    if requested_user_id and requested_user_id != user.id:
+        if not _can_edit_montage_schedule(user):
+            return jsonify({'success': False, 'message': 'Недостаточно прав.'}), 403
+        target_user = db.session.get(User, requested_user_id)
+        if not target_user or target_user.role != 'correspondent':
+            return jsonify({'success': False, 'message': 'Корреспондент не найден.'}), 404
+
+    period_start, period_end = _story_period_from_request()
+    entries = StoryOutputEntry.query.filter(
+        StoryOutputEntry.user_id == target_user.id,
+        StoryOutputEntry.air_date >= period_start,
+        StoryOutputEntry.air_date <= period_end,
+    ).order_by(
+        StoryOutputEntry.air_date.desc(),
+        StoryOutputEntry.id.desc(),
+    ).all()
+
+    return jsonify({
+        'success': True,
+        'periodStart': period_start.isoformat(),
+        'periodEnd': period_end.isoformat(),
+        'count': len(entries),
+        'owner': {
+            'id': target_user.id,
+            'name': target_user.full_name or target_user.email,
+        },
+        'canEdit': target_user.id == user.id,
+        'entries': [entry.to_dict() for entry in entries],
+    })
+
+
+@app.route('/api/story-output', methods=['POST'])
+@limiter.limit("120 per hour", key_func=_rate_limit_key_user)
+def create_story_output_entry():
+    """Добавить сюжет в личную выработку текущего пользователя."""
+    user = _get_active_user()
+    if not user:
+        return jsonify({'success': False, 'message': 'Требуется вход в систему.'}), 401
+
+    values, error = _story_entry_payload()
+    if error:
+        return jsonify({'success': False, 'message': error}), 400
+
+    entry = StoryOutputEntry(user_id=user.id, **values)
+    db.session.add(entry)
+    db.session.commit()
+    return jsonify({'success': True, 'entry': entry.to_dict()}), 201
+
+
+@app.route('/api/story-output/<int:entry_id>', methods=['PUT'])
+@limiter.limit("120 per hour", key_func=_rate_limit_key_user)
+def update_story_output_entry(entry_id):
+    """Исправить собственную запись выработки."""
+    user = _get_active_user()
+    if not user:
+        return jsonify({'success': False, 'message': 'Требуется вход в систему.'}), 401
+
+    entry = db.session.get(StoryOutputEntry, entry_id)
+    if not entry:
+        return jsonify({'success': False, 'message': 'Запись не найдена.'}), 404
+    if entry.user_id != user.id:
+        return jsonify({'success': False, 'message': 'Можно изменять только свои записи.'}), 403
+
+    values, error = _story_entry_payload()
+    if error:
+        return jsonify({'success': False, 'message': error}), 400
+    entry.air_date = values['air_date']
+    entry.title = values['title']
+    entry.note = values['note']
+    entry.updated_at = datetime.now()
+    db.session.commit()
+    return jsonify({'success': True, 'entry': entry.to_dict()})
+
+
+@app.route('/api/story-output/<int:entry_id>', methods=['DELETE'])
+@limiter.limit("120 per hour", key_func=_rate_limit_key_user)
+def delete_story_output_entry(entry_id):
+    """Удалить собственную запись выработки."""
+    user = _get_active_user()
+    if not user:
+        return jsonify({'success': False, 'message': 'Требуется вход в систему.'}), 401
+
+    entry = db.session.get(StoryOutputEntry, entry_id)
+    if not entry:
+        return jsonify({'success': False, 'message': 'Запись не найдена.'}), 404
+    if entry.user_id != user.id:
+        return jsonify({'success': False, 'message': 'Можно удалять только свои записи.'}), 403
+
+    db.session.delete(entry)
+    db.session.commit()
+    return jsonify({'success': True})
+
+
+@app.route('/api/story-output/summary', methods=['GET'])
+def get_story_output_summary():
+    """Сводка по всем одобренным корреспондентам за расчётный период."""
+    user = _get_active_user()
+    if not user:
+        return jsonify({'success': False, 'message': 'Требуется вход в систему.'}), 401
+    if not _can_edit_montage_schedule(user):
+        return jsonify({'success': False, 'message': 'Недостаточно прав.'}), 403
+
+    period_start, period_end = _story_period_from_request()
+    correspondents = User.query.filter_by(
+        role='correspondent',
+        approval_status=APPROVAL_APPROVED,
+    ).order_by(User.full_name.asc(), User.email.asc()).all()
+    counts = {candidate.id: 0 for candidate in correspondents}
+    rows = StoryOutputEntry.query.filter(
+        StoryOutputEntry.user_id.in_(list(counts)),
+        StoryOutputEntry.air_date >= period_start,
+        StoryOutputEntry.air_date <= period_end,
+    ).all() if counts else []
+    for entry in rows:
+        counts[entry.user_id] = counts.get(entry.user_id, 0) + 1
+
+    return jsonify({
+        'success': True,
+        'periodStart': period_start.isoformat(),
+        'periodEnd': period_end.isoformat(),
+        'total': sum(counts.values()),
+        'correspondents': [
+            {
+                'id': candidate.id,
+                'name': candidate.full_name or candidate.email,
+                'email': candidate.email,
+                'count': counts.get(candidate.id, 0),
+            }
+            for candidate in correspondents
+        ],
+    })
+
 
 @app.route('/api/my-applications', methods=['GET'])
 def get_my_applications():

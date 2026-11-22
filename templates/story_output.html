@@ -1,0 +1,527 @@
+{% extends "base.html" %}
+
+{% block title %}Моя выработка{% endblock %}
+
+{% block styles %}
+.workload-page {
+    width: min(1120px, calc(100% - 32px));
+    margin: 0 auto;
+    padding: 28px 0 56px;
+}
+
+.workload-topbar,
+.period-card,
+.entry-form,
+.entries-card {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-soft);
+    box-shadow: var(--shadow-card);
+}
+
+.workload-topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    padding: 18px 22px;
+    border-radius: var(--radius-lg);
+}
+
+.back-link,
+.period-button,
+.secondary-button,
+.entry-action {
+    border: 1px solid var(--border-strong);
+    background: #fff;
+    color: var(--text-primary);
+    border-radius: 16px;
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.back-link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 0 16px;
+}
+
+.profile-copy {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+}
+
+.period-card {
+    margin-top: 20px;
+    padding: 34px;
+    border-radius: var(--radius-xl);
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: end;
+    gap: 24px;
+}
+
+.eyebrow {
+    color: #8a5a2c;
+    font-size: 0.76rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+}
+
+.period-card h1 {
+    margin: 10px 0 14px;
+    font-size: clamp(2.5rem, 6vw, 5.5rem);
+    line-height: 0.9;
+    letter-spacing: -0.07em;
+}
+
+.period-label {
+    color: var(--text-secondary);
+    font-size: 1.08rem;
+}
+
+.period-total {
+    min-width: 190px;
+    padding: 22px;
+    border-radius: 28px;
+    background: linear-gradient(135deg, #1b1814, #493321);
+    color: #fff;
+    text-align: center;
+}
+
+.period-total strong {
+    display: block;
+    font-size: 3.4rem;
+    line-height: 1;
+}
+
+.period-total span {
+    display: block;
+    margin-top: 7px;
+    color: rgba(255, 255, 255, 0.76);
+}
+
+.period-nav {
+    display: flex;
+    gap: 10px;
+    margin-top: 18px;
+}
+
+.period-button {
+    min-height: 44px;
+    padding: 0 16px;
+}
+
+.workload-grid {
+    display: grid;
+    grid-template-columns: minmax(280px, 0.76fr) minmax(0, 1.24fr);
+    gap: 20px;
+    margin-top: 20px;
+    align-items: start;
+}
+
+.entry-form,
+.entries-card {
+    padding: 26px;
+    border-radius: var(--radius-xl);
+}
+
+.entry-form h2,
+.entries-card h2 {
+    margin-bottom: 18px;
+    font-size: 1.55rem;
+    letter-spacing: -0.04em;
+}
+
+.field {
+    display: grid;
+    gap: 7px;
+    margin-bottom: 16px;
+}
+
+.field label {
+    color: var(--text-secondary);
+    font-size: 0.88rem;
+    font-weight: 700;
+}
+
+.field input,
+.field textarea {
+    width: 100%;
+    border: 1px solid var(--border-strong);
+    background: #fff;
+    color: var(--text-primary);
+    border-radius: 16px;
+    padding: 13px 14px;
+    font: inherit;
+}
+
+.field textarea {
+    min-height: 104px;
+    resize: vertical;
+}
+
+.form-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.primary-button {
+    min-height: 48px;
+    padding: 0 18px;
+    border: 0;
+    border-radius: 16px;
+    background: linear-gradient(135deg, #1b1814, #493321);
+    color: #fff;
+    font: inherit;
+    font-weight: 800;
+    cursor: pointer;
+}
+
+.secondary-button {
+    min-height: 48px;
+    padding: 0 18px;
+}
+
+.message {
+    min-height: 24px;
+    margin-top: 12px;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+.message.error { color: #9d2f27; }
+.message.success { color: #24683b; }
+
+.entries-list {
+    display: grid;
+    gap: 12px;
+}
+
+.entry {
+    padding: 18px;
+    border: 1px solid var(--border-soft);
+    border-radius: 22px;
+    background: #fff;
+}
+
+.entry-head {
+    display: flex;
+    justify-content: space-between;
+    gap: 14px;
+    align-items: flex-start;
+}
+
+.entry-date {
+    color: #8a5a2c;
+    font-size: 0.78rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.entry h3 {
+    margin-top: 6px;
+    font-size: 1.15rem;
+    line-height: 1.35;
+}
+
+.entry-note {
+    margin-top: 10px;
+    color: var(--text-secondary);
+    white-space: pre-wrap;
+}
+
+.entry-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.entry-action {
+    min-height: 36px;
+    padding: 0 11px;
+    font-size: 0.82rem;
+}
+
+.entry-action.danger { color: #9d2f27; }
+
+.empty-state {
+    padding: 32px 18px;
+    border: 1px dashed var(--border-strong);
+    border-radius: 22px;
+    color: var(--text-secondary);
+    text-align: center;
+}
+
+@media (max-width: 760px) {
+    .workload-page { width: min(100% - 20px, 1120px); padding-top: 10px; }
+    .workload-topbar { align-items: flex-start; flex-direction: column; }
+    .period-card { grid-template-columns: 1fr; padding: 24px 20px; }
+    .period-total { min-width: 0; width: 100%; }
+    .period-nav { width: 100%; display: grid; grid-template-columns: 1fr; }
+    .period-button { width: 100%; }
+    .workload-grid { grid-template-columns: 1fr; }
+    .entry-form, .entries-card { padding: 20px 16px; }
+    .entry-head { display: grid; }
+    .entry-actions { justify-content: flex-start; }
+}
+{% endblock %}
+
+{% block content %}
+<main class="workload-page">
+    <div class="workload-topbar">
+        <a class="back-link" href="{{ '/dashboard' if user_role in ('admin', 'coordinator') else '/forms' }}">← Назад</a>
+        <div class="profile-copy">{{ user_name }}</div>
+    </div>
+
+    <section class="period-card">
+        <div>
+            <div class="eyebrow">Личная выработка</div>
+            <h1>Мои сюжеты</h1>
+            <p class="period-label" id="period-label">Загрузка периода…</p>
+            <div class="period-nav">
+                <button class="period-button" type="button" id="period-prev">← Прошлый период</button>
+                <button class="period-button" type="button" id="period-next">Следующий период →</button>
+            </div>
+        </div>
+        <div class="period-total">
+            <strong id="period-count">0</strong>
+            <span id="period-count-label">сюжетов в эфире</span>
+        </div>
+    </section>
+
+    <div class="workload-grid">
+        <form class="entry-form" id="entry-form">
+            <h2 id="form-title">Добавить сюжет</h2>
+            <input type="hidden" id="entry-id">
+            <div class="field">
+                <label for="air-date">Дата выхода в эфир</label>
+                <input type="date" id="air-date" required>
+            </div>
+            <div class="field">
+                <label for="story-title">Название сюжета</label>
+                <input type="text" id="story-title" maxlength="500" required placeholder="Например, Осенние продукты">
+            </div>
+            <div class="field">
+                <label for="story-note">Заметка — необязательно</label>
+                <textarea id="story-note" maxlength="2000" placeholder="Герой, рубрика или другая полезная пометка"></textarea>
+            </div>
+            <div class="form-actions">
+                <button class="primary-button" type="submit" id="submit-button">Добавить</button>
+                <button class="secondary-button" type="button" id="cancel-edit" hidden>Отменить</button>
+            </div>
+            <p class="message" id="form-message" aria-live="polite"></p>
+        </form>
+
+        <section class="entries-card">
+            <h2>Сюжеты периода</h2>
+            <div class="entries-list" id="entries-list">
+                <div class="empty-state">Загружаем записи…</div>
+            </div>
+        </section>
+    </div>
+</main>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let periodAnchor = new Date();
+let periodStart = '';
+let periodEnd = '';
+let entries = [];
+
+function isoDate(date) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+
+function parseDate(value) {
+    return new Date(`${value}T12:00:00`);
+}
+
+function formatDate(value) {
+    return parseDate(value).toLocaleDateString('ru-RU', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+    });
+}
+
+function countLabel(count) {
+    const mod10 = count % 10;
+    const mod100 = count % 100;
+    if (mod10 === 1 && mod100 !== 11) return 'сюжет в эфире';
+    if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return 'сюжета в эфире';
+    return 'сюжетов в эфире';
+}
+
+function showMessage(text, kind = '') {
+    const element = document.getElementById('form-message');
+    element.textContent = text || '';
+    element.className = `message ${kind}`.trim();
+}
+
+function resetForm() {
+    document.getElementById('entry-id').value = '';
+    document.getElementById('entry-form').reset();
+    document.getElementById('form-title').textContent = 'Добавить сюжет';
+    document.getElementById('submit-button').textContent = 'Добавить';
+    document.getElementById('cancel-edit').hidden = true;
+    const today = isoDate(new Date());
+    document.getElementById('air-date').value =
+        today >= periodStart && today <= periodEnd ? today : periodEnd;
+    showMessage('');
+}
+
+function renderEntries() {
+    const container = document.getElementById('entries-list');
+    container.replaceChildren();
+    if (!entries.length) {
+        const empty = document.createElement('div');
+        empty.className = 'empty-state';
+        empty.textContent = 'В этом периоде пока нет сюжетов. Добавьте первый вышедший сюжет слева.';
+        container.appendChild(empty);
+        return;
+    }
+
+    entries.forEach((entry) => {
+        const card = document.createElement('article');
+        card.className = 'entry';
+
+        const head = document.createElement('div');
+        head.className = 'entry-head';
+        const copy = document.createElement('div');
+        const date = document.createElement('div');
+        date.className = 'entry-date';
+        date.textContent = formatDate(entry.airDate);
+        const title = document.createElement('h3');
+        title.textContent = entry.title;
+        copy.append(date, title);
+
+        const actions = document.createElement('div');
+        actions.className = 'entry-actions';
+        const edit = document.createElement('button');
+        edit.type = 'button';
+        edit.className = 'entry-action';
+        edit.textContent = 'Изменить';
+        edit.addEventListener('click', () => startEdit(entry));
+        const remove = document.createElement('button');
+        remove.type = 'button';
+        remove.className = 'entry-action danger';
+        remove.textContent = 'Удалить';
+        remove.addEventListener('click', () => deleteEntry(entry));
+        actions.append(edit, remove);
+        head.append(copy, actions);
+        card.appendChild(head);
+
+        if (entry.note) {
+            const note = document.createElement('p');
+            note.className = 'entry-note';
+            note.textContent = entry.note;
+            card.appendChild(note);
+        }
+        container.appendChild(card);
+    });
+}
+
+function startEdit(entry) {
+    document.getElementById('entry-id').value = entry.id;
+    document.getElementById('air-date').value = entry.airDate;
+    document.getElementById('story-title').value = entry.title;
+    document.getElementById('story-note').value = entry.note || '';
+    document.getElementById('form-title').textContent = 'Изменить сюжет';
+    document.getElementById('submit-button').textContent = 'Сохранить';
+    document.getElementById('cancel-edit').hidden = false;
+    document.getElementById('entry-form').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+async function loadEntries() {
+    const response = await fetch(`/api/story-output?period=${encodeURIComponent(isoDate(periodAnchor))}`, {
+        credentials: 'same-origin',
+        cache: 'no-store',
+    });
+    const data = await response.json();
+    if (!response.ok || !data.success) {
+        throw new Error(data.message || 'Не удалось загрузить выработку.');
+    }
+    periodStart = data.periodStart;
+    periodEnd = data.periodEnd;
+    entries = data.entries || [];
+    document.getElementById('period-label').textContent =
+        `${formatDate(periodStart)} — ${formatDate(periodEnd)}`;
+    document.getElementById('period-count').textContent = data.count;
+    document.getElementById('period-count-label').textContent = countLabel(data.count);
+    renderEntries();
+    resetForm();
+}
+
+async function saveEntry(event) {
+    event.preventDefault();
+    const entryId = document.getElementById('entry-id').value;
+    const payload = {
+        airDate: document.getElementById('air-date').value,
+        title: document.getElementById('story-title').value.trim(),
+        note: document.getElementById('story-note').value.trim(),
+    };
+    const response = await window.fetchWithCsrfRetry(
+        entryId ? `/api/story-output/${entryId}` : '/api/story-output',
+        {
+            method: entryId ? 'PUT' : 'POST',
+            credentials: 'same-origin',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-Token': window.getCsrfToken(),
+            },
+            body: JSON.stringify(payload),
+        },
+    );
+    const data = await response.json();
+    if (!response.ok || !data.success) {
+        showMessage(data.message || 'Не удалось сохранить сюжет.', 'error');
+        return;
+    }
+    periodAnchor = parseDate(payload.airDate);
+    await loadEntries();
+    showMessage(entryId ? 'Изменения сохранены.' : 'Сюжет добавлен.', 'success');
+}
+
+async function deleteEntry(entry) {
+    if (!window.confirm(`Удалить сюжет «${entry.title}»?`)) return;
+    const response = await window.fetchWithCsrfRetry(`/api/story-output/${entry.id}`, {
+        method: 'DELETE',
+        credentials: 'same-origin',
+        headers: { 'X-CSRF-Token': window.getCsrfToken() },
+    });
+    const data = await response.json();
+    if (!response.ok || !data.success) {
+        showMessage(data.message || 'Не удалось удалить сюжет.', 'error');
+        return;
+    }
+    await loadEntries();
+}
+
+function shiftPeriod(direction) {
+    const base = periodStart ? parseDate(periodStart) : periodAnchor;
+    base.setMonth(base.getMonth() + direction);
+    periodAnchor = base;
+    loadEntries().catch((error) => showMessage(error.message, 'error'));
+}
+
+document.getElementById('entry-form').addEventListener('submit', (event) => {
+    saveEntry(event).catch((error) => showMessage(error.message, 'error'));
+});
+document.getElementById('cancel-edit').addEventListener('click', resetForm);
+document.getElementById('period-prev').addEventListener('click', () => shiftPeriod(-1));
+document.getElementById('period-next').addEventListener('click', () => shiftPeriod(1));
+
+loadEntries().catch((error) => {
+    document.getElementById('entries-list').innerHTML = `<div class="empty-state"></div>`;
+    document.querySelector('#entries-list .empty-state').textContent = error.message;
+});
+</script>
+{% endblock %}

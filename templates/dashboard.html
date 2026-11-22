@@ -27,7 +27,8 @@
 }
 
 .dashboard-hero {
-    padding: 38px;
+    position: relative;
+    padding: 38px 340px 38px 38px;
 }
 
 .dashboard-kicker {
@@ -60,10 +61,31 @@
     line-height: 1.7;
 }
 
-.dashboard-meta {
-    margin-top: 18px;
+.dashboard-account {
+    position: absolute;
+    top: 28px;
+    right: 28px;
+    width: 280px;
+    padding: 18px;
+    border: 1px solid var(--border-soft);
+    border-radius: 24px;
+    background: rgba(255, 255, 255, 0.84);
+}
+
+.dashboard-account span,
+.dashboard-account strong {
+    display: block;
+}
+
+.dashboard-account span {
+    margin-bottom: 5px;
     color: var(--text-muted);
-    font-size: 0.92rem;
+    font-size: 0.78rem;
+}
+
+.dashboard-account strong {
+    overflow-wrap: anywhere;
+    font-size: 0.9rem;
 }
 
 .dashboard-grid {
@@ -80,6 +102,25 @@
     background: #fff;
     border: 1px solid var(--border-soft);
     transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.dashboard-card-wide {
+    grid-column: 1 / -1;
+    min-height: 190px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    background: linear-gradient(135deg, #1b1814 0%, #493321 100%);
+    color: #fff;
+}
+
+.dashboard-card.dashboard-card-wide span,
+.dashboard-card.dashboard-card-wide p {
+    color: rgba(255, 255, 255, 0.72);
+}
+
+.dashboard-card-wide h2 {
+    font-size: clamp(2rem, 4vw, 3.4rem);
 }
 
 .dashboard-card:hover {
@@ -109,13 +150,10 @@
     line-height: 1.65;
 }
 
-.dashboard-actions {
-    display: flex;
-    justify-content: flex-end;
-}
-
 .dashboard-logout {
+    width: 100%;
     min-height: 48px;
+    margin-top: 14px;
     padding: 0 18px;
     border-radius: 18px;
     border: 1px solid var(--border-strong);
@@ -134,6 +172,12 @@
         padding: 24px 20px;
     }
 
+    .dashboard-account {
+        position: static;
+        width: 100%;
+        margin-top: 20px;
+    }
+
     .dashboard-grid {
         grid-template-columns: 1fr;
         padding: 14px;
@@ -143,13 +187,6 @@
         padding: 22px 18px;
     }
 
-    .dashboard-actions {
-        justify-content: stretch;
-    }
-
-    .dashboard-logout {
-        width: 100%;
-    }
 }
 {% endblock %}
 
@@ -157,29 +194,72 @@
 <div class="container">
     <div class="dashboard-shell">
         <section class="dashboard-hero">
-            <div class="dashboard-kicker">Администратор</div>
-            <h1>Рабочая панель</h1>
-            <p>Здесь собраны оба сценария администратора: переход в панель заявок и переход в административную панель обработки.</p>
-            <div class="dashboard-meta">Вы вошли как {{ user_email }}</div>
+            <div class="dashboard-kicker">
+                {% if user_role == 'admin' %}Администратор{% elif user_role == 'coordinator' %}Координатор{% else %}Корреспондент{% endif %}
+            </div>
+            <h1>{{ 'Моя рабочая панель' if user_role == 'correspondent' else 'Рабочая панель' }}</h1>
+            <p>
+                {% if user_role == 'correspondent' %}
+                Отправляйте заявки, ведите личную выработку и просматривайте график монтажа.
+                {% else %}
+                Здесь собраны доступные разделы системы подачи заявок и графика монтажа.
+                {% endif %}
+            </p>
+            <aside class="dashboard-account">
+                <span>Вы вошли как</span>
+                <strong>{{ user_email }}</strong>
+                <button type="button" class="dashboard-logout" onclick="handleDashboardLogout()">Выйти</button>
+            </aside>
         </section>
 
         <section class="dashboard-grid">
+            {% if user_role == 'correspondent' %}
+            <a href="/forms" class="dashboard-card dashboard-card-wide">
+                <span>Система заявок</span>
+                <h2>Отправить заявку</h2>
+                <p>Открыть формы ТТК, ТМК и заявки продюсерам.</p>
+            </a>
+
+            <a href="/story-output" class="dashboard-card">
+                <span>Сюжеты в эфире</span>
+                <h2>Моя выработка</h2>
+                <p>Добавить вышедший сюжет и посмотреть личный итог за период.</p>
+            </a>
+
+            <a href="/montage-schedule" class="dashboard-card">
+                <span>Аппаратные AVID</span>
+                <h2>График монтажа</h2>
+                <p>Посмотреть актуальный график монтажных аппаратных.</p>
+            </a>
+            {% else %}
             <a href="/forms" class="dashboard-card">
                 <span>Панель заявок</span>
                 <h2>Заявки</h2>
                 <p>Открыть формы ТТК, ФИГАРО и заявки продюсерам.</p>
             </a>
 
+            <a href="/montage-schedule" class="dashboard-card">
+                <span>Аппаратные AVID</span>
+                <h2>График монтажа</h2>
+                <p>Открыть и редактировать график монтажных аппаратных.</p>
+            </a>
+
+            <a href="/story-output/overview" class="dashboard-card">
+                <span>Сюжеты в эфире</span>
+                <h2>Выработка корреспондентов</h2>
+                <p>Посмотреть количество и список вышедших сюжетов за период с 21-го по 20-е.</p>
+            </a>
+
+            {% if user_role == 'admin' %}
             <a href="/admin" class="dashboard-card">
                 <span>Панель администратора</span>
                 <h2>Администрирование</h2>
                 <p>Просмотр, фильтрация, статусы и обработка поступивших заявок.</p>
             </a>
+            {% endif %}
+            {% endif %}
         </section>
 
-        <div class="dashboard-actions">
-            <button type="button" class="dashboard-logout" onclick="handleDashboardLogout()">Выйти</button>
-        </div>
     </div>
 </div>
 {% endblock %}
