@@ -400,7 +400,13 @@
         }
 
         .air-choice {
+            display: grid;
+            gap: 6px;
             min-width: 180px;
+        }
+
+        .air-mode {
+            min-height: 36px;
         }
 
         .air-date {
@@ -1206,7 +1212,14 @@
                     <td><input data-bind="title" value="${esc(row.title)}" placeholder="Сюжет" aria-label="Название сюжета"></td>
                     <td>
                         <div class="air-choice">
-                            <input class="air-date" type="date" data-bind="air-picker" value="${esc(airIso(row.airDate))}" aria-label="Дата эфира">
+                            <select class="air-mode" data-bind="air-mode" aria-label="Вариант даты эфира">
+                                <option value="empty" ${!row.airDate && row.airDateMode !== 'date' ? 'selected' : ''}>Не указана</option>
+                                <option value="date" ${(row.airDate && row.airDate !== 'По готовности') || row.airDateMode === 'date' ? 'selected' : ''}>Выбрать дату</option>
+                                <option value="ready" ${row.airDate === 'По готовности' ? 'selected' : ''}>По готовности</option>
+                            </select>
+                            ${(row.airDate && row.airDate !== 'По готовности') || row.airDateMode === 'date'
+                                ? `<input class="air-date" type="date" data-bind="air-picker" value="${esc(airIso(row.airDate))}" aria-label="Дата эфира">`
+                                : ''}
                         </div>
                     </td>
                     <td><input data-bind="story-editor" value="${esc(row.storyEditor || '')}" placeholder="Фамилия" aria-label="Редактор" autocomplete="off"></td>
@@ -1625,7 +1638,7 @@
         document.getElementById('stage').addEventListener('input', (event) => {
             if (!canEdit()) return;
             const bind = event.target.dataset.bind;
-            if (!bind || bind === 'editor' || bind === 'night-room-editor' || bind === 'air-picker') return;
+            if (!bind || bind === 'editor' || bind === 'night-room-editor' || bind === 'air-picker' || bind === 'air-mode') return;
             const room = activeRoom();
             if (!room) return;
             if (bind === 'note') {
@@ -1704,6 +1717,23 @@
                 render();
                 return;
             }
+            if (bind === 'air-mode') {
+                const index = Number(event.target.closest('[data-index]').dataset.index);
+                const row = room.rows[index];
+                if (event.target.value === 'ready') {
+                    row.airDate = 'По готовности';
+                    delete row.airDateMode;
+                } else if (event.target.value === 'empty') {
+                    row.airDate = '';
+                    delete row.airDateMode;
+                } else {
+                    row.airDateMode = 'date';
+                }
+                saveState();
+                markSaved();
+                render();
+                return;
+            }
             if (bind !== 'start' && bind !== 'end' && bind !== 'air' && bind !== 'air-picker') return;
             const index = Number(event.target.closest('[data-index]').dataset.index);
             const row = room.rows[index];
@@ -1725,6 +1755,7 @@
             }
             if (bind === 'air-picker') {
                 row.airDate = event.target.value;
+                delete row.airDateMode;
             }
             saveState();
             markSaved();
