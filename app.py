@@ -24,6 +24,7 @@ import logging
 import os
 import json
 import secrets
+import calendar
 from typing import Optional
 from urllib.parse import quote
 from dotenv import load_dotenv
@@ -573,11 +574,20 @@ def _can_edit_montage_schedule(user: Optional[User]) -> bool:
 MONTAGE_SCHEDULE_START_DATE = date(2026, 12, 1)
 
 
-def _montage_schedule_window():
-    """Окно графика: вчера, сегодня и три дня вперёд, но не раньше даты запуска."""
+def _date_after_months(value: date, months: int) -> date:
+    month_index = value.month - 1 + months
+    year = value.year + month_index // 12
+    month = month_index % 12 + 1
+    day = min(value.day, calendar.monthrange(year, month)[1])
+    return date(year, month, day)
+
+
+def _montage_schedule_window(user: Optional[User] = None):
+    """Окно графика: до двух месяцев для редакторов, пять дней для остальных."""
     today = date.today()
     anchor = max(today, MONTAGE_SCHEDULE_START_DATE)
-    return max(MONTAGE_SCHEDULE_START_DATE, anchor - timedelta(days=1)), anchor, anchor + timedelta(days=3)
+    max_date = _date_after_months(anchor, 2) if _can_edit_montage_schedule(user) else anchor + timedelta(days=3)
+    return max(MONTAGE_SCHEDULE_START_DATE, anchor - timedelta(days=1)), anchor, max_date
 
 
 def _parse_schedule_date(value: str) -> Optional[date]:
@@ -1032,9 +1042,9 @@ def montage_schedule():
 
 @app.route('/api/montage-schedule', methods=['GET'])
 def get_montage_schedule():
-    """Публично вернуть дни текущего пятидневного окна графика."""
+    """Вернуть доступное роли окно графика."""
     user = _get_active_user()
-    min_date, initial_date, max_date = _montage_schedule_window()
+    min_date, initial_date, max_date = _montage_schedule_window(user)
     rows = MontageScheduleDay.query.filter(
         MontageScheduleDay.schedule_date >= min_date,
         MontageScheduleDay.schedule_date <= max_date,
@@ -1077,7 +1087,7 @@ def save_montage_schedule_day(schedule_date):
         return jsonify({'success': False, 'message': 'Недостаточно прав для изменения графика.'}), 403
 
     parsed_date = _parse_schedule_date(schedule_date)
-    min_date, _, max_date = _montage_schedule_window()
+    min_date, _, max_date = _montage_schedule_window(user)
     if not parsed_date or parsed_date < min_date or parsed_date > max_date:
         return jsonify({'success': False, 'message': 'Дата находится вне доступного окна графика.'}), 400
 

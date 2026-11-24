@@ -8,7 +8,9 @@
             <div class="screen-actions">
                 <button class="back-btn" onclick="window.location.href='/'">← На главную</button>
                 <button class="back-btn" onclick="window.location.href='/montage-schedule'">График монтажа</button>
+                {% if (user_profile or {}).get('role') == 'correspondent' %}
                 <button class="back-btn" onclick="window.location.href='/story-output'">Моя выработка</button>
+                {% endif %}
                 <button class="back-btn archive-btn" onclick="window.location.href='/archive'">Архив моих заявок</button>
             </div>
             
